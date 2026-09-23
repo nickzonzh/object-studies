@@ -36,6 +36,7 @@ export function useToolInteraction() {
     canRedo: false,
   })
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [rendering, setRendering] = useState(false)
   const [exportStatus, setExportStatus] = useState<
     'idle' | 'exporting' | 'error'
   >('idle')
@@ -67,6 +68,10 @@ export function useToolInteraction() {
         saveTimer = setTimeout(flushSave, 250)
       },
       restored.strokes,
+      (busy) => {
+        surface.setAttribute('aria-busy', String(busy))
+        setRendering(busy)
+      },
     )
     setHistory(drawing.state())
     setSaveStatus(restored.status)
@@ -207,7 +212,7 @@ export function useToolInteraction() {
         if (active) ready(true)
       },
       async savePng() {
-        if (exporting) return
+        if (exporting || drawing.isBusy()) return
         releaseCapture()
         if (active) ready(true)
         exporting = true
@@ -243,6 +248,7 @@ export function useToolInteraction() {
       'pointerdown',
       (event) => {
         if (
+          drawing.isBusy() ||
           !active ||
           event.button !== 0 ||
           !event.isPrimary ||
@@ -319,6 +325,15 @@ export function useToolInteraction() {
       'keydown',
       (event) => {
         if (event.ctrlKey || event.metaKey || event.altKey) return
+        if (drawing.isBusy()) {
+          if (
+            event.key === ' ' ||
+            event.key === 'Enter' ||
+            event.key.startsWith('Arrow')
+          )
+            event.preventDefault()
+          return
+        }
         if (!active || pointer !== null) return
         if (event.key === ' ' || event.key === 'Enter') {
           event.preventDefault()
@@ -486,6 +501,7 @@ export function useToolInteraction() {
     ...history,
     saveStatus,
     exportStatus,
+    rendering,
     select: (id: ToolId, activation: Activation) =>
       controller.current?.select(id, activation),
     putBack: (keyboard = false) => controller.current?.putBack(keyboard),

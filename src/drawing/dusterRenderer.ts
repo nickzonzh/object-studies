@@ -1,10 +1,7 @@
 import { random } from './random'
 import type { ChalkPoint, DusterStroke } from './types'
 
-function feltBrush(seed: number) {
-  const brush = document.createElement('canvas')
-  brush.width = 128
-  brush.height = 48
+function feltBrush(brush: HTMLCanvasElement, seed: number) {
   const ctx = brush.getContext('2d')!
   const image = ctx.createImageData(brush.width, brush.height)
   const next = random(seed)
@@ -35,6 +32,9 @@ export function createDusterRenderer(canvas: HTMLCanvasElement) {
   // at a capped strength, so overlapping stamps cannot erase the ghost in one sweep.
   const base = document.createElement('canvas')
   const mask = document.createElement('canvas')
+  const brush = document.createElement('canvas')
+  brush.width = 128
+  brush.height = 48
   const baseCtx = base.getContext('2d')!
   const maskCtx = mask.getContext('2d')!
   const ctx = canvas.getContext('2d')!
@@ -49,7 +49,7 @@ export function createDusterRenderer(canvas: HTMLCanvasElement) {
           scratch.height = canvas.height
         }
       }
-      const brush = feltBrush(stroke.seed)
+      feltBrush(brush, stroke.seed)
       const sx = canvas.width / stroke.space.width
       const sy = canvas.height / stroke.space.height
       let dirty: {
@@ -114,6 +114,7 @@ export function createDusterRenderer(canvas: HTMLCanvasElement) {
     },
     destroy() {
       base.width = base.height = mask.width = mask.height = 0
+      brush.width = brush.height = 0
     },
   }
 }

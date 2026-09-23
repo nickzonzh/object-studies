@@ -21,6 +21,7 @@ export function Chalkboard() {
     canRedo,
     saveStatus,
     exportStatus,
+    rendering,
     select,
     putBack,
     clear,
@@ -57,6 +58,7 @@ export function Chalkboard() {
               tabIndex={0}
               role="group"
               aria-label="Chalkboard drawing surface"
+              aria-busy={rendering}
               aria-describedby="tool-instructions tool-study-note"
             >
               <div className="slate-residue" aria-hidden="true" />
@@ -121,16 +123,18 @@ export function Chalkboard() {
             <UtilityButton
               className="put-back"
               type="button"
-              disabled={exportStatus === 'exporting'}
+              disabled={exportStatus === 'exporting' || rendering}
               onActivate={savePng}
             >
               {exportStatus === 'exporting' ? 'Preparing…' : 'Save PNG'}
             </UtilityButton>
           </div>
           <span className="save-note" role="status">
-            {exportStatus === 'error'
-              ? 'The PNG could not be created. Please try again.'
-              : saveMessages[saveStatus]}
+            {rendering
+              ? 'Updating drawing…'
+              : exportStatus === 'error'
+                ? 'The PNG could not be created. Please try again.'
+                : saveMessages[saveStatus]}
           </span>
         </div>
       </figcaption>

@@ -160,3 +160,24 @@ test('storage failures remain non-fatal and never report a successful save', () 
   )
   assert.equal(writes, 1)
 })
+
+test('the point limit prevents oversized saves without replacing the existing drawing', () => {
+  let value = 'existing drawing'
+  const store = createBoardStorage(() => ({
+    getItem: () => value,
+    setItem: (_key, raw) => {
+      value = raw
+    },
+  }))
+  const stroke = chalk(1)
+  stroke.points = Array.from({ length: 40_001 }, () => ({
+    x: 1,
+    y: 1,
+    pressure: 0.5,
+  }))
+  assert.equal(store.save([stroke]), 'full')
+  assert.equal(value, 'existing drawing')
+  stroke.points.pop()
+  assert.equal(store.save([stroke]), 'saved')
+  assert.equal(store.load().strokes[0].points.length, 40_000)
+})

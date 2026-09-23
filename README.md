@@ -59,6 +59,8 @@ Stroke records drive undo/redo and autosave. Undo groups a continuous gesture, i
 
 `replayCache.ts` holds up to four raster prefixes, with a 32 MiB RGBA pixel budget, to avoid replaying the entire drawing for recent Undo/Redo. It preserves periodic checkpoints and reuses a recent-state buffer. Matching requires the same stroke objects in the same order, so Clear and new branches cannot pick up unrelated pixels. A resize or unmount releases the cache. The main canvas and duster scratch surfaces are additional to this cache budget. Initial load, resize and history older than the retained checkpoints still replay stroke records.
 
+Long replays now run cooperatively: each batch yields after a 6 ms budget or 64 work units, whichever comes first. Individual canvas operations can exceed that budget. Short cached replays still finish synchronously. The slate reports “Updating drawing…” while rebuilding; drawing and PNG export wait for completion, while Clear, Undo/Redo and resizing can cancel and replace pending work. Only completed stroke prefixes enter the cache. Autosave uses the complete stroke records, never a partially rebuilt canvas, and checks size limits before serialising without re-parsing the result.
+
 ## Felt erasing
 
 `drawingSurface.ts` records chalk and duster strokes in order. The duster's rounded rectangular mask matches the physical tool's size, with soft edges and seeded felt fibres. Each sweep removes at most 82% of existing pigment through `destination-out`. Two reusable scratch canvases hold the pre-pass board and coverage mask; only the changed rectangle is composited on each input update. This prevents overlapping stamps from accidentally scrubbing a mark to zero in a single sweep.
@@ -84,3 +86,5 @@ The site URL is [nickzonzh.github.io/kimolia](https://nickzonzh.github.io/kimoli
 ## Visual verification
 
 See [the K1 review](docs/K1-review.md) for materials, [the K2 review](docs/K2-review.md) for tool interaction, [the K3 review](docs/K3-review.md) for chalk, [the K4 review](docs/K4-review.md) for erasing, [the K5 review](docs/K5-review.md) for history, autosave and export, and [the K6 review](docs/K6-review.md) for replay performance.
+
+The [performance polish notes](docs/performance-polish.md) cover cooperative rebuilding, cancellation, autosave overhead and remaining extreme-board limits.

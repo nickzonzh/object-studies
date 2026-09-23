@@ -93,12 +93,17 @@ export function createBoardStorage(getStore: () => Store) {
       }
     },
     save(strokes: DrawingStroke[]): SaveStatus {
-      const raw = JSON.stringify({ version: 1, strokes })
-      try {
-        decodeBoard(raw)
-      } catch {
-        return 'full'
+      // These are typed records produced by the renderer (or already validated
+      // on restore). Check limits before serialising; do not parse and rebuild
+      // the entire drawing again on every autosave.
+      if (strokes.length > 4000) return 'full'
+      let points = 0
+      for (const stroke of strokes) {
+        points += stroke.points.length
+        if (points > MAX_POINTS) return 'full'
       }
+      const raw = JSON.stringify({ version: 1, strokes })
+      if (raw.length > MAX_CHARACTERS) return 'full'
       try {
         getStore().setItem(STORAGE_KEY, raw)
         return 'saved'

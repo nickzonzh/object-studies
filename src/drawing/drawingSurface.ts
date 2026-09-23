@@ -6,17 +6,20 @@ import { createDusterRenderer } from './dusterRenderer'
 import type { ChalkPoint, DrawingStroke, DrawingTool } from './types'
 import { createDrawingHistory, type HistoryState } from './history'
 import { createReplayCache, CHECKPOINT_INTERVAL } from './replayCache'
+import { createCooperativeTask } from './cooperativeTask'
 
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,
   onChange: (state: HistoryState, strokes: DrawingStroke[]) => void,
   initial: DrawingStroke[] = [],
+  onBusy: (busy: boolean) => void = () => {},
 ) {
   const ctx = canvas.getContext('2d')!
   const brushes = createChalkBrushes()
   const duster = createDusterRenderer(canvas)
   const history = createDrawingHistory(initial)
   const cache = createReplayCache(canvas)
+  const replayTask = createCooperativeTask(onBusy)
   let gesture: DrawingStroke[] = []
   let active: DrawingStroke | null = null
   let sampler: {
@@ -116,27 +119,35 @@ export function createDrawingSurface(
     ctx.resetTransform()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
-  const replay = () => {
+  function* replaySteps() {
     clearPixels()
     const strokes = history.strokes()
     const start = cache.restore(strokes)
+    yield
     for (let index = start; index < strokes.length; index++) {
       const stroke = strokes[index]
       const samples = makeSampler(stroke)
-      stroke.points.forEach((point) => samples.add(point))
+      for (const point of stroke.points) {
+        samples.add(point)
+        yield
+      }
       samples.end()
       if ((index + 1) % CHECKPOINT_INTERVAL === 0)
         cache.capture(strokes.slice(0, index + 1), true)
+      yield
     }
     cache.capture(strokes)
   }
+  const replay = () => replayTask.run(replaySteps())
   return {
     state: history.state,
+    isBusy: replayTask.isBusy,
     begin(
       chosen: DrawingTool,
       point: ChalkPoint,
       size?: { width: number; height: number },
     ) {
+      if (replayTask.isBusy()) return
       end()
       if (chosen === 'duster' && !history.state().hasMarks) return
       tool = chosen
@@ -163,6 +174,7 @@ export function createDrawingSurface(
       if (width === nextWidth && height === nextHeight && dpr === nextDpr)
         return
       end()
+      replayTask.cancel()
       cache.clear()
       width = Math.max(1, nextWidth)
       height = Math.max(1, nextHeight)
@@ -173,6 +185,7 @@ export function createDrawingSurface(
     },
     clear() {
       end()
+      replayTask.cancel()
       if (!history.state().hasMarks) return
       history.clear()
       clearPixels()
@@ -193,6 +206,7 @@ export function createDrawingSurface(
       changed()
     },
     destroy() {
+      replayTask.cancel()
       end()
       brushes.clear()
       duster.destroy()
