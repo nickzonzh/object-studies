@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { GalleryFrame, type GalleryFrameProps } from '../../components/GalleryFrame'
 import './baroque.css'
 import { BaroqueCorner } from './BaroqueCorner'
+import { BaroqueRails } from './BaroqueRails'
 
 /** A stationary shell: only the raised gilding responds to a fine pointer. */
 export function BaroqueGold({ onPointerMove, onPointerLeave, onPointerCancel, ...props }: Omit<GalleryFrameProps, 'variant' | 'decoration'>) {
@@ -15,7 +16,7 @@ export function BaroqueGold({ onPointerMove, onPointerLeave, onPointerCancel, ..
     element.style.removeProperty('--relief-return')
   }
   useEffect(() => () => { if (pending.current !== null) cancelAnimationFrame(pending.current) }, [])
-  return <GalleryFrame {...props} variant="baroque-gold" decoration={<BaroqueCorner />}
+  return <GalleryFrame {...props} variant="baroque-gold" decoration={<><BaroqueRails /><BaroqueCorner /></>}
     onPointerMove={event => {
       onPointerMove?.(event)
       if (event.defaultPrevented || event.pointerType === 'touch' || matchMedia('(prefers-reduced-motion: reduce)').matches) return

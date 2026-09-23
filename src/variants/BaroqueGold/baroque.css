@@ -72,8 +72,54 @@
 }
 .baroque-corner__light { opacity: var(--relief-light, .65); }
 .baroque-corner__return { opacity: var(--relief-return, .12); }
+.baroque-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
+.baroque-corner--tr, .baroque-corner--br { left: auto; right: calc(var(--frame-width) * -.16); }
+.baroque-corner--bl, .baroque-corner--br { top: auto; bottom: calc(var(--frame-width) * -.16); }
+.baroque-corner--tr { transform: scaleX(-1); }
+.baroque-corner--bl { transform: scaleY(-1); }
+.baroque-corner--br { transform: scale(-1); }
+/* Shared crest lines describe the leaf folds; the exposed contact rim and
+   body gradients are counter-reflected so light still arrives above-left. */
+.baroque-corner--tr .baroque-corner__light,
+.baroque-corner--bl .baroque-corner__light { stroke: #e5cc8e; }
+.baroque-corner--br .baroque-corner__light { stroke: #ceb06c; }
+
+.baroque-rail {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  overflow: hidden;
+  opacity: .68;
+}
+.baroque-rail--top, .baroque-rail--bottom {
+  left: calc(var(--frame-width) * 2.12);
+  right: calc(var(--frame-width) * 2.12);
+  height: var(--frame-width);
+}
+.baroque-rail--top { top: 0; }
+.baroque-rail--bottom { bottom: 0; transform: scaleY(-1); }
+.baroque-rail--left, .baroque-rail--right {
+  top: calc(var(--frame-width) * 2.25);
+  bottom: calc(var(--frame-width) * 2.25);
+  width: var(--frame-width);
+  flex-direction: column;
+}
+.baroque-rail--left { left: 0; }
+.baroque-rail--right { right: 0; transform: scaleX(-1); }
+.baroque-rail__end { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; mask-image: linear-gradient(to right, #000 0%, #000 35%, transparent 95%); }
+.baroque-rail__end svg { display: block; width: calc(var(--frame-width) * 2); height: var(--frame-width); max-width: none; }
+.baroque-rail__end--1 { transform: scaleX(-1); }
+.baroque-rail--left .baroque-rail__end,
+.baroque-rail--right .baroque-rail__end { mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 95%); }
+.baroque-rail--left svg, .baroque-rail--right svg { transform-origin: 0 0; transform: matrix(0, 1, 1, 0, 0, 0); }
+.baroque-rail--left .baroque-rail__end--1,
+.baroque-rail--right .baroque-rail__end--1 { transform: scaleY(-1); }
+.baroque-rail__light { opacity: calc(var(--relief-light, .65) * .55); }
+@media (max-width: 600px) { .baroque-rail { opacity: .55; } }
 @media (max-width: 600px) { .baroque-corner__micro { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
   .baroque-corner__light { opacity: .65; }
   .baroque-corner__return { opacity: .12; }
+  .baroque-rail__light { opacity: .3575; }
 }

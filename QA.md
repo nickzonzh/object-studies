@@ -1,3 +1,27 @@
+# F2C verification — 23 September 2026
+
+Completed four-corner Baroque Gold with whispering rails. The approved master paths, generic nine-slice shell, gold width/profile/material field, liner, recess, and pointer handler are unchanged. Mirrored corner instances reuse one path library per frame; counter-reflected gradients and offset relief preserve upper-left illumination. Corner undercuts remain stable. New low-relief leaf shoots sit beneath the corner tails, fade to open central zones, and inherit the gold palette. Fine rail contrast is reduced on mobile. The gold demo now stacks at 601–850px because the old three-column portrait was too small for the completed composition; F1 remains unchanged.
+
+## Checks and evidence
+
+- Production build, strict TypeScript and `git diff --check` pass.
+- Chrome on Windows: 1920, 1440, 768, 375 and 320px, plus a 601px breakpoint check. No horizontal document overflow. Four ornaments per gold frame, none on F1. Corners remain square at 3.2 times thickness.
+- Recorded comparison against approved F2B.1: outer/opening dimensions, generic corners and scroll states are unchanged outside the intentional tablet gold-demo layout adjustment. Gold thickness and ornament scaling remain unchanged there too.
+- Actual screen transforms show all four corner contact shadows displaced approximately +1.092px horizontally and +1.820px vertically at 1440px, including reflected instances.
+- Pointer upper-left / lower-right highlight opacity: 0.8008 / 0.212, unchanged amplitude; identical frame bounds. Leave/cancel clears variables. Touch skips updates. Reduced motion stays at 0.65. Live content remains interactive. IDs are unique. No console errors or warnings on fresh loads.
+- One completed frame has 46 DOM path elements and 56 uses, with zero filters. The master geometry is stored once per frame. No idle animation loop or React pointer-state rerender was added. This is structural efficiency evidence, not a device performance benchmark.
+- React checklist: stable keys, unconditional useId, decorative/pointer-transparent SVGs, no new effects, state or dependencies. Generic child semantics remain untouched.
+
+Artifacts in `output/playwright/f2c/`: `portrait.png`, `square.png`, `landscape.png`, `gallery.png`; `corner-tl.png`, `corner-tr.png`, `corner-bl.png`, `corner-br.png`; `rail-transition.png`; `mobile.png`, `viewport-320.png`, `viewport-375.png`, `viewport-768.png`; `light-upper-left.png`, `light-lower-right.png`. These were visually inspected. The `all-ratios-*` element crops exclude tiny outside projections at their crop boundary and should not be treated as viewport clipping evidence. `capture.js`, `details.js`, `mobile.js`, result files, `compare.cjs` and `comparison.json` retain reproducible measurements.
+
+## Evaluation
+
+The completed object reads as Baroque through the four lobed acanthus/scroll compositions. Corners remain decisively dominant. The shallow rail shoots continue their vocabulary and settle into generous unornamented centres. Overlapping folds, local contact shadows, roots lying on the convex crown and heels crossing the liner give the carving architectural attachment. The artwork remains the main uninterrupted area in each ratio. Tablet stacking restores adequate viewing scale.
+
+Approved and locked by Nick on 23 September 2026: Baroque Gold F2C is the first locked Korniza variant. No further ornament density is recommended. Remaining limitations: broad SVG surfaces are smoother and more regular than hand-carved gilding; rail shoots become almost subliminal on mobile by design; edge-based pointer response is stylised rather than full physical relighting. Safari, Firefox, physical mobile devices and device performance are unverified. No other variants, deployment or publishing work was started.
+
+---
+
 # F0 + F1 verification
 
 ## F2B hero refinement — 23 September 2026

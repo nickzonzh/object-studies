@@ -2,7 +2,7 @@
 
 Frames for things worth looking at. A React component collection, with a small gallery demo.
 
-This implementation covers **F0, polished F1, F2A / F2A.1, and the F2B hero corner**. The neutral prototype establishes scalable geometry; Baroque Gold adds antique gilded moulding and one authored top-left acanthus/scroll relief. The other corners and full rail ornament remain unimplemented.
+This implementation covers **F0 through F2C**. The neutral prototype establishes scalable geometry; Baroque Gold is the first approved and locked fully ornamented variant (23 September 2026), with four consistent acanthus/scroll corners and restrained leaf shoots tapering into quiet rail centres.
 
 ## Develop
 
@@ -45,7 +45,7 @@ Shared profile stops form an outer lip, recessed sweep, front bead and dark rabb
 
 The frame structure is hidden from assistive technology. Child semantics, pointer events and keyboard focus remain native.
 
-## Baroque Gold (F2A / F2B)
+## Baroque Gold (F2C)
 
 ```tsx
 import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
@@ -59,7 +59,11 @@ Use the `BaroqueGold` wrapper to load its scoped material CSS and pointer lighti
 
 A small local SVG supplies faint leaf variation without raster textures or filters. A masked highlight affects the raised outer moulding only. Pointer events schedule at most one pending animation frame, with no idle loop; leave/cancel restores above-left light. Touch and reduced-motion users receive static light. The frame and artwork never move. Caller pointer handlers are preserved.
 
-F2B adds `BaroqueCorner.tsx`, with authored geometry in `cornerGeometry.ts` and material/relief layers in the component. The generic shell's optional `decoration` slot sits outside the content opening; it changes no grid tracks. `BaroqueGold` owns that slot. The square SVG scales at 3.2 times frame thickness (50 drawing units per thickness), independent of artwork ratio. Only the top-left receives a composition: a lobed diagonal acanthus, a folded heel, unequal scrolls and short rail tails. The hero refinement adds two tucked root leaves, broader fold planes and local undercuts, shortens the horizontal reach by 12.6% and the vertical reach by 5.7%, and warms the ornament's mid-golds. Solid offset copies supply contact relief; stable brown cuts separate folds; pale edge catches respond to the unchanged pointer handler. There are 41 unique authored paths, 47 path elements including definitions, four uses and two gradients per corner; no filters or external ornament assets.
+F2C reuses the approved F2B.1 master in all four corners. `cornerGeometry.ts` remains the geometry authority: lobed diagonal acanthus, folded heel, unequal scrolls, tucked root leaves and local undercuts. `BaroqueCorner.tsx` defines the path groups once per frame and references them with SVG uses. Reflected instances counter-reflect body/fold gradients and relief offsets to keep the light above-left; far-side crest colours are warmer. The original top-left geometry, palette and relief offsets remain unchanged.
+
+`BaroqueRails.tsx` adds two reusable shallow leaf-shoot paths. Fixed-size shoots emerge beneath each scroll tip, fade along each half-rail and leave the centre quiet. They do not stretch or tile with the artwork ratio. Corner layering sits above the rail shoots, which occupy the convex moulding and leave channels and liner clear. Mobile lowers rail contrast slightly without replacing the ornament. The completed ornament totals 46 DOM paths and 56 uses per frame, with no filters, new animation loops, assets or runtime dependencies. SVG IDs remain unique across multiple instances.
+
+The F1 comparison remains in the demo. Gold specimens stack between 601 and 850px as well as on mobile, giving the complete carving room without changing component width tokens or geometry. QA and screenshots are recorded in `QA.md`.
 
 ## Delivery
 
