@@ -5,6 +5,7 @@ import { createDusterSampler } from './dusterSampler'
 import { createDusterRenderer } from './dusterRenderer'
 import type { ChalkPoint, DrawingStroke, DrawingTool } from './types'
 import { createDrawingHistory, type HistoryState } from './history'
+import { createReplayCache, CHECKPOINT_INTERVAL } from './replayCache'
 
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,
@@ -15,6 +16,7 @@ export function createDrawingSurface(
   const brushes = createChalkBrushes()
   const duster = createDusterRenderer(canvas)
   const history = createDrawingHistory(initial)
+  const cache = createReplayCache(canvas)
   let gesture: DrawingStroke[] = []
   let active: DrawingStroke | null = null
   let sampler: {
@@ -71,8 +73,14 @@ export function createDrawingSurface(
     lastInput = null
     tool = null
     if (gesture.length) {
+      const previousCount = history.strokes().length
       history.commit(gesture)
       gesture = []
+      cache.capture(
+        history.strokes(),
+        Math.floor(history.strokes().length / CHECKPOINT_INTERVAL) >
+          Math.floor(previousCount / CHECKPOINT_INTERVAL),
+      )
       changed()
     }
   }
@@ -110,11 +118,17 @@ export function createDrawingSurface(
   }
   const replay = () => {
     clearPixels()
-    for (const stroke of history.strokes()) {
+    const strokes = history.strokes()
+    const start = cache.restore(strokes)
+    for (let index = start; index < strokes.length; index++) {
+      const stroke = strokes[index]
       const samples = makeSampler(stroke)
       stroke.points.forEach((point) => samples.add(point))
       samples.end()
+      if ((index + 1) % CHECKPOINT_INTERVAL === 0)
+        cache.capture(strokes.slice(0, index + 1), true)
     }
+    cache.capture(strokes)
   }
   return {
     state: history.state,
@@ -149,6 +163,7 @@ export function createDrawingSurface(
       if (width === nextWidth && height === nextHeight && dpr === nextDpr)
         return
       end()
+      cache.clear()
       width = Math.max(1, nextWidth)
       height = Math.max(1, nextHeight)
       dpr = nextDpr
@@ -181,6 +196,7 @@ export function createDrawingSurface(
       end()
       brushes.clear()
       duster.destroy()
+      cache.clear()
     },
   }
 }
