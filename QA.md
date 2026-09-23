@@ -1,5 +1,26 @@
 # F0 + F1 verification
 
+## F2B hero refinement — 23 September 2026
+
+Baseline F2B was committed as `270ac8c` before this pass. Product changes are confined to `cornerGeometry.ts` and `BaroqueCorner.tsx`. No changes to the generic shell, moulding, CSS dimensions, material field, demo, pointer handler or ornament coordinate system. The top-left remains the only decorated corner on each gold specimen.
+
+Refinement:
+
+- Added two tucked leaf masses at the shared root, behind the original acanthus and folded heel. They bridge the scroll shoulders into a more compact carved core. Three local fold planes articulate these additions without adding another motif family.
+- Broadened the spine and two acanthus lobes. Seven tapered brown undercut shapes create local overlap and recess depth beneath fold planes. Directional contact offset increases from `(0.9, 1.5)` to `(1.05, 1.75)` drawing units, a 16.7% increase; opacity and groove contrast are unchanged. The requested 15–20% perceived-depth increase is an artistic target, not an objectively measurable depth value for this SVG.
+- Shortened the top reach from 143 to 125 drawing units measured from the corner origin (12.6%); shortened the downward reach from 140 to 132 (5.7%). Updated associated fold and edge paths, preserving tapered tips and the original scrolls. The square container and frame-thickness scaling are unchanged.
+- Warmed and quieted selected ornament mid-golds and fold crests, retaining pale selected high points. Added two minute bole traces at new exposed folds. No distress texture or global contrast adjustment. Pointer-light opacity ranges and colors remain unchanged; undercut pockets remain static.
+
+Validation: production build and TypeScript pass; `git diff --check` passes. Chrome at 1920, 1440, 768, 375 and 320 CSS pixels matches baseline F2B exactly for all seven frames' outer/opening/corner dimensions, scroll states and ornament container dimensions/positions. No horizontal document overflow. Each gold frame contains exactly one ornament; others contain none. SVG width equals height across every ratio; thickness multiplier remains 3.2 within pixel rounding. Unique SVG IDs, live child interaction, stationary pointer response, leave/cancel reset, touch exclusion and reduced-motion behavior all pass. No console errors or warnings; only React's development-tools information message.
+
+Evidence: `output/playwright/f2b-refinement/` contains `before-corner.png`, `before-portrait.png`, refined `corner.png`, `portrait.png`, `square.png`, `landscape.png`, `gallery.png`, `viewport-320.png`, `viewport-375.png`, `viewport-768.png`, and both `light-upper-left.png` / `light-lower-right.png`. Close crops, three full frames, mobile/tablet and both lighting states were visually inspected. `capture.js`, `results.txt`, `compare.cjs` and `comparison.json` preserve the checks and baseline comparison.
+
+Assessment: the shared root is denser, the primary leaf retains its hierarchy, and the deeper pockets separate overlapping folds rather than adding line noise. The warmer gold sits closer to the moulding beneath it. The shortened top sweep reads clearly and leaves more room for future rail work. At mobile scale, the added cuts merge into a quiet shadow mass while the acanthus/scroll silhouette survives; no protrusion clipping was observed. The root is now the darkest and most intricate area, so further layering would risk a knot of dark detail. The overall design remains recognizably the approved composition, with a more weighty Baroque root rather than an entirely new silhouette.
+
+Current complexity: 41 unique authored paths, 47 DOM path elements including reusable definitions, four uses, two gradients, no filters; approximately 60 painted path instances after reuse. Four-corner cost and composition remain untested. Recommend approval of this refined hero before F2C, with restrained rail continuation and an early four-corner density check on the smallest portrait/tablet examples. Do not add more root microdetail. Browser evidence is Chrome on Windows, not Safari/Firefox or physical mobile hardware. No duplication or full rails were implemented.
+
+---
+
 ## F2B single hero corner — 23 September 2026
 
 Implemented one top-left ornament per Baroque Gold specimen, with no ornament on the other corners. The existing demo, moulding profiles, antique material field, width tokens, inner liner, recess and shadows are unchanged. The generic component gains only an optional decorative overlay slot outside its semantic content opening; the nine-slice grid and CSS are untouched.
