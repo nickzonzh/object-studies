@@ -53,3 +53,11 @@ footer { display: flex; justify-content: space-between; padding-block: 28px; bor
   .oak-study .study--portrait { max-width: 357px; }
   .oak-study .study--square { max-width: 386px; }
 }
+
+.walnut-study { border-top: 1px solid #343a3026; }
+@media (min-width: 601px) and (max-width: 850px) {
+  .walnut-study .gallery { grid-template-columns: 1fr; gap: 52px; }
+  .walnut-study .study { width: 100%; max-width: 420px; justify-self: center; }
+  .walnut-study .study--portrait { max-width: 357px; }
+  .walnut-study .study--square { max-width: 386px; }
+}

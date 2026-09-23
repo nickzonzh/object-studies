@@ -1,0 +1,69 @@
+/* F4A: deep outer torus, cut channel, quiet walnut face, inner bolection,
+   hairline antique-gold slip and dark rabbet. Stops run outside → artwork. */
+.gallery-frame[data-variant='dark-walnut'] {
+  --frame-width: clamp(25px, 3.3vw, 48px);
+  --frame-width: round(nearest, clamp(25px, 3.3vw, 48px), 1px);
+  --light-x: 26%;
+  --light-y: 16%;
+  --profile: #241813 0%, #493022 2%, #684632 5%, #805b42 10%,
+    #76503b 15%, #5a3a2a 22%, #382319 28%, #1b120e 30%,
+    #241813 35%, #3c271d 38%, #63412e 40%, #5a3a2a 44%,
+    #523425 54%, #4a2f23 65%, #342117 69%, #211610 71%,
+    #523726 73%, #79573e 77%, #896447 79%, #60402d 82%,
+    #36231a 86%, #241813 88%, #675237 89%, #ac9461 90.5%,
+    #8d754b 92%, #50402b 93%, #241813 94%, #17100d 100%;
+  --profile-shadow: #1d140f 0%, #39251b 2%, #533725 5%, #6d4832 10%,
+    #63402e 15%, #4b3022 22%, #2e1e16 28%, #17100d 30%,
+    #201610 35%, #322118 38%, #543525 40%, #4d3022 44%,
+    #452b20 54%, #3d271d 65%, #2d1e16 69%, #1b130e 71%,
+    #442c20 73%, #684731 77%, #785538 79%, #513525 82%,
+    #2e1e16 86%, #201610 88%, #55432c 89%, #917b50 90.5%,
+    #78613e 92%, #433323 93%, #201610 94%, #140e0b 100%;
+  background: #241813;
+}
+.walnut-material { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.walnut-board { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; }
+/* Non-tiled, full-board veneers cross slice boundaries and end at real mitres.
+   Texture stops before the metal slip; it is not a wood-coloured overlay. */
+.walnut-board--top, .walnut-board--bottom {
+  left: 0; right: 0; height: var(--frame-width);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--frame-width)) 100%, var(--frame-width) 100%);
+  background-image: url('./grain.svg'), linear-gradient(to bottom, var(--profile));
+}
+.walnut-board--top { top: 0; }
+.walnut-board--bottom { bottom: 0; transform: scale(-1); background-image: url('./grain.svg'), linear-gradient(to bottom, var(--profile-shadow)); }
+.walnut-board--left, .walnut-board--right {
+  top: 0; bottom: 0; width: var(--frame-width);
+  clip-path: polygon(0 0, 100% var(--frame-width), 100% calc(100% - var(--frame-width)), 0 100%);
+  background-image: url('./grain-vertical.svg'), linear-gradient(to right, var(--profile));
+}
+.walnut-board--left { left: 0; }
+.walnut-board--right { right: 0; transform: scale(-1); background-image: url('./grain-vertical.svg'), linear-gradient(to right, var(--profile-shadow)); }
+/* Broad low-energy response on timber; stronger wax-polished crests. Each
+   mask is a ring, so channels, rabbet and content receive no moving sheen. */
+.walnut-board::after {
+  content: ''; position: absolute; inset: 40% 0 34%;
+  background: radial-gradient(ellipse at var(--light-x) 50%, #d2a7780b, transparent 65%);
+}
+.walnut-board--left::after, .walnut-board--right::after { inset: 0 34% 0 40%; background: radial-gradient(ellipse at 50% var(--light-y), #d2a7780b, transparent 65%); }
+.walnut-material::before, .walnut-material::after {
+  content: ''; position: absolute; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse at var(--light-x) var(--light-y), #ffe0b534, #d6a5700c 38%, transparent 72%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.walnut-material::before { inset: calc(var(--frame-width) * .055); padding: calc(var(--frame-width) * .145); }
+.walnut-material::after { inset: calc(var(--frame-width) * .745); padding: calc(var(--frame-width) * .065); }
+@media (max-width: 600px) {
+  .walnut-board { background-size: 130% 100%, 100% 100%; }
+  .walnut-board--left, .walnut-board--right { background-size: 100% 130%, 100% 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .gallery-frame[data-variant='dark-walnut'] { --light-x: 26% !important; --light-y: 16% !important; } }
+/* A restrained glint on the integrated metal slip, separate from the timber. */
+.gallery-frame[data-variant='dark-walnut']::before {
+  content: ''; position: absolute; z-index: 3; pointer-events: none;
+  inset: calc(var(--frame-width) * .89); padding: calc(var(--frame-width) * .03);
+  background: radial-gradient(ellipse at var(--light-x) var(--light-y), #e3c79020, transparent 64%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}

@@ -2,6 +2,7 @@ import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { GalleryArtwork, GalleryFrame } from './components'
 import './style.css'
+import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut'
 import { CarvedOak } from './variants/CarvedOak/CarvedOak'
 import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
 
@@ -28,6 +29,12 @@ function App() {
         <div className="material-intro"><p className="eyebrow">Carved Oak · 03</p><h2 id="oak-title">The warmth<br />of a quieter craft.</h2><p>Oiled oak. Shaped edges. A fine inner reed.<br />A study in timber, held in the light.</p></div>
         <div className="gallery" aria-label="Carved Oak in three proportions">
           {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><CarvedOak ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></CarvedOak><figcaption><span>Carved Oak · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
+        </div>
+      </section>
+      <section className="walnut-study" aria-labelledby="walnut-title">
+        <div className="material-intro"><p className="eyebrow">Dark Walnut · 04</p><h2 id="walnut-title">A deeper tone.<br />A quieter grandeur.</h2><p>Burnished walnut. Deep channels. A thread of old gold.<br />Weight and warmth, gathered in the shadows.</p></div>
+        <div className="gallery" aria-label="Dark Walnut in three proportions">
+          {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><DarkWalnut ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></DarkWalnut><figcaption><span>Dark Walnut · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
         </div>
       </section>
       <section className="content-study" aria-labelledby="content-title"><div className="content-copy"><p className="eyebrow">Beyond the still image</p><h2 id="content-title">An opening<br />for anything.</h2><p>A photograph, a moving image, a small idea.<br />The frame holds it. The content stays yours.</p><p className="study-note">Try leaving a mark in this little live canvas.</p></div><div className="live-frame"><GalleryFrame ratio="3 / 2"><LivingStudy /></GalleryFrame></div></section>

@@ -2,7 +2,7 @@
 
 Frames for things worth looking at. A React component collection, with a small gallery demo.
 
-This implementation covers **F0 through F3A.1**. The neutral prototype establishes scalable geometry; Baroque Gold is the first approved and locked fully ornamented variant (23 September 2026), with four consistent acanthus/scroll corners and restrained leaf shoots tapering into quiet rail centres.
+This implementation covers **F0 through F4A**. The neutral prototype establishes scalable geometry; Baroque Gold is the first approved and locked fully ornamented variant (23 September 2026), with four consistent acanthus/scroll corners and restrained leaf shoots tapering into quiet rail centres.
 
 ## Develop
 
@@ -78,6 +78,22 @@ import { CarvedOak } from './variants/CarvedOak/CarvedOak'
 The first timber-study candidate uses a separate 23–44px moulding: eased outer edge, shallow channel, broad sloping oak face, double inner reed and dark rabbet. The generic grid and content slot are unchanged. Four pointer-transparent material surfaces span complete boards with clipped mitres, maintaining grain continuity across the underlying corner/rail slices. Two small non-tiled SVG assets supply tapered grain bands, pores and scattered pale rays; gradients provide the shaped timber body and static above-left shading. There are no raster textures or SVG filters.
 
 The wrapper follows the existing event-driven pointer-light architecture, with softer masked highlights on the outer edge and inner reed. It preserves caller handlers, cancels pending work on unmount/leave/cancel, and skips touch and reduced-motion interaction. There is no idle loop or pointer-triggered React state update. The restrained demo includes all three proportions, stacking at tablet/mobile sizes. This is F3A only: no heavy ornament or F3B work. F3A.1 lifts the timber toward golden-neutral medium oak, opens the broad-face grain and pores slightly, and softens the satin sheen while preserving all geometry and pointer behaviour. Approved and locked by Nick on 23 September 2026: Carved Oak F3A.1 is the second real Korniza variant and the first locked timber variant.
+
+## Dark Walnut (F4A)
+
+```tsx
+import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut'
+
+<DarkWalnut ratio="4 / 5">
+  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
+</DarkWalnut>
+```
+
+A distinct 25–48px walnut profile: rounded outer moulding, deep narrow channel, broad warm-brown face, polished inner bolection, very thin antique-gold slip and near-black rabbet. Fine flowing grain and small pores use two non-tiled vector assets, with no raster textures, filters, botanical decoration or runtime dependencies. Full-board surfaces retain directional grain through slice boundaries and terminate at mitres. The slip occupies approximately 3% of the moulding width (0.75–1.44 CSS pixels), subordinate to the timber.
+
+The existing event-driven pointer-light pattern is retained locally: broad faces respond weakly, raised mouldings catch warmer polish, and the liner receives a faint glint. Recesses and artwork remain static. Touch/reduced-motion use fixed light; leave/cancel and unmount clean up pending work. The shared shell, artwork recess and wall shadows are unchanged, as are the locked Oak and Gold variants. Only the shared TypeScript variant union is extended.
+
+The fourth demo study includes portrait, square and landscape using the same artwork for comparison. Approved and locked by Nick on 23 September 2026: Dark Walnut F4A is the third finished Korniza variant. The approved baseline includes the final 5% grain-opacity lift; preserve its material, profile, polish and thin antique-gold liner. No heavier ornament milestone has begun.
 
 ## Delivery
 

@@ -1,3 +1,51 @@
+# F4A Dark Walnut — 23 September 2026
+
+Approved and locked by Nick on 23 September 2026 as the third finished Korniza variant, including the final 5% grain-opacity refinement. Baroque Gold and Carved Oak remain locked and unchanged. The generic shell receives only the `dark-walnut` TypeScript union member; its geometry, content slot, depth CSS and shadows are unchanged.
+
+## F4A grain refinement
+
+At Nick's request, increased all Walnut grain/fibre/pore opacities by a relative 5% in both directional SVG assets. Pattern geometry, profile, palette, liner and lighting are unchanged. Production build passes; desktop (1440px) and mobile (390px) screenshots were captured and visually inspected. The result remains restrained, with a small increase in timber definition. Evidence: `output/playwright/f4a-grain-plus5-desktop.png` and `output/playwright/f4a-grain-plus5-mobile.png`.
+
+## Material and profile
+
+- 25–48px local width, deep rounded outer moulding, narrow shadow channel, broad walnut face, raised inner bolection, antique-gold slip and dark artwork rabbet.
+- Warm reddish-brown body, visible light/dark plane separation and near-black cavities. Walnut grain is finer and less open than Oak, with gently flowing streaks, subtle warm fibres and small pores. No pale oak rays, raster textures, tiling or SVG filters. Two vector assets total about 26KB raw / 6.2KB gzip, with 108 paths each rendered as CSS images; only four board spans and their container are added to the DOM.
+- Moving light is strongest on raised timber, weak on the broad face, faint on the slip and absent from the deep channels/rabbet. No transform, animation loop or React pointer-state updates.
+- The gold slip was retained: its approximately 0.75–1.44px width clarifies the opening and adds the formal gallery character without competing with the walnut.
+- The first visual review prompted one small increase in grain contrast; no geometry or ornament pass followed.
+
+## Verification
+
+Chrome on Windows, local Vite app:
+
+- Strict TypeScript and production build pass; `git diff --check` passes.
+- Measured 1920, 1440, 1024, 851, 850, 768, 600, 390, 375 and 320px viewports. No horizontal document overflow. All corner squares remain square; all three opening ratios remain within 0.00011 of 0.8, 1 and 1.5. Narrowest portrait opening is approximately 168px at the 320px viewport.
+- Pointer coordinates change between opposite corners; bounding boxes remain identical. Leave clears inline light variables; pointercancel resets them. Touch and reduced-motion tests produce no inline light updates. Existing live-content button still increments its status.
+- Desktop and mobile captures show continuous mitres, readable artwork and stable liner width. Blank-artwork capture retains convincing material/profile separation.
+- Device-scale-factor 2 Chrome capture used for close-ups and equal-width three-material comparison. This is emulation, not physical high-DPI-device testing. Firefox/Safari remain unverified.
+- Fresh browser console shows only the React development-tools informational notice, without warnings/errors. Editing the entrypoint during development triggered the existing duplicate-createRoot hot-reload warning; a separate fresh-page console/pageerror check returned an empty error list.
+
+## Captured evidence
+
+All paths are local under `output/playwright/` (ignored by Git):
+
+- `f4a-study.png`: desktop three-proportion study.
+- `f4a-portrait.png`, `f4a-square.png`, `f4a-landscape.png`: full individual specimens.
+- `f4a-corner.png`, `f4a-grain.png`, `f4a-liner.png`: high-density detail crops.
+- `f4a-mobile-390.png`, `f4a-mobile-320.png`: mobile viewports.
+- `f4a-390-{portrait,square,landscape}.png`, `f4a-320-{portrait,square,landscape}.png`: individual mobile specimens.
+- `f4a-pointer-left.png`, `f4a-pointer-right.png`: material-light states.
+- `f4a-blank.png`: blank content opening.
+- `f4a-comparison.png`: equal-width Gold / Oak / Walnut portraits, arranged temporarily in the browser for QA only; the actual demo retains its existing editorial layout.
+
+## Evaluation and recommendation
+
+Walnut reads as fine-grained, burnished dark timber, clearly richer/darker than Oak. Its drama comes from the outer roll, deep channel and polished inner moulding, not ornament. The thin liner improves the opening and gives the frame a formal gallery identity. It sits comfortably beside the warm Oak and ornate Gold as a distinct third personality.
+
+Dark Walnut F4A is approved and locked. Preserve this material, profile, restrained polish and antique-gold liner as its finished baseline. Remaining limitations: subtle grain naturally becomes less legible at the smallest mobile scale; straight mouldings still read as carefully restored, rather than irregular hand-aged timber. Neither warrants heavier carving or an automatic follow-up pass. No F4B work or deployment performed. Nick authorized commit and push of this approved F4A baseline.
+
+---
+
 # F3A.1 material identity refinement — 23 September 2026
 
 Material-only refinement of the existing Carved Oak. Product edits are limited to `oak.css`, `grain.svg` and `grain-vertical.svg`. The wrapper, nine-slice geometry, profile stop positions, width, mitre clips, recess, demo, responsive rules and pointer handler are unchanged. The F3A source material is preserved in `output/playwright/f3a1/baseline/` for comparison.
