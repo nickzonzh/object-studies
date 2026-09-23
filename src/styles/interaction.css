@@ -158,6 +158,12 @@
   min-height: 44px;
   touch-action: manipulation;
 }
+.board-utilities {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+}
 .put-back:disabled {
   color: #797a70;
   cursor: default;
@@ -196,6 +202,15 @@
   }
   .tool-study-note {
     margin-left: 4px;
+  }
+  .material-note {
+    flex: 1;
+  }
+  .material-swatch {
+    flex: none;
+  }
+  .board-utilities {
+    gap: 4px;
   }
   .tool-flight--duster:not(.is-ready) {
     --face-offset: 3px;

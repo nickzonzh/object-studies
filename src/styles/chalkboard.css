@@ -78,6 +78,13 @@
     radial-gradient(ellipse 40% 1.6% at 48% 100%, #d8d5b522, transparent),
     linear-gradient(0deg, #d8d5b506, transparent 6%);
 }
+.chalk-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
 @media (max-width: 520px) {
   .chalkboard {
     --frame-width: 17px;

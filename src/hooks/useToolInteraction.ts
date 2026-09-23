@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { clampPoint } from '../tools/geometry'
 import { createToolMotion } from '../tools/toolMotion'
+import { createChalkSurface } from '../drawing/chalkSurface'
+import { pressureFor } from '../drawing/chalkSampler'
 import {
   type Activation,
   type Point,
@@ -11,26 +13,32 @@ import {
 type Controller = {
   select: (id: ToolId, activation: Activation) => void
   putBack: (keyboard?: boolean) => void
+  clear: () => void
 }
 
 export function useToolInteraction() {
   const boardRef = useRef<HTMLDivElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const controller = useRef<Controller | null>(null)
   const [selected, setSelected] = useState<ToolId | null>(null)
+  const [hasMarks, setHasMarks] = useState(false)
 
   useEffect(() => {
     const board = boardRef.current!
     const surface = surfaceRef.current!
     const motion = createToolMotion(board, overlayRef.current!)
+    const drawing = createChalkSurface(canvasRef.current!, setHasMarks)
     let active: ToolId | null = null
     let pointer: number | null = null
     let pointerType = ''
+    let contactPressure = 0.5
     let over = false
     let touching = false
     let last: Point | null = null
     let rect = surface.getBoundingClientRect()
+    drawing.resize(rect.width, rect.height)
     const events = new AbortController()
     const options = { signal: events.signal }
 
@@ -44,6 +52,7 @@ export function useToolInteraction() {
       point.y >= rect.top &&
       point.y <= rect.bottom
     const releaseCapture = () => {
+      drawing.end()
       const captured = pointer
       pointer = null
       touching = false
@@ -51,6 +60,7 @@ export function useToolInteraction() {
         surface.releasePointerCapture(captured)
     }
     const ready = (immediate = false) => {
+      drawing.end()
       over = false
       last = null
       if (active) {
@@ -88,6 +98,19 @@ export function useToolInteraction() {
       x: event.clientX,
       y: event.clientY,
     })
+    const inkPoint = (point: Point, pressure = 0.5) => ({
+      x: point.x - rect.left,
+      y: point.y - rect.top,
+      pressure,
+    })
+    const addSamples = (event: PointerEvent) => {
+      const samples = event.getCoalescedEvents?.() ?? []
+      // Always include the parent event: some devices return an empty list.
+      for (const sample of [...samples, event]) {
+        contactPressure = pressureFor(sample.pointerType, sample.pressure)
+        drawing.add(inkPoint(pointFrom(sample), contactPressure))
+      }
+    }
     const select = (id: ToolId, activation: Activation) => {
       if (active === id) {
         putBack(activation === 'keyboard')
@@ -108,7 +131,15 @@ export function useToolInteraction() {
         phase('hover')
       }
     }
-    controller.current = { select, putBack }
+    controller.current = {
+      select,
+      putBack,
+      clear() {
+        releaseCapture()
+        drawing.clear()
+        if (active) ready(true)
+      },
+    }
 
     surface.addEventListener(
       'pointerenter',
@@ -143,6 +174,9 @@ export function useToolInteraction() {
         surface.setPointerCapture(event.pointerId)
         surface.focus({ preventScroll: true })
         motion.move(active, pose(point), true)
+        contactPressure = pressureFor(event.pointerType, event.pressure)
+        if (active !== 'duster')
+          drawing.begin(active, inkPoint(point, contactPressure))
         last = point
         phase('contact')
       },
@@ -159,6 +193,7 @@ export function useToolInteraction() {
           return
         const point = pointFrom(event)
         over = inside(point)
+        if (touching && pointer === event.pointerId) addSamples(event)
         motion.move(active, pose(point), touching && over)
         last = point
         phase(touching && over ? 'contact' : 'hover')
@@ -170,6 +205,8 @@ export function useToolInteraction() {
       (event) => {
         if (event.pointerId !== pointer || !active) return
         const point = pointFrom(event)
+        // Pointer-up pressure is zero; keep the last contact pressure at release.
+        drawing.add(inkPoint(point, contactPressure))
         releaseCapture()
         if (pointerType === 'touch' || !inside(point))
           ready(pointerType === 'touch')
@@ -197,9 +234,10 @@ export function useToolInteraction() {
     surface.addEventListener(
       'keydown',
       (event) => {
-        if (!active) return
+        if (!active || pointer !== null) return
         if (event.key === ' ' || event.key === 'Enter') {
           event.preventDefault()
+          if (touching || event.repeat) return
           touching = true
           rect = surface.getBoundingClientRect()
           last ??= {
@@ -207,6 +245,7 @@ export function useToolInteraction() {
             y: rect.top + rect.height / 2,
           }
           motion.move(active, pose(last), true, true)
+          if (active !== 'duster') drawing.begin(active, inkPoint(last))
           phase('contact')
           return
         }
@@ -233,6 +272,7 @@ export function useToolInteraction() {
           rect,
         )
         motion.move(active, pose(next), touching, true)
+        if (touching) drawing.add(inkPoint(next))
         last = next
         over = true
         phase(touching ? 'contact' : 'hover')
@@ -249,6 +289,7 @@ export function useToolInteraction() {
         )
           return
         event.preventDefault()
+        drawing.end()
         touching = false
         if (last) motion.move(active, pose(last), false, true)
         phase('hover')
@@ -293,20 +334,24 @@ export function useToolInteraction() {
       },
       { ...options, passive: true },
     )
-    const resize = new ResizeObserver(() => {
+    const resizeSurface = () => {
       rect = surface.getBoundingClientRect()
       if (active) {
         releaseCapture()
         ready(true)
       }
-    })
+      drawing.resize(rect.width, rect.height)
+    }
+    const resize = new ResizeObserver(resizeSurface)
     resize.observe(surface)
+    window.addEventListener('resize', resizeSurface, options)
     phase('idle')
     return () => {
       releaseCapture()
       events.abort()
       resize.disconnect()
       motion.destroy()
+      drawing.destroy()
       controller.current = null
     }
   }, [])
@@ -315,9 +360,12 @@ export function useToolInteraction() {
     boardRef,
     surfaceRef,
     overlayRef,
+    canvasRef,
     selected,
+    hasMarks,
     select: (id: ToolId, activation: Activation) =>
       controller.current?.select(id, activation),
     putBack: (keyboard = false) => controller.current?.putBack(keyboard),
+    clear: () => controller.current?.clear(),
   }
 }
