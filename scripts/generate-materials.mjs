@@ -1,9 +1,12 @@
 // Local, deterministic SVG materials. No image service, bitmap or runtime generation.
 import { writeFileSync } from 'node:fs'
 
-let state = 68431
-const random = () =>
-  (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 4294967296
+const seededRandom = (seed) => {
+  let state = seed
+  return () =>
+    (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 4294967296
+}
+const random = seededRandom(68431)
 const save = (name, text) =>
   writeFileSync(
     new URL(`../src/assets/${name}.svg`, import.meta.url),
@@ -12,23 +15,35 @@ const save = (name, text) =>
 const svg = (width, height, content) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">${content}</svg>`
 
-const grain = []
-for (let line = 0; line < 46; line++) {
-  const y = line * 1.4 - 2
+// Fibres follow one slow wood flow, with uneven spacing and local departures.
+// Interruptions and tapered strength avoid an evenly ruled, full-width stripe.
+const grain = [
+  '<defs><linearGradient id="fade"><stop stop-color="#352619" stop-opacity="0"/><stop offset=".16" stop-color="#352619"/><stop offset=".72" stop-color="#352619"/><stop offset="1" stop-color="#352619" stop-opacity="0"/></linearGradient></defs>',
+]
+const flow = (x, y) =>
+  Math.sin(x / 178) * 0.8 +
+  Math.sin(x / 310 + y / 19) * 1.5 +
+  Math.exp(-(((x - 760) / 170) ** 2)) * Math.sin(y / 17) * 2.5
+let y = -4
+while (y < 65) {
+  y += 0.5 + random() ** 1.3 * 2.5
   const phase = random() * 6.28
-  const amplitude = 0.25 + random() * 1.2
-  const frequency = 100 + random() * 120
-  const points = []
-  for (let x = -20; x <= 1220; x += 20) {
-    const ripple =
-      Math.sin(x / frequency + phase) * amplitude +
-      Math.sin(x / 45 + phase) * 0.17
-    const bow = Math.exp(-(((x - 770) / 150) ** 2)) * Math.sin(y / 16) * 3
-    points.push(`${x},${(y + ripple + bow).toFixed(2)}`)
+  const amplitude = 0.12 + random() * 0.45
+  const width = (0.25 + random() * 0.65).toFixed(2)
+  let start = -80 + random() * 140
+  while (start < 1200) {
+    const end = Math.min(1220, start + 90 + random() * 420)
+    const opacity = (0.1 + random() * 0.25).toFixed(2)
+    const points = []
+    for (let x = start; x < end; x += 12) {
+      const ripple = Math.sin(x / 58 + phase) * amplitude
+      points.push(`${x.toFixed(1)},${(y + flow(x, y) + ripple).toFixed(2)}`)
+    }
+    grain.push(
+      `<polyline points="${points.join(' ')}" fill="none" stroke="url(#fade)" stroke-width="${width}" opacity="${opacity}" stroke-linecap="round"/>`,
+    )
+    start = end + 14 + random() * 88
   }
-  grain.push(
-    `<polyline points="${points.join(' ')}" fill="none" stroke="#352619" stroke-width="${(0.25 + random() * 0.7).toFixed(2)}" opacity="${(0.13 + random() * 0.25).toFixed(2)}"/>`,
-  )
 }
 // Interrupted oak pores, stretched along the timber, never perpendicular to it.
 for (let i = 0; i < 220; i++) {
@@ -61,12 +76,14 @@ save(
     '<filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".008 .013" numOctaves="3" seed="8"/><feColorMatrix type="saturate" values="0"/></filter><path filter="url(#n)" d="M0 0h1000v620H0z"/>',
   ),
 )
+// Independent seed preserves the existing dust when the timber changes.
+const dustRandom = seededRandom(1441559149)
 const dust = []
 for (let i = 0; i < 280; i++) {
-  const x = 30 + random() * 910
-  const y = 8 + random() * 14
+  const x = 30 + dustRandom() * 910
+  const y = 8 + dustRandom() * 14
   dust.push(
-    `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.15 + random() * 0.65).toFixed(2)}" fill="#eee7ce" opacity="${(0.04 + random() * 0.12).toFixed(2)}"/>`,
+    `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.15 + dustRandom() * 0.65).toFixed(2)}" fill="#eee7ce" opacity="${(0.04 + dustRandom() * 0.12).toFixed(2)}"/>`,
   )
 }
 save('dust', svg(1000, 30, dust.join('')))

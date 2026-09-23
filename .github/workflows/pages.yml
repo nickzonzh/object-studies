@@ -9,9 +9,7 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  # Enable only after Pages is available and configured to use Actions.
   deploy:
-    if: vars.PAGES_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write

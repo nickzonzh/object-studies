@@ -44,15 +44,9 @@ The complete static object is exposed as one described image to assistive techno
 
 CI runs install, lint, strict typecheck and production build on main pushes and pull requests. The Pages workflow independently repeats those checks before deploying.
 
-The repository is private. On 23 September 2026, GitHub rejected Pages creation with HTTP 422: `Your current plan does not support GitHub Pages for this repository.` The workflow is present but gated by the repository variable `PAGES_ENABLED`; there is no live Pages deployment yet.
+The repository is public and Pages uses **GitHub Actions** as its source. Main pushes automatically build and deploy the app; the workflow can also be run manually. No repository variable is required.
 
-When Pages becomes available for this private repository:
-
-1. Enable Pages in repository settings with **GitHub Actions** as its source.
-2. Set repository Actions variable `PAGES_ENABLED` to `true`.
-3. Run **Deploy to GitHub Pages** manually, or push to main.
-
-The Vite base is already `/kimolia/`, following the [Vite Pages deployment guide](https://vite.dev/guide/static-deploy#github-pages). No visibility change or account upgrade is performed by the workflow.
+The site URL is [nickzonzh.github.io/kimolia](https://nickzonzh.github.io/kimolia/). The Vite base is `/kimolia/`, following the [Vite Pages deployment guide](https://vite.dev/guide/static-deploy#github-pages).
 
 ## Visual verification
 
