@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="311" height="277" viewBox="0 0 311 277" preserveAspectRatio="none">
+  <!-- One continuous nonrepeating field across the frame. Soft, asymmetric
+       changes in leaf tone only: no grain, hard tile boundaries or filters. -->
+  <defs>
+    <radialGradient id="warm"><stop stop-color="#78482b" stop-opacity=".23"/><stop offset=".45" stop-color="#78482b" stop-opacity=".11"/><stop offset="1" stop-color="#78482b" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pale"><stop stop-color="#e7dab1" stop-opacity=".16"/><stop offset="1" stop-color="#e7dab1" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse fill="url(#warm)" cx="62" cy="9" rx="48" ry="36"/>
+  <ellipse fill="url(#warm)" cx="224" cy="0" rx="31" ry="27"/>
+  <ellipse fill="url(#warm)" cx="303" cy="168" rx="35" ry="68"/>
+  <ellipse fill="url(#warm)" cx="4" cy="212" rx="30" ry="49"/>
+  <ellipse fill="url(#warm)" cx="145" cy="273" rx="59" ry="27"/>
+  <ellipse fill="url(#pale)" cx="146" cy="5" rx="51" ry="39"/>
+  <ellipse fill="url(#pale)" cx="8" cy="90" rx="32" ry="58"/>
+  <ellipse fill="url(#pale)" cx="308" cy="56" rx="27" ry="37"/>
+  <ellipse fill="url(#pale)" cx="263" cy="271" rx="34" ry="24"/>
+</svg>

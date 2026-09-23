@@ -2,7 +2,7 @@
 
 Frames for things worth looking at. A React component collection, with a small gallery demo.
 
-This implementation covers **F0 + F1 only**. The prototype establishes scalable geometry and physical depth; decorative materials and F2 are intentionally absent.
+This implementation covers **F0, polished F1, and F2A**. The neutral prototype establishes scalable geometry; Baroque Gold adds layered gilded moulding. Botanical ornament and F2B are intentionally absent.
 
 ## Develop
 
@@ -43,7 +43,21 @@ Thickness is clamped from 20–38px and rounded to whole CSS pixels in supportin
 
 Shared profile stops form an outer lip, recessed sweep, front bead and dark rabbet. Darker right/bottom faces establish a static upper-left light. A pointer-transparent inset shadow overlaps the opening, while separate contact and ambient shadows mount the frame against the wall. There are no textures, filters, animation loops, tilt, glass, or child-style resets.
 
-The frame structure is hidden from assistive technology. Child semantics, pointer events and keyboard focus remain native. There is no motion, including with reduced-motion preferences.
+The frame structure is hidden from assistive technology. Child semantics, pointer events and keyboard focus remain native.
+
+## Baroque Gold (F2A)
+
+```tsx
+import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
+
+<BaroqueGold ratio="4 / 5">
+  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
+</BaroqueGold>
+```
+
+Use the `BaroqueGold` wrapper to load its scoped material CSS and pointer lighting. It accepts the same div/content props as `GalleryFrame`, with the variant fixed. Generic geometry and its 20–38px scaling remain unchanged; gold owns a 26–53px width token. Shared corner/rail profiles describe the outer lip, convex moulding, patinated channel, secondary roll, relief fillet, inner liner and dark rabbet.
+
+A small local SVG supplies faint leaf variation without raster textures or filters. A masked highlight affects the raised outer moulding only. Pointer events schedule at most one pending animation frame, with no idle loop; leave/cancel restores above-left light. Touch and reduced-motion users receive static light. The frame and artwork never move. Caller pointer handlers are preserved.
 
 ## Delivery
 

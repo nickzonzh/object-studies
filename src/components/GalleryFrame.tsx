@@ -2,7 +2,7 @@ import type { CSSProperties, ComponentPropsWithoutRef } from 'react'
 import './gallery-frame.css'
 
 export type GalleryFrameProps = ComponentPropsWithoutRef<'div'> & {
-  variant?: 'prototype'
+  variant?: 'prototype' | 'baroque-gold'
   /** Aspect ratio of the content opening, excluding the frame. */
   ratio?: CSSProperties['aspectRatio']
 }

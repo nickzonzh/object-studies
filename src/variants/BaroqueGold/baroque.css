@@ -1,0 +1,59 @@
+/* Shared cross-sections travel through the existing mitres unchanged.
+   The two profiles describe above-left illumination, not different geometry.
+   0–10 outer lip; 10–46 convex ogee; 46–61 channel;
+   61–78 secondary roll; 78–85 relief fillet; 85–95 liner; 95–100 rabbet. */
+.gallery-frame[data-variant='baroque-gold'] {
+  --frame-width: clamp(26px, 3.6vw, 53px);
+  --frame-width: round(nearest, clamp(26px, 3.6vw, 53px), 1px);
+  --light-x: 26%;
+  --light-y: 16%;
+  --profile:
+    #49301d 0%, #8e642c 1.5%, #d1ae5e 3%, #f1d98d 4.5%,
+    #ac8039 6.5%, #634021 9%, #86602b 11%,
+    #a18148 15%, #b49755 20%, #c3a662 26%, #d8bc78 29%,
+    #c0a05a 33%, #ad8746 38%, #8e652f 43%, #5d3a20 47%,
+    #3c281b 49%, #654326 52%, #826035 56%, #6b4828 59%, #38251a 61%,
+    #a07a3e 63%, #d0b16b 66%, #efdaa0 68%, #bea061 71%, #98733b 75%, #5b3b21 78%,
+    #bda166 80%, #dfc894 81.5%, #896432 84%, #573720 86%,
+    #ae9055 88%, #c9b27b 90%, #ddca97 92%, #886937 94%,
+    #402a1c 96%, #241b14 100%;
+  --profile-shadow:
+    #35251a 0%, #795124 1.5%, #b58c43 3%, #d5b56a 4.5%,
+    #8e622b 6.5%, #4f321b 9%, #745023 11%,
+    #8c6b3b 15%, #a18346 20%, #af914f 26%, #c3a661 29%,
+    #ac8b49 33%, #97733b 38%, #7d5429 43%, #4e301c 47%,
+    #302118 49%, #50351f 52%, #694927 56%, #593a23 59%, #302017 61%,
+    #876532 63%, #b99b57 66%, #d9c18a 68%, #ab8c50 71%, #815e2e 75%, #4b301c 78%,
+    #a88a50 80%, #c4ab76 81.5%, #725028 84%, #462d1c 86%,
+    #97793f 88%, #b49c64 90%, #c7b180 92%, #75552d 94%,
+    #332318 96%, #1c1712 100%;
+  background: #50391f;
+}
+
+/* A single continuous surface avoids texture discontinuities at rail joins.
+   The mask confines leaf variation and moving light to the convex high point;
+   neither artwork nor dark channels receive a shiny overlay. */
+.gallery-frame[data-variant='baroque-gold']::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--frame-width) * .13);
+  padding: calc(var(--frame-width) * .26);
+  z-index: 2;
+  pointer-events: none;
+  /* Static bole sits above the light layer, on a few points of the 29% crown.
+     Two offset soft marks give each trace an irregular silhouette. */
+  background:
+    radial-gradient(ellipse 2.5px 1px at 19% calc(var(--frame-width) * .16), #79463048, transparent),
+    radial-gradient(ellipse 1.3px .9px at calc(19% + 1.8px) calc(var(--frame-width) * .16 + .4px), #79463030, transparent),
+    radial-gradient(ellipse 1.8px 1px at 76% calc(100% - var(--frame-width) * .16), #79463040, transparent),
+    radial-gradient(ellipse 1px 2.2px at calc(var(--frame-width) * .16) 41%, #79463040, transparent),
+    url('./leaf.svg'),
+    radial-gradient(ellipse at var(--light-x) var(--light-y), #fff2c528, #f5dc9808 30%, transparent 59%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-frame[data-variant='baroque-gold'] { --light-x: 26% !important; --light-y: 16% !important; }
+}

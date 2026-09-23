@@ -32,6 +32,9 @@ h2 { font-size: clamp(36px, 3.7vw, 54px); letter-spacing: -.04em; line-height: 1
 .living-study output { font-size: 9px; margin-top: 12px; }
 footer { display: flex; justify-content: space-between; padding-block: 28px; border-top: 1px solid #343a3026; font-size: 10px; }
 .greek { color: #63665b; margin-left: 8px; }
+.gold-study { border-top: 1px solid #343a3026; }
+.material-intro { padding-block: 62px 48px; }
+.material-intro > p:last-child { color: #63665b; font-size: 13px; line-height: 1.8; }
 @media (max-width: 850px) { .intro-note { position: static; margin-top: 24px; } .gallery { gap: 28px; } .content-study { gap: 40px; } .living-study { padding: 18px; } }
 @media (max-width: 600px) { header { padding-top: 25px; } .wordmark { font-size: 21px; } .edition { font-size: 9px; } .edition > span { margin-inline: 4px; } .intro { padding-block: 55px 45px; } .gallery { grid-template-columns: 1fr; gap: 52px; padding-bottom: 60px; } .study { width: 100%; max-width: 420px; justify-self: center; } .study--portrait { width: 85%; } .study--square { width: 92%; } .content-study { grid-template-columns: 1fr; padding-block: 45px 60px; gap: 28px; } .live-frame { justify-self: center; } .living-study p { font-size: 28px; } footer { font-size: 9px; gap: 20px; line-height: 1.7; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
