@@ -1,0 +1,95 @@
+.duster {
+  position: absolute;
+  right: 10%;
+  top: -14px;
+  width: clamp(84px, 11.6vw, 126px);
+  height: 40px;
+  transform: rotate(-3deg);
+  filter: drop-shadow(2px 3px 1px #251d19b3) drop-shadow(3px 5px 3px #30261c4d);
+}
+.duster-felt {
+  position: absolute;
+  inset: 14px 1px 0;
+  border-radius: 2px 3px 4px 4px;
+  background:
+    repeating-linear-gradient(
+      87deg,
+      #0000 0 8px,
+      #13181945 8px 9px,
+      #73736818 9px 10px
+    ),
+    repeating-linear-gradient(
+      101deg,
+      transparent 0 2px,
+      #ddd9b90c 2px 2.5px,
+      transparent 2.5px 4px
+    ),
+    linear-gradient(180deg, #242825, #424640 62%, #292d2a);
+  box-shadow:
+    inset 0 -2px 2px #141c18,
+    inset -1px 0 #0e110f;
+}
+.duster-felt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 27% 90%, #ded8b92e, transparent 49%),
+    radial-gradient(ellipse at 67% 76%, #b3c3bf1f, transparent 38%),
+    url('../assets/noise.svg');
+  opacity: 0.33;
+}
+.duster-handle {
+  position: absolute;
+  inset: 0 0 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px 5px 4px 4px;
+  background: linear-gradient(
+    170deg,
+    #b28e5f,
+    #9a764e 25%,
+    #88633f 61%,
+    #6f4c2e
+  );
+  box-shadow:
+    inset 1px 2px 1px #dac08b66,
+    inset -1px -4px 2px #4c352563,
+    inset 0 -1px #38291d;
+}
+.duster-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: url('../assets/oak-grain.svg') center / 100% 100%;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+.duster-handle span {
+  position: relative;
+  top: -1px;
+  font-size: 7px;
+  letter-spacing: 0.19em;
+  font-weight: 700;
+  color: #513c2a;
+  text-shadow: 0 1px #e2c08366;
+}
+@media (max-width: 520px) {
+  .duster {
+    width: clamp(57px, 17.5vw, 78px);
+    height: 30px;
+    top: -9px;
+    right: 6%;
+  }
+  .duster-handle {
+    bottom: 8px;
+    border-radius: 4px;
+  }
+  .duster-handle span {
+    font-size: 5px;
+  }
+  .duster-felt {
+    top: 11px;
+  }
+}
