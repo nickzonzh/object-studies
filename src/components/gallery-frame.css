@@ -1,0 +1,53 @@
+.gallery-frame {
+  --frame-width: clamp(20px, 2.6vw, 38px);
+  --frame-width: round(nearest, clamp(20px, 2.6vw, 38px), 1px);
+  /* Outside → opening. Shared stops keep every rail/corner join identical. */
+  --profile: #252622 0%, #55554d 3%, #717168 6%, #4b4c45 10%,
+    #41423c 17%, #45463f 23%, #55564d 28%, #52534a 33%,
+    #46473f 38%, #3d3e37 59%, #34352f 69%, #2c2d28 76%,
+    #4b4c43 80%, #68695d 84%, #505147 88%, #252621 92%, #181b17 100%;
+  --profile-shadow: #1c1d1a 0%, #41413b 3%, #575750 6%, #393a35 10%,
+    #32332e 17%, #353630 23%, #41423b 28%, #3f4039 33%,
+    #363730 38%, #2f302a 59%, #282924 69%, #22231f 76%,
+    #393a34 80%, #505148 84%, #3e3e37 88%, #1c1d19 92%, #121511 100%;
+  display: grid;
+  grid-template-columns: var(--frame-width) minmax(0, 1fr) var(--frame-width);
+  grid-template-rows: var(--frame-width) auto var(--frame-width);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  background: #30312b;
+  box-shadow: 0 2px 3px #24251d40, 1px 7px 10px -5px #24251d50,
+    5px 20px 27px -12px #34332840, 10px 38px 54px -22px #34332830;
+}
+.gallery-frame__slice { pointer-events: none; }
+/* Subpixel grid origins can rasterize adjacent edges separately. A one-pixel
+   longitudinal bleed closes that boundary without changing the cross-section. */
+.gallery-frame__top, .gallery-frame__bottom { margin-inline: -1px; z-index: 1; }
+.gallery-frame__left, .gallery-frame__right { margin-block: -1px; z-index: 1; }
+.gallery-frame__top { grid-area: 1 / 2; background: linear-gradient(to bottom, var(--profile)); }
+.gallery-frame__bottom { grid-area: 3 / 2; background: linear-gradient(to top, var(--profile-shadow)); }
+.gallery-frame__left { grid-area: 2 / 1; background: linear-gradient(to right, var(--profile)); }
+.gallery-frame__right { grid-area: 2 / 3; background: linear-gradient(to left, var(--profile-shadow)); }
+.gallery-frame__tl { grid-area: 1 / 1; }
+.gallery-frame__tr { grid-area: 1 / 3; transform: scaleX(-1); }
+.gallery-frame__bl { grid-area: 3 / 1; transform: scaleY(-1); }
+.gallery-frame__br { grid-area: 3 / 3; transform: scale(-1); }
+.gallery-frame__tl, .gallery-frame__tr, .gallery-frame__bl, .gallery-frame__br { position: relative; aspect-ratio: 1; }
+/* Two complementary mitres use the very same perpendicular profiles as rails.
+   The first fills the square underneath the second, avoiding antialias gaps. */
+.gallery-frame__slice::before, .gallery-frame__slice::after { content: ''; position: absolute; inset: 0; }
+.gallery-frame__slice::before { background: linear-gradient(to bottom, var(--profile)); }
+.gallery-frame__slice::after { background: linear-gradient(to right, var(--profile)); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.gallery-frame__top::before, .gallery-frame__top::after,
+.gallery-frame__bottom::before, .gallery-frame__bottom::after,
+.gallery-frame__left::before, .gallery-frame__left::after,
+.gallery-frame__right::before, .gallery-frame__right::after { content: none; }
+.gallery-frame__tr::after, .gallery-frame__br::after { background: linear-gradient(to right, var(--profile-shadow)); }
+.gallery-frame__bl::before, .gallery-frame__br::before { background: linear-gradient(to bottom, var(--profile-shadow)); }
+.gallery-frame__opening { grid-area: 2 / 2; min-width: 0; min-height: 0; position: relative; overflow: auto; background: #ddd7c8; isolation: isolate; }
+.gallery-frame::after {
+  content: ''; position: absolute; inset: var(--frame-width); z-index: 1; pointer-events: none;
+  box-shadow: inset 2px 3px 3px #10140e80, inset 4px 7px 11px #10140e55, inset -1px -1px 3px #10140e40;
+}
+.gallery-artwork { width: 100%; height: 100%; object-fit: cover; display: block; }
