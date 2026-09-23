@@ -2,7 +2,7 @@
 
 Frames for things worth looking at. A React component collection, with a small gallery demo.
 
-This implementation covers **F0 through F2C**. The neutral prototype establishes scalable geometry; Baroque Gold is the first approved and locked fully ornamented variant (23 September 2026), with four consistent acanthus/scroll corners and restrained leaf shoots tapering into quiet rail centres.
+This implementation covers **F0 through F3A.1**. The neutral prototype establishes scalable geometry; Baroque Gold is the first approved and locked fully ornamented variant (23 September 2026), with four consistent acanthus/scroll corners and restrained leaf shoots tapering into quiet rail centres.
 
 ## Develop
 
@@ -64,6 +64,20 @@ F2C reuses the approved F2B.1 master in all four corners. `cornerGeometry.ts` re
 `BaroqueRails.tsx` adds two reusable shallow leaf-shoot paths. Fixed-size shoots emerge beneath each scroll tip, fade along each half-rail and leave the centre quiet. They do not stretch or tile with the artwork ratio. Corner layering sits above the rail shoots, which occupy the convex moulding and leave channels and liner clear. Mobile lowers rail contrast slightly without replacing the ornament. The completed ornament totals 46 DOM paths and 56 uses per frame, with no filters, new animation loops, assets or runtime dependencies. SVG IDs remain unique across multiple instances.
 
 The F1 comparison remains in the demo. Gold specimens stack between 601 and 850px as well as on mobile, giving the complete carving room without changing component width tokens or geometry. QA and screenshots are recorded in `QA.md`.
+
+## Carved Oak (F3A.1)
+
+```tsx
+import { CarvedOak } from './variants/CarvedOak/CarvedOak'
+
+<CarvedOak ratio="4 / 5">
+  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
+</CarvedOak>
+```
+
+The first timber-study candidate uses a separate 23–44px moulding: eased outer edge, shallow channel, broad sloping oak face, double inner reed and dark rabbet. The generic grid and content slot are unchanged. Four pointer-transparent material surfaces span complete boards with clipped mitres, maintaining grain continuity across the underlying corner/rail slices. Two small non-tiled SVG assets supply tapered grain bands, pores and scattered pale rays; gradients provide the shaped timber body and static above-left shading. There are no raster textures or SVG filters.
+
+The wrapper follows the existing event-driven pointer-light architecture, with softer masked highlights on the outer edge and inner reed. It preserves caller handlers, cancels pending work on unmount/leave/cancel, and skips touch and reduced-motion interaction. There is no idle loop or pointer-triggered React state update. The restrained demo includes all three proportions, stacking at tablet/mobile sizes. This is F3A only: no heavy ornament or F3B work. F3A.1 lifts the timber toward golden-neutral medium oak, opens the broad-face grain and pores slightly, and softens the satin sheen while preserving all geometry and pointer behaviour. Approved and locked by Nick on 23 September 2026: Carved Oak F3A.1 is the second real Korniza variant and the first locked timber variant.
 
 ## Delivery
 

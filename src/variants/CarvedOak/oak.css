@@ -1,0 +1,55 @@
+/* F3A.1: lifted golden-neutral body; quieter crests; rabbet colours retained.
+   Oak cross-section: rounded edge, cut channel, broad gently sloped face,
+   double reed, recessed liner and dark rabbet. No shared geometry overrides. */
+.gallery-frame[data-variant='carved-oak'] {
+  --frame-width: clamp(23px, 3vw, 44px);
+  --frame-width: round(nearest, clamp(23px, 3vw, 44px), 1px);
+  --light-x: 26%;
+  --light-y: 16%;
+  --profile: #4c3725 0%, #82603d 2%, #be9865 6%, #b18b5c 10%,
+    #7f5b3c 16%, #4e3926 18%, #674a31 23%, #a37d52 26%,
+    #b89262 29%, #a78356 35%, #9d794e 49%, #926f47 64%,
+    #805c3d 69%, #573f28 71%, #bb9462 74%, #c39e6c 76%,
+    #825d3c 80%, #5a4128 82%, #b18c5c 85%, #99734b 88%,
+    #64462e 91%, #473020 94%, #302117 100%;
+  --profile-shadow: #3c2c1d 0%, #6e5035 2%, #ab8657 6%, #9d784b 10%,
+    #6c4b33 16%, #433122 18%, #573f29 23%, #8a6742 26%,
+    #a37c50 29%, #967048 35%, #8b6842 49%, #825f3b 64%,
+    #715034 69%, #483425 71%, #9f7a4d 74%, #ad8858 76%,
+    #705034 80%, #4b3725 82%, #9c754b 85%, #825f3b 88%,
+    #533a27 91%, #39281d 94%, #261c14 100%;
+  background: #473020;
+}
+.oak-material { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.oak-board {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+/* Full-length boards carry grain through the nine-slice boundaries. The shell
+   beneath fills rasterised mitre edges; grain is never tiled or filtered. */
+.oak-board--top, .oak-board--bottom {
+  left: 0; right: 0; height: var(--frame-width);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--frame-width)) 100%, var(--frame-width) 100%);
+  background-image: url('./grain.svg'), linear-gradient(to bottom, var(--profile));
+}
+.oak-board--top { top: 0; }
+.oak-board--bottom { bottom: 0; transform: scale(-1); background-image: url('./grain.svg'), linear-gradient(to bottom, var(--profile-shadow)); }
+.oak-board--left, .oak-board--right {
+  top: 0; bottom: 0; width: var(--frame-width);
+  clip-path: polygon(0 0, 100% var(--frame-width), 100% calc(100% - var(--frame-width)), 0 100%);
+  background-image: url('./grain-vertical.svg'), linear-gradient(to right, var(--profile));
+}
+.oak-board--left { left: 0; }
+.oak-board--right { right: 0; transform: scale(-1); background-image: url('./grain-vertical.svg'), linear-gradient(to right, var(--profile-shadow)); }
+/* Broad, low-energy light on the eased outside edge and inner reed only. */
+.oak-material::before, .oak-material::after {
+  content: ''; position: absolute; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse at var(--light-x) var(--light-y), #fff1d51e, #eed8ad06 38%, transparent 72%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.oak-material::before { inset: calc(var(--frame-width) * .025); padding: calc(var(--frame-width) * .10); }
+.oak-material::after { inset: calc(var(--frame-width) * .73); padding: calc(var(--frame-width) * .055); }
+@media (max-width: 600px) { .oak-board { background-size: 145% 100%, 100% 100%; } .oak-board--left, .oak-board--right { background-size: 100% 145%, 100% 100%; } }
+@media (prefers-reduced-motion: reduce) { .gallery-frame[data-variant='carved-oak'] { --light-x: 26% !important; --light-y: 16% !important; } }

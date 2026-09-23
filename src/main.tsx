@@ -2,6 +2,7 @@ import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { GalleryArtwork, GalleryFrame } from './components'
 import './style.css'
+import { CarvedOak } from './variants/CarvedOak/CarvedOak'
 import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
 
 function LivingStudy() {
@@ -21,6 +22,12 @@ function App() {
         <div className="material-intro"><p className="eyebrow">Baroque Gold · 02</p><h2 id="gold-title">A little history<br />in the light.</h2><p>Carved corners. Quiet leafwork. Antique gold.<br />Move across the frame to catch the light.</p></div>
         <div className="gallery" aria-label="Baroque Gold in three proportions">
           {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><BaroqueGold ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></BaroqueGold><figcaption><span>Baroque Gold · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
+        </div>
+      </section>
+      <section className="oak-study" aria-labelledby="oak-title">
+        <div className="material-intro"><p className="eyebrow">Carved Oak · 03</p><h2 id="oak-title">The warmth<br />of a quieter craft.</h2><p>Oiled oak. Shaped edges. A fine inner reed.<br />A study in timber, held in the light.</p></div>
+        <div className="gallery" aria-label="Carved Oak in three proportions">
+          {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><CarvedOak ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></CarvedOak><figcaption><span>Carved Oak · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
         </div>
       </section>
       <section className="content-study" aria-labelledby="content-title"><div className="content-copy"><p className="eyebrow">Beyond the still image</p><h2 id="content-title">An opening<br />for anything.</h2><p>A photograph, a moving image, a small idea.<br />The frame holds it. The content stays yours.</p><p className="study-note">Try leaving a mark in this little live canvas.</p></div><div className="live-frame"><GalleryFrame ratio="3 / 2"><LivingStudy /></GalleryFrame></div></section>

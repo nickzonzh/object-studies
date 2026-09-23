@@ -1,3 +1,60 @@
+# F3A.1 material identity refinement — 23 September 2026
+
+Material-only refinement of the existing Carved Oak. Product edits are limited to `oak.css`, `grain.svg` and `grain-vertical.svg`. The wrapper, nine-slice geometry, profile stop positions, width, mitre clips, recess, demo, responsive rules and pointer handler are unchanged. The F3A source material is preserved in `output/playwright/f3a1/baseline/` for comparison.
+
+## Changes
+
+- Lifted the timber body toward warm medium oak, with relatively more green/blue in the brown mixture to reduce its red/chocolate cast. Bright crests receive a smaller lift than the body, narrowing the polished-looking contrast. Profile colours at 91–100% and the rabbet remain unchanged.
+- Broadened irregular grain movement slightly. Broad-face tapered bands are 25% wider, with a small contrast increase; broad-face pore strokes increase from 0.5 to 0.7 SVG units and opacity from 0.19 to 0.23. Pale rays shift toward a neutral golden tone. The deterministic arrangement remains non-tiled and knot-free, with construction-aligned grain.
+- Reduced moving highlight peak alpha from 40/255 to 30/255 and the soft secondary alpha from 8/255 to 6/255. The existing light positions, masks, event handling and motion preferences remain unchanged. No new effects or geometry.
+
+## Verification and comparison
+
+Production build and strict TypeScript pass. `git diff --check` passes. Chrome at 1920, 1440, 768, 601, 375 and 320px: every frame's outer/opening dimensions, corner sizes, overflow states, board count and thickness exactly match F3A. No horizontal document overflow. Source comparison confirms the Oak wrapper is byte-identical and Oak CSS changes consist only of colour values and a comment. Pointer coordinates and stationary bounds match the prior results; leave/cancel reset correctly, touch/reduced-motion stay static, live content works, and no fresh-load browser errors or warnings were recorded.
+
+The same top broad-face screenshot region has approximately 11.6% higher mean weighted sRGB luma than F3A. This supports the requested modest visual lift; it is not a whole-frame or perceptual lightness measurement.
+
+Captured and inspected: portrait, square, landscape, corner/mitre, top-rail/broad-face grain, blank opening, mobile, responsive ratios and both pointer-light states. `output/playwright/f3a1/comparison.png` shows before/after portrait and enlarged top rail. `gallery.png`, `corner.png`, `grain.png`, `mobile.png`, `ratios-320.png`, `light-upper-left.png` and `light-lower-right.png` provide additional evidence. Capture/verification scripts, `results.txt` and `comparison.json` retain the checks.
+
+## Evaluation
+
+The material now reads more clearly as warm medium oak, with less chocolate/red richness and enough tonal space for a future darker walnut. No Walnut implementation exists to compare directly. Broader grain and visible pores reduce broad-face uniformity without creating a rustic texture. The sheen is calmer while convex edges still catch light. Geometry, mitres, proportions, artwork depth and restrained detailing are preserved in all three ratios and mobile. It remains clearly quieter than Baroque Gold.
+
+Approved and locked by Nick on 23 September 2026: Carved Oak F3A.1 is the second real Korniza variant and the first locked timber variant. Preserve this material, profile and restrained detailing as its approved baseline. Remaining limitations: grain is authored/illustrative, the same field is reused across boards, and oak species cues remain subtle at mobile size. Firefox, Safari and physical-device performance are unverified. No Dark Walnut or heavier ornament work was started.
+
+---
+
+# F3A verification — 23 September 2026
+
+Carved Oak is implemented as the first restrained timber-study candidate. Baroque Gold source is unchanged. The only generic component change is adding `carved-oak` to the variant type; geometry, content semantics, recess and wall shadows are unchanged. Oak owns a slimmer 23–44px profile and four full-length mitred material surfaces over the existing shell. Rounded edge, shallow channel, broad face, double inner reed and dark rabbet create the shaping. Non-tiled SVG grain layers provide irregular tapered bands, pores and pale ray hints. The material has no knots, raster textures, filters or heavy ornament.
+
+## Verification
+
+- Production build and strict TypeScript pass; `git diff --check` passes.
+- Actual Chrome on Windows at 1920, 1440, 768, 601, 375 and 320 CSS pixels: no horizontal document overflow, square corners, correct 4:5 / 1:1 / 3:2 openings within subpixel rounding, and no Oak content overflow. Oak thickness is 44 / 43 / 23 / 23 / 23 / 23px respectively.
+- Compared outer/opening dimensions, corner sizes and scroll states for every preserved prototype/gold specimen against recorded F2C results at the five shared viewport widths: zero differences. The existing live-content scroll behaviour remains unchanged.
+- Pointer coordinates update the low-opacity satin field. Upper-left and lower-right states have identical frame bounds. Leave/cancel clear transient values; touch/reduced-motion updates are skipped. The live React content remains clickable. No fresh-load console warnings/errors or page errors.
+- React checklist: stable decorative keys, unconditional hooks, cleanup of pending animation frame, no pointer state rerenders, no idle loop, hidden pointer-transparent decoration, native child semantics, no added runtime dependencies.
+- Material overhead: five decorative DOM elements per frame and two shared SVG assets, approximately 4KB gzip each. No filters or continuous animations. This is a structural check, not a device performance benchmark.
+
+## Visual evidence
+
+Captured and inspected in `output/playwright/f3a/`: `gallery.png`, `portrait.png`, `square.png`, `landscape.png`, `corner.png`, `grain.png`, `blank.png`, `mobile.png`, `light-upper-left.png`, `light-lower-right.png`, and responsive `ratios-*.png`. `capture.js`, `verify.js`, `results.txt`, `compare.cjs` and `comparison.json` retain the reproducible checks. `generate-grain.mjs` records the deterministic asset construction.
+
+The initial grain was too faint. A stronger version was too evenly striped. The final tapered, irregular bands recover timber character without competing with the profile. Horizontal and vertical grain follows the four boards and changes direction at mitres; no open corner/rail seams were visible. The full blank opening still reads as a shaped timber object. Mobile retains a generous opening and quiet inner detailing. Light movement is intentionally subtle, with the artwork and dark channels stable.
+
+## Evaluation and recommendation
+
+- A true oak frame rather than a wooden UI border? Yes at the intended viewing size: moulding depth, grain direction, mitres and rabbet establish a constructed timber object. It remains an illustrative material, not a photoreal scan.
+- Convincing without louder ornament? Yes. Broad timber faces and fine inner reeds are enough for F3A.
+- Same family as Baroque Gold, clearly different? Yes. Shared recess/contact-light logic connects them; slimmer architectural shaping and satin timber distinguish Oak.
+- Calm but special? Yes: the shaped edge and double reed give it furniture-like character without heroic corners.
+- Second real variant? Recommended as the second variant and ready for F3A approval. Do not mark it user-locked until Nick approves.
+
+Recommend locking this restrained F3A candidate rather than adding ornament. Remaining limitations: the same authored grain field is reused across boards (reversed on opposite sides), although it never tiles along a rail; very close inspection reveals regular moulding and stylised pores. Species-specific oak character is subtler on mobile. Firefox, Safari, physical mobile hardware and device performance remain unverified. These do not justify a heavy ornament pass. No F3B, publishing, push or deployment was performed.
+
+---
+
 # F2C verification — 23 September 2026
 
 Completed four-corner Baroque Gold with whispering rails. The approved master paths, generic nine-slice shell, gold width/profile/material field, liner, recess, and pointer handler are unchanged. Mirrored corner instances reuse one path library per frame; counter-reflected gradients and offset relief preserve upper-left illumination. Corner undercuts remain stable. New low-relief leaf shoots sit beneath the corner tails, fade to open central zones, and inherit the gold palette. Fine rail contrast is reduced on mobile. The gold demo now stacks at 601–850px because the old three-column portrait was too small for the completed composition; F1 remains unchanged.

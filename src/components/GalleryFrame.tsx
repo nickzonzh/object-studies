@@ -2,7 +2,7 @@ import type { CSSProperties, ComponentPropsWithoutRef, ReactNode } from 'react'
 import './gallery-frame.css'
 
 export type GalleryFrameProps = ComponentPropsWithoutRef<'div'> & {
-  variant?: 'prototype' | 'baroque-gold'
+  variant?: 'prototype' | 'baroque-gold' | 'carved-oak'
   /** Aspect ratio of the content opening, excluding the frame. */
   ratio?: CSSProperties['aspectRatio']
   /** Decorative overlay; outside the content slot and independent of grid sizing. */
