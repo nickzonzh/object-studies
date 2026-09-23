@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { clampPoint } from '../tools/geometry'
 import { createToolMotion } from '../tools/toolMotion'
-import { createChalkSurface } from '../drawing/chalkSurface'
+import { createDrawingSurface } from '../drawing/drawingSurface'
 import { pressureFor } from '../drawing/chalkSampler'
 import {
   type Activation,
@@ -29,7 +29,10 @@ export function useToolInteraction() {
     const board = boardRef.current!
     const surface = surfaceRef.current!
     const motion = createToolMotion(board, overlayRef.current!)
-    const drawing = createChalkSurface(canvasRef.current!, setHasMarks)
+    const drawing = createDrawingSurface(canvasRef.current!, setHasMarks)
+    const parkedDuster = board.querySelector<HTMLElement>(
+      '[data-slot="duster"] .duster',
+    )!
     let active: ToolId | null = null
     let pointer: number | null = null
     let pointerType = ''
@@ -103,6 +106,19 @@ export function useToolInteraction() {
       y: point.y - rect.top,
       pressure,
     })
+    const beginMark = (point: Point, pressure = 0.5) => {
+      if (!active) return
+      drawing.begin(
+        active,
+        inkPoint(point, pressure),
+        active === 'duster'
+          ? {
+              width: parkedDuster.offsetWidth,
+              height: parkedDuster.offsetHeight * 1.2,
+            }
+          : undefined,
+      )
+    }
     const addSamples = (event: PointerEvent) => {
       const samples = event.getCoalescedEvents?.() ?? []
       // Always include the parent event: some devices return an empty list.
@@ -110,6 +126,7 @@ export function useToolInteraction() {
         contactPressure = pressureFor(sample.pointerType, sample.pressure)
         drawing.add(inkPoint(pointFrom(sample), contactPressure))
       }
+      drawing.flush()
     }
     const select = (id: ToolId, activation: Activation) => {
       if (active === id) {
@@ -175,8 +192,7 @@ export function useToolInteraction() {
         surface.focus({ preventScroll: true })
         motion.move(active, pose(point), true)
         contactPressure = pressureFor(event.pointerType, event.pressure)
-        if (active !== 'duster')
-          drawing.begin(active, inkPoint(point, contactPressure))
+        beginMark(point, contactPressure)
         last = point
         phase('contact')
       },
@@ -245,7 +261,7 @@ export function useToolInteraction() {
             y: rect.top + rect.height / 2,
           }
           motion.move(active, pose(last), true, true)
-          if (active !== 'duster') drawing.begin(active, inkPoint(last))
+          beginMark(last)
           phase('contact')
           return
         }
@@ -272,7 +288,10 @@ export function useToolInteraction() {
           rect,
         )
         motion.move(active, pose(next), touching, true)
-        if (touching) drawing.add(inkPoint(next))
+        if (touching) {
+          drawing.add(inkPoint(next))
+          drawing.flush()
+        }
         last = next
         over = true
         phase(touching ? 'contact' : 'hover')

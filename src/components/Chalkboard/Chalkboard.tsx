@@ -82,15 +82,15 @@ export function Chalkboard() {
       </figcaption>
       <p className="tool-study-note" id="tool-study-note">
         {selected === 'duster'
-          ? 'The duster is a study in movement for now. Erasing comes next.'
+          ? 'Sweep to lift the chalk. Wipe again for a cleaner slate.'
           : 'A little pressure, a little dust. Marks last until you refresh.'}
       </p>
       <p className="sr-only" id="tool-instructions">
         Choose chalk, then drag on the slate to draw. Choose it again, use Put
         back, or press Escape to return it. Keyboard selection moves focus to
         the slate: use arrow keys to move, Shift for larger steps, and hold
-        Space or Enter while moving to draw. Clear removes all marks. The duster
-        does not erase yet.
+        Space or Enter while moving to draw or erase. The duster leaves faint
+        residue; repeated passes remove more. Clear removes all marks.
       </p>
     </figure>
   )

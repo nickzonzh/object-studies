@@ -1,6 +1,6 @@
 import { ChalkPiece } from './ChalkPiece'
 import { Duster } from './Duster'
-import { useRef } from 'react'
+import { useRef, type HTMLAttributes } from 'react'
 import { toolLabels, type Activation, type ToolId } from '../../tools/types'
 
 const chalkColors = ['white', 'yellow', 'blue', 'pink'] as const
@@ -12,6 +12,55 @@ type ChalkRailProps = {
 
 export function ChalkRail({ selected, onSelect }: ChalkRailProps) {
   const input = useRef<Activation>('pointer')
+  const touchStart = useRef<{
+    pointer: number
+    x: number
+    y: number
+    tool: ToolId
+  } | null>(null)
+  const toolEvents: HTMLAttributes<HTMLButtonElement> = {
+    onPointerDown(event) {
+      if (!event.isPrimary) return
+      input.current = event.pointerType === 'touch' ? 'touch' : 'pointer'
+      touchStart.current =
+        event.pointerType === 'touch'
+          ? {
+              pointer: event.pointerId,
+              x: event.clientX,
+              y: event.clientY,
+              tool: event.currentTarget.dataset.slot as ToolId,
+            }
+          : null
+    },
+    onPointerUp(event) {
+      const start = touchStart.current
+      if (!start || event.pointerId !== start.pointer) return
+      touchStart.current = null
+      const rect = event.currentTarget.getBoundingClientRect()
+      if (
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 12 &&
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      ) {
+        // Touch selection must not depend on a later compatibility click,
+        // which browsers can suppress immediately after a captured drawing drag.
+        onSelect(start.tool, 'touch')
+      }
+    },
+    onPointerCancel(event) {
+      if (event.pointerId === touchStart.current?.pointer)
+        touchStart.current = null
+    },
+    onClick(event) {
+      if (input.current === 'touch' && event.detail > 0) return
+      onSelect(
+        event.currentTarget.dataset.slot as ToolId,
+        event.detail === 0 ? 'keyboard' : 'pointer',
+      )
+    },
+  }
   return (
     <div className="chalk-rail" role="group" aria-label="Chalk and duster">
       <div className="rail-bed" aria-hidden="true" />
@@ -27,13 +76,7 @@ export function ChalkRail({ selected, onSelect }: ChalkRailProps) {
             aria-label={toolLabels[color]}
             aria-pressed={selected === color}
             aria-describedby="tool-instructions"
-            onPointerDown={(event) => {
-              input.current =
-                event.pointerType === 'touch' ? 'touch' : 'pointer'
-            }}
-            onClick={(event) =>
-              onSelect(color, event.detail === 0 ? 'keyboard' : input.current)
-            }
+            {...toolEvents}
           >
             <span aria-hidden="true">
               <ChalkPiece color={color} />
@@ -48,12 +91,7 @@ export function ChalkRail({ selected, onSelect }: ChalkRailProps) {
         aria-label={toolLabels.duster}
         aria-pressed={selected === 'duster'}
         aria-describedby="tool-instructions"
-        onPointerDown={(event) => {
-          input.current = event.pointerType === 'touch' ? 'touch' : 'pointer'
-        }}
-        onClick={(event) =>
-          onSelect('duster', event.detail === 0 ? 'keyboard' : input.current)
-        }
+        {...toolEvents}
       >
         <span aria-hidden="true">
           <Duster />

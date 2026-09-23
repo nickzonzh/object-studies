@@ -10,6 +10,17 @@ export type ChalkStroke = {
   space: { width: number; height: number }
   points: ChalkPoint[]
 }
+export type DusterStroke = {
+  id: number
+  tool: 'duster'
+  width: number
+  height: number
+  seed: number
+  space: { width: number; height: number }
+  points: ChalkPoint[]
+}
+export type DrawingStroke = ChalkStroke | DusterStroke
+export type DrawingTool = ChalkColor | 'duster'
 export type ChalkStamp = ChalkPoint & {
   size: number
   angle: number
