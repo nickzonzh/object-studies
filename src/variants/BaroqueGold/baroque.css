@@ -3,10 +3,8 @@
    0–10 outer lip; 10–46 convex ogee; 46–61 channel;
    61–78 secondary roll; 78–85 relief fillet; 85–95 liner; 95–100 rabbet. */
 .gallery-frame[data-variant='baroque-gold'] {
-  --frame-width: clamp(26px, 3.6vw, 53px);
-  --frame-width: round(nearest, clamp(26px, 3.6vw, 53px), 1px);
-  --light-x: 26%;
-  --light-y: 16%;
+  --frame-width: clamp(12px, 10.192cqw, 53px);
+  --frame-width: round(nearest, clamp(12px, 10.192cqw, 53px), 1px);
   --profile:
     #49301d 0%, #8e642c 1.5%, #d1ae5e 3%, #f1d98d 4.5%,
     #ac8039 6.5%, #634021 9%, #86602b 11%,
@@ -116,8 +114,8 @@
 .baroque-rail--left .baroque-rail__end--1,
 .baroque-rail--right .baroque-rail__end--1 { transform: scaleY(-1); }
 .baroque-rail__light { opacity: calc(var(--relief-light, .65) * .55); }
-@media (max-width: 600px) { .baroque-rail { opacity: .55; } }
-@media (max-width: 600px) { .baroque-corner__micro { opacity: .3; } }
+@container (max-width: 300px) { .baroque-rail { opacity: .55; } }
+@container (max-width: 300px) { .baroque-corner__micro { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
   .baroque-corner__light { opacity: .65; }
   .baroque-corner__return { opacity: .12; }

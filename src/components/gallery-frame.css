@@ -1,18 +1,12 @@
+.korniza { container-type: inline-size; width: 100%; min-width: 0; }
+.korniza, .gallery-frame, .gallery-frame__opening, .gallery-frame__slice { box-sizing: border-box; }
 .gallery-frame {
-  --frame-width: clamp(20px, 2.6vw, 38px);
-  --frame-width: round(nearest, clamp(20px, 2.6vw, 38px), 1px);
-  /* Outside → opening. Shared stops keep every rail/corner join identical. */
-  --profile: #252622 0%, #55554d 3%, #717168 6%, #4b4c45 10%,
-    #41423c 17%, #45463f 23%, #55564d 28%, #52534a 33%,
-    #46473f 38%, #3d3e37 59%, #34352f 69%, #2c2d28 76%,
-    #4b4c43 80%, #68695d 84%, #505147 88%, #252621 92%, #181b17 100%;
-  --profile-shadow: #1c1d1a 0%, #41413b 3%, #575750 6%, #393a35 10%,
-    #32332e 17%, #353630 23%, #41423b 28%, #3f4039 33%,
-    #363730 38%, #2f302a 59%, #282924 69%, #22231f 76%,
-    #393a34 80%, #505148 84%, #3e3e37 88%, #1c1d19 92%, #121511 100%;
+  --light-x: 26%;
+  --light-y: 16%;
   display: grid;
   grid-template-columns: var(--frame-width) minmax(0, 1fr) var(--frame-width);
   grid-template-rows: var(--frame-width) auto var(--frame-width);
+  min-width: 0;
   position: relative;
   isolation: isolate;
   width: 100%;
@@ -45,10 +39,14 @@
 .gallery-frame__right::before, .gallery-frame__right::after { content: none; }
 .gallery-frame__tr::after, .gallery-frame__br::after { background: linear-gradient(to right, var(--profile-shadow)); }
 .gallery-frame__bl::before, .gallery-frame__br::before { background: linear-gradient(to bottom, var(--profile-shadow)); }
-.gallery-frame__opening { grid-area: 2 / 2; min-width: 0; min-height: 0; position: relative; overflow: auto; background: #ddd7c8; isolation: isolate; }
+.gallery-frame__opening { grid-area: 2 / 2; min-width: 0; min-height: 0; position: relative; overflow: auto; overscroll-behavior: contain; background: #ddd7c8; isolation: isolate; }
 .gallery-frame::after {
   content: ''; position: absolute; inset: var(--frame-width); z-index: 1; pointer-events: none;
   box-shadow: inset 1px 1px 2px #10140e50, inset -2px -3px 3px #10140e85,
     inset -3px -4px 6px #10140e35;
 }
-.gallery-artwork { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-artwork { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-frame { --light-x: 26% !important; --light-y: 16% !important; }
+}

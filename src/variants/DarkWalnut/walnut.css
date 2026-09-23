@@ -1,10 +1,8 @@
 /* F4A: deep outer torus, cut channel, quiet walnut face, inner bolection,
    hairline antique-gold slip and dark rabbet. Stops run outside → artwork. */
 .gallery-frame[data-variant='dark-walnut'] {
-  --frame-width: clamp(25px, 3.3vw, 48px);
-  --frame-width: round(nearest, clamp(25px, 3.3vw, 48px), 1px);
-  --light-x: 26%;
-  --light-y: 16%;
+  --frame-width: clamp(12px, 9.231cqw, 48px);
+  --frame-width: round(nearest, clamp(12px, 9.231cqw, 48px), 1px);
   --profile: #241813 0%, #493022 2%, #684632 5%, #805b42 10%,
     #76503b 15%, #5a3a2a 22%, #382319 28%, #1b120e 30%,
     #241813 35%, #3c271d 38%, #63412e 40%, #5a3a2a 44%,
@@ -54,7 +52,7 @@
 }
 .walnut-material::before { inset: calc(var(--frame-width) * .055); padding: calc(var(--frame-width) * .145); }
 .walnut-material::after { inset: calc(var(--frame-width) * .745); padding: calc(var(--frame-width) * .065); }
-@media (max-width: 600px) {
+@container (max-width: 300px) {
   .walnut-board { background-size: 130% 100%, 100% 100%; }
   .walnut-board--left, .walnut-board--right { background-size: 100% 130%, 100% 100%; }
 }

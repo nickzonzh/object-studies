@@ -1,0 +1,5 @@
+export { Frame } from './Frame'
+export type { FrameProps } from './Frame'
+export { GalleryArtwork as FrameImage } from './components/GalleryFrame'
+export { frameVariants } from './variants'
+export type { FrameVariant } from './variants'

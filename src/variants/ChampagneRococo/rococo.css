@@ -1,0 +1,65 @@
+/* 0–12 eased outer bead; 12–52 shallow ogee; 52–65 recessed flute;
+   65–83 fine inner roll; 83–95 ivory-gold slip; 95–100 dark rabbet.
+   Champagne is built around warm ivory catches and rosy bronze cavities. */
+.gallery-frame[data-variant='champagne-rococo'] {
+  --frame-width: clamp(12px, 7.500cqw, 39px);
+  --frame-width: round(nearest, clamp(12px, 7.500cqw, 39px), 1px);
+  --profile: #806044 0%, #bb9660 2%, #eedbb0 5%, #f5e9ca 7%,
+    #d3b477 10%, #95734e 13%, #b39160 17%, #d0b17d 24%,
+    #e1c993 33%, #ebd7a8 38%, #d9bf8a 43%, #b48d60 50%,
+    #8d684b 54%, #aa855e 58%, #b59671 61%, #89674b 65%,
+    #c3a16b 68%, #e7d2a1 73%, #f2e3bb 76%, #d4b981 80%,
+    #9e7b52 84%, #cfb887 87%, #e9d9b3 91%, #c0a47a 94%,
+    #705238 96%, #332a20 100%;
+  --profile-shadow: #71533d 0%, #ab8758 2%, #ddc697 5%, #e7d5b0 7%,
+    #c6a773 10%, #866348 13%, #a38359 17%, #bfa171 24%,
+    #d2b983 33%, #dec998 38%, #c9ae7b 43%, #a78058 50%,
+    #7c5b43 54%, #997654 58%, #a48863 61%, #7a5c44 65%,
+    #b18f5f 68%, #d6be8b 73%, #e3d0a7 76%, #c4a873 80%,
+    #8d6b49 84%, #c0a778 87%, #dac69f 91%, #ae916b 94%,
+    #5d4431 96%, #29231c 100%;
+  background: #987550;
+}
+.gallery-frame[data-variant='champagne-rococo']::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--frame-width) * .17);
+  padding: calc(var(--frame-width) * .28);
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 18px 1px at 24% 0%, #7d574418, transparent),
+    radial-gradient(ellipse 1px 24px at 100% 68%, #7d57441a, transparent),
+    url('./gilt.svg'),
+    radial-gradient(ellipse at var(--light-x) var(--light-y), #fff4d52b, #f0d5a20b 32%, transparent 65%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+/* Forty drawing units = one moulding width. Each ornament includes its own
+   tapered rail continuation: fixed scale, no repeated motifs or stretched leaves. */
+.rococo-ornament {
+  position: absolute;
+  top: calc(var(--frame-width) * -.075);
+  left: calc(var(--frame-width) * -.075);
+  width: calc(var(--frame-width) * 2.85);
+  height: calc(var(--frame-width) * 2.85);
+  overflow: visible;
+  z-index: 3;
+  pointer-events: none;
+}
+.rococo-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
+.rococo-ornament--tr, .rococo-ornament--br { left: auto; right: calc(var(--frame-width) * -.075); }
+.rococo-ornament--bl, .rococo-ornament--br { top: auto; bottom: calc(var(--frame-width) * -.075); }
+.rococo-ornament--tr { transform: scaleX(-1); }
+.rococo-ornament--bl { transform: scaleY(-1); }
+.rococo-ornament--br { transform: scale(-1); }
+.rococo-ornament__light { opacity: var(--relief-light, .43); }
+.rococo-ornament__return { opacity: var(--relief-return, .08); }
+@container (max-width: 300px) { .rococo-ornament__micro { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) {
+  .gallery-frame[data-variant='champagne-rococo'] { --light-x: 26% !important; --light-y: 16% !important; }
+  .rococo-ornament__light { opacity: .43; }
+  .rococo-ornament__return { opacity: .08; }
+}

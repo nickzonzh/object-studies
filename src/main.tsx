@@ -1,45 +1,52 @@
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { GalleryArtwork, GalleryFrame } from './components'
+import { Frame, FrameImage, frameVariants } from './index'
 import './style.css'
-import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut'
-import { CarvedOak } from './variants/CarvedOak/CarvedOak'
-import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
+
+const asset = (name: string) => `${import.meta.env.BASE_URL}${name}`
+const ratios = [{ value: '93.4 / 73.2', label: 'Painting · original' }, { value: '4 / 5', label: 'Portrait · 4:5' }, { value: '1', label: 'Square · 1:1' }, { value: '3 / 2', label: 'Landscape · 3:2' }]
 
 function LivingStudy() {
   const [count, setCount] = useState(0)
   return <div className="living-study"><span className="eyebrow">A living canvas</span><p>Something<br /><em>to return to.</em></p><button onClick={() => setCount(count + 1)}>Leave a mark <span aria-hidden="true">↗</span></button><output aria-live="polite">{count === 0 ? 'Make yourself part of the picture.' : `${count} ${count === 1 ? 'mark' : 'marks'} left here.`}</output></div>
 }
 
+function Content({ kind }: { kind: string }) {
+  if (kind === 'children') return <LivingStudy />
+  const image = kind === 'photo' ? ['blue-marble.jpg', 'Earth photographed by the Apollo 17 crew: clouds over Africa and Antarctica.'] : kind === 'graphic' ? ['still-land.svg', 'Graphic landscape: a pale sun above sage hills and an ochre shoreline.'] : ['wheat-field-with-cypresses.jpg', 'Wheat Field with Cypresses, 1889, Vincent van Gogh. Golden fields below cypresses, mountains and swirling clouds.']
+  const img = <FrameImage src={asset(image[0])} alt={image[1]} />
+  return kind === 'painting' ? <div className="painting-crop">{img}</div> : img
+}
+
 function App() {
+  const [ratio, setRatio] = useState(ratios[0].value)
+  const [content, setContent] = useState('painting')
+  const [light, setLight] = useState(true)
   return <>
-    <header><a className="wordmark" href="#main" aria-label="Korniza home">KORNIZA</a><span className="edition">Studies in framing <span>—</span> No. 01</span></header>
+    <header><a className="wordmark" href="#main">KORNIZA</a><nav aria-label="Page"><a href="#collection">Collection</a><a href="#examples">Examples</a></nav></header>
     <main id="main">
-      <section className="intro"><p className="eyebrow">A collection in the making</p><h1>Frames for things<br />worth looking at.</h1><p className="intro-note">A quiet study in proportion, light and depth.<br />One frame. Three ways of seeing.</p></section>
-      <section className="gallery" aria-label="Prototype frame in three proportions">
-        {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map((item, i) => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><GalleryFrame ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></GalleryFrame><figcaption><span><small>0{i + 1}</small>{item.name}</span><span>{item.label}</span></figcaption></figure>)}
+      <section id="collection" aria-labelledby="collection-title">
+        <div className="sheet-heading"><div><p className="eyebrow">The collection / No. 01</p><h1 id="collection-title">Six frames. {content === 'painting' ? 'One painting.' : 'One canvas.'}</h1></div><p className="intro-note">Six materials, a shared light.<br />An opening for anything.</p></div>
+        <div className="controls" aria-label="Comparison settings">
+          <label>Content<select aria-label="Content" value={content} onChange={event => setContent(event.target.value)}><option value="painting">Painting</option><option value="photo">Photograph</option><option value="graphic">Graphic</option><option value="children">React children</option></select></label>
+          <label>Opening<select aria-label="Opening" value={ratio} onChange={event => setRatio(event.target.value)}>{ratios.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          <label className="light-toggle"><input type="checkbox" checked={light} onChange={event => setLight(event.target.checked)} /> Pointer light</label>
+        </div>
+        <div className="sheet-grid">{frameVariants.map((item, index) => <figure key={item.variant}>
+          <Frame variant={item.variant} aspectRatio={ratio} interactiveLight={light}><Content kind={content} /></Frame>
+          <figcaption><span className="ordinal">0{index + 1}</span><div><h2>{item.name}</h2><p>{item.description}</p></div></figcaption>
+        </figure>)}</div>
+        <p className="credit">{content === 'painting' ? <><cite>Wheat Field with Cypresses</cite>, 1889 · Vincent van Gogh · <a href="https://www.metmuseum.org/art/collection/search/436535">The Metropolitan Museum of Art</a> · Public domain</> : content === 'photo' ? <><a href="https://www.nasa.gov/image-article/apollo-17-blue-marble/">The Blue Marble</a> · Apollo 17 crew / NASA · 1972</> : content === 'graphic' ? 'Still Land · original SVG study for KORNIZA' : 'Live React content · buttons, state and semantics stay yours.'}</p>
       </section>
-      <section className="gold-study" aria-labelledby="gold-title">
-        <div className="material-intro"><p className="eyebrow">Baroque Gold · 02</p><h2 id="gold-title">A little history<br />in the light.</h2><p>Carved corners. Quiet leafwork. Antique gold.<br />Move across the frame to catch the light.</p></div>
-        <div className="gallery" aria-label="Baroque Gold in three proportions">
-          {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><BaroqueGold ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></BaroqueGold><figcaption><span>Baroque Gold · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
+      <section id="examples" aria-labelledby="examples-title"><div className="section-heading"><p className="eyebrow">In practice</p><h2 id="examples-title">The content stays yours.</h2><p>Images, typography and working interfaces. The opening owns the ratio;<br />your content owns its layout, meaning and interaction.</p></div>
+        <div className="examples-grid">
+          <article><Frame variant="modern-black" aspectRatio="3 / 2"><Content kind="photo" /></Frame><h3>A single image</h3><p>Full-bleed photography, fitted to the opening.</p><code>&lt;Frame variant="modern-black"&gt;</code></article>
+          <article id="child-example"><Frame variant="carved-oak" aspectRatio="1"><LivingStudy /></Frame><h3>Arbitrary children</h3><p>A live card with a keyboard-accessible button.</p><code>&lt;Frame variant="carved-oak"&gt;&lt;YourCard /&gt;&lt;/Frame&gt;</code></article>
+          <article><Frame variant="champagne-rococo" aspectRatio="4 / 5"><div className="type-study"><span>Field notes / 01</span><p>Give the<br /><em>ordinary</em><br />a little room.</p><span>Typography, held in light.</span></div></Frame><h3>A typography study</h3><p>Unmodified HTML with its own spacing and type.</p><code>&lt;Frame variant="champagne-rococo"&gt;…&lt;/Frame&gt;</code></article>
         </div>
       </section>
-      <section className="oak-study" aria-labelledby="oak-title">
-        <div className="material-intro"><p className="eyebrow">Carved Oak · 03</p><h2 id="oak-title">The warmth<br />of a quieter craft.</h2><p>Oiled oak. Shaped edges. A fine inner reed.<br />A study in timber, held in the light.</p></div>
-        <div className="gallery" aria-label="Carved Oak in three proportions">
-          {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><CarvedOak ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></CarvedOak><figcaption><span>Carved Oak · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
-        </div>
-      </section>
-      <section className="walnut-study" aria-labelledby="walnut-title">
-        <div className="material-intro"><p className="eyebrow">Dark Walnut · 04</p><h2 id="walnut-title">A deeper tone.<br />A quieter grandeur.</h2><p>Burnished walnut. Deep channels. A thread of old gold.<br />Weight and warmth, gathered in the shadows.</p></div>
-        <div className="gallery" aria-label="Dark Walnut in three proportions">
-          {([{ name: 'Portrait', ratio: '4 / 5', label: '4:5' }, { name: 'Square', ratio: '1 / 1', label: '1:1' }, { name: 'Landscape', ratio: '3 / 2', label: '3:2' }]).map(item => <figure key={item.name} className={`study study--${item.name.toLowerCase()}`}><DarkWalnut ratio={item.ratio}><GalleryArtwork src={`${import.meta.env.BASE_URL}still-land.svg`} alt="Abstract landscape: a pale sun above layered sage hills and a still, ochre shoreline." /></DarkWalnut><figcaption><span>Dark Walnut · {item.name}</span><span>{item.label}</span></figcaption></figure>)}
-        </div>
-      </section>
-      <section className="content-study" aria-labelledby="content-title"><div className="content-copy"><p className="eyebrow">Beyond the still image</p><h2 id="content-title">An opening<br />for anything.</h2><p>A photograph, a moving image, a small idea.<br />The frame holds it. The content stays yours.</p><p className="study-note">Try leaving a mark in this little live canvas.</p></div><div className="live-frame"><GalleryFrame ratio="3 / 2"><LivingStudy /></GalleryFrame></div></section>
     </main>
-    <footer><span>KORNIZA <span className="greek" lang="el">/ κορνίζα</span></span><span>Prototype 01 · Form before ornament</span></footer>
+    <footer><span>KORNIZA <span lang="el">/ κορνίζα</span></span><span>Six frames · One collection</span></footer>
   </>
 }
 

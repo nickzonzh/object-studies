@@ -1,104 +1,130 @@
 # KORNIZA
 
-Frames for things worth looking at. A React component collection, with a small gallery demo.
+Six dimensional React frames for images, typography and arbitrary content. CSS mouldings and SVG ornament provide depth without raster frame assets. The v1 collection is visually locked; this repository contains the components and a restrained comparison demo.
 
-This implementation covers **F0 through F4A**. The neutral prototype establishes scalable geometry; Baroque Gold is the first approved and locked fully ornamented variant (23 September 2026), with four consistent acanthus/scroll corners and restrained leaf shoots tapering into quiet rail centres.
+## Collection
 
-## Develop
+| `variant` | Name | Character / use |
+| --- | --- | --- |
+| `baroque-gold` | Baroque Gold | Ornate antique gilt; paintings and expressive compositions |
+| `champagne-rococo` | Champagne Rococo | Pale airy ornament; delicate artwork and typography |
+| `carved-oak` | Carved Oak | Warm restrained timber; photography and everyday content |
+| `dark-walnut` | Dark Walnut | Rich formal timber; traditional artwork and portraits |
+| `ebonised-black` | Ebonised Black | Severe classical blackened timber with a fine gold lip |
+| `modern-black` | Modern Black | Contemporary architectural minimalism; photography and graphics |
 
-Requires Node.js 24 and npm.
+## Run locally
+
+Node 22.12+ and npm are required. React 19.2+ within major 19 is the supported peer range (verified here with React 19.3).
 
 ```sh
 npm ci
 npm run dev
-npm run build
-npm run preview
+npm run check     # TypeScript, demo build and library build
+npm run preview  # serve the production demo
 ```
 
-`npm run build` includes strict TypeScript checking. React and React DOM are the only runtime dependencies.
+The demo opens at `http://127.0.0.1:5173`. Its anchor is **Six frames. One painting.** Content, opening ratio and pointer-light controls apply identical conditions to all six variants. Below it are a single photograph, a live React card and a typography study. The demo images are local; no external service is required at runtime.
 
-## Components
+## Use
 
-Import from `src/components`; the component imports its own scoped CSS. The gallery page styles are separate.
+The package is not published. To try it in another local project:
+
+```sh
+# In this repository; prepack builds the library and its declarations
+npm pack --ignore-scripts=false
+# In a React application
+npm install /absolute/path/to/korniza-0.1.0.tgz
+```
 
 ```tsx
-import { GalleryFrame, GalleryArtwork } from './components'
+import { Frame, FrameImage } from 'korniza'
+import 'korniza/style.css'
 
-<GalleryFrame variant="prototype" ratio="4 / 5">
-  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
-</GalleryFrame>
-
-<GalleryFrame ratio="3 / 2">
-  <YourInteractiveComponent />
-</GalleryFrame>
+export function Photograph() {
+  return (
+    <Frame variant="modern-black" aspectRatio="3 / 2" style={{ maxWidth: 520 }}>
+      <FrameImage src="/photograph.jpg" alt="Morning light across a quiet courtyard" />
+    </Frame>
+  )
+}
 ```
 
-`ratio` describes the **content opening**, not the outer silhouette. It accepts CSS aspect ratios, including numeric values. Use positive, finite ratios. The wrapper accepts normal div attributes, `className` and `style`. Arbitrary children retain their own styling and semantics; consumers size their own content. Oversized content scrolls inside the opening rather than distorting the frame. Only the optional `GalleryArtwork` helper applies image fitting.
+### Public API
 
-## Geometry and depth
+| Prop | Default | Meaning |
+| --- | --- | --- |
+| `variant` | required | One of the six kebab-case identifiers above |
+| `aspectRatio` | `"4 / 5"` | CSS aspect ratio of the **opening**, excluding rails; a positive number or ratio string |
+| `children` | none | Your unmodified React content |
+| `interactiveLight` | `true` | Enable restrained pointer-driven material highlights |
+| `className`, `style` | none | Applied to the outer width/container wrapper |
+| Other div attributes/events | none | Forwarded to the outer wrapper; handlers are composed with internal lighting |
 
-An explicit 3 × 3 CSS grid holds eight decorative slices and a genuine DOM opening. Corner squares have the same dimensions as the rail thickness. Horizontal rails only extend horizontally; vertical rails only extend vertically. The two triangular faces of each corner share the exact gradient profile of their adjoining rails. Corner backgrounds overlap under the mitre to avoid transparent antialias gaps.
+`FrameImage` accepts normal image props and requires `alt` in TypeScript. It fills the opening using `object-fit: cover`; override `style={{ objectFit: 'contain' }}` or `objectPosition` when cropping is inappropriate. Use `alt=""` only for decorative images. The frame adds no image role or accessible label of its own: use meaningful child semantics and a surrounding `figure`/`figcaption` where appropriate.
 
-Thickness is clamped from 20–38px and rounded to whole CSS pixels in supporting browsers, with a clamp fallback. Override `--frame-width` in a consumer class if needed. The default is tuned for frame widths in this demo; exceptionally tiny hosts need a smaller custom thickness.
+Also exported: `FrameProps`, `FrameVariant`, and the readonly `frameVariants` metadata array in canonical collection order. The shell and variant-specific components are internal. There is no prototype variant in the public API. Earlier source-level `GalleryFrame` / variant imports and `ratio` are replaced by `Frame` and `aspectRatio`.
 
-Shared profile stops form an outer lip, recessed sweep, front bead and dark rabbet. Darker right/bottom faces establish a static upper-left light. A pointer-transparent inset shadow overlaps the opening, while separate contact and ambient shadows mount the frame against the wall. There are no textures, filters, animation loops, tilt, glass, or child-style resets.
+### Width, ratios and content
 
-The frame structure is hidden from assistive technology. Child semantics, pointer events and keyboard focus remain native.
+Frames fill their parent's available width. Use normal CSS, `className`, or `style` for a maximum width; no separate size prop is needed. A container wrapper makes rail thickness respond to the frame's own width, with whole-CSS-pixel rounding where supported and a maximum per material. Place it in a width-constrained block or grid. The supported practical minimum outer width is 220px; allow about 10px of space outside it for protruding ornament, and more for shadows.
 
-## Baroque Gold (F2C)
+Use `aspectRatio={1}`, `"4 / 5"`, or `"3 / 2"` for fixed openings. `aspectRatio="auto"` lets normal-flow content determine height; use this for longer cards rather than a fill-positioned `FrameImage`. Invalid, zero or negative ratios are outside the API contract.
+
+Content is contained in the recessed opening with `overflow: auto`: oversized custom content can scroll instead of pushing the rails apart. Children are not cloned or assigned styles. Give a custom card its own padding, colors and sizing. The decorative layers ignore pointer events. Focus, selection, scrolling and media controls remain available. For simple art cards use `minHeight: '100%'`; for full-bleed video use absolute positioning and `objectFit` inside the fixed opening.
 
 ```tsx
-import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
-
-<BaroqueGold ratio="4 / 5">
-  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
-</BaroqueGold>
+<Frame variant="carved-oak" aspectRatio={1} interactiveLight={false}>
+  <div style={{ minHeight: '100%', padding: 24, background: '#e9ddc9', boxSizing: 'border-box' }}>
+    <h2>A small idea</h2>
+    <p>Any semantic HTML or React component can live here.</p>
+    <button onClick={() => alert('Still your interface')}>Open the note</button>
+  </div>
+</Frame>
 ```
-
-Use the `BaroqueGold` wrapper to load its scoped material CSS and pointer lighting. It accepts the same div/content props as `GalleryFrame`, with the variant fixed. Generic geometry and its 20–38px scaling remain unchanged; gold owns a 26–53px width token. Shared corner/rail profiles describe the outer lip, convex moulding, patinated channel, secondary roll, relief fillet, inner liner and dark rabbet.
-
-A small local SVG supplies faint leaf variation without raster textures or filters. A masked highlight affects the raised outer moulding only. Pointer events schedule at most one pending animation frame, with no idle loop; leave/cancel restores above-left light. Touch and reduced-motion users receive static light. The frame and artwork never move. Caller pointer handlers are preserved.
-
-F2C reuses the approved F2B.1 master in all four corners. `cornerGeometry.ts` remains the geometry authority: lobed diagonal acanthus, folded heel, unequal scrolls, tucked root leaves and local undercuts. `BaroqueCorner.tsx` defines the path groups once per frame and references them with SVG uses. Reflected instances counter-reflect body/fold gradients and relief offsets to keep the light above-left; far-side crest colours are warmer. The original top-left geometry, palette and relief offsets remain unchanged.
-
-`BaroqueRails.tsx` adds two reusable shallow leaf-shoot paths. Fixed-size shoots emerge beneath each scroll tip, fade along each half-rail and leave the centre quiet. They do not stretch or tile with the artwork ratio. Corner layering sits above the rail shoots, which occupy the convex moulding and leave channels and liner clear. Mobile lowers rail contrast slightly without replacing the ornament. The completed ornament totals 46 DOM paths and 56 uses per frame, with no filters, new animation loops, assets or runtime dependencies. SVG IDs remain unique across multiple instances.
-
-The F1 comparison remains in the demo. Gold specimens stack between 601 and 850px as well as on mobile, giving the complete carving room without changing component width tokens or geometry. QA and screenshots are recorded in `QA.md`.
-
-## Carved Oak (F3A.1)
 
 ```tsx
-import { CarvedOak } from './variants/CarvedOak/CarvedOak'
+// Compare the same content in every material.
+import { Frame, FrameImage, frameVariants } from 'korniza'
 
-<CarvedOak ratio="4 / 5">
-  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
-</CarvedOak>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 40 }}>
+  {frameVariants.map(({ variant, name }) => (
+    <figure key={variant} style={{ margin: 0 }}>
+      <Frame variant={variant} aspectRatio="4 / 5">
+        <FrameImage src="/artwork.jpg" alt="Describe the artwork here" />
+      </Frame>
+      <figcaption>{name}</figcaption>
+    </figure>
+  ))}
+</div>
 ```
 
-The first timber-study candidate uses a separate 23–44px moulding: eased outer edge, shallow channel, broad sloping oak face, double inner reed and dark rabbet. The generic grid and content slot are unchanged. Four pointer-transparent material surfaces span complete boards with clipped mitres, maintaining grain continuity across the underlying corner/rail slices. Two small non-tiled SVG assets supply tapered grain bands, pores and scattered pale rays; gradients provide the shaped timber body and static above-left shading. There are no raster textures or SVG filters.
+### Light and accessibility
 
-The wrapper follows the existing event-driven pointer-light architecture, with softer masked highlights on the outer edge and inner reed. It preserves caller handlers, cancels pending work on unmount/leave/cancel, and skips touch and reduced-motion interaction. There is no idle loop or pointer-triggered React state update. The restrained demo includes all three proportions, stacking at tablet/mobile sizes. This is F3A only: no heavy ornament or F3B work. F3A.1 lifts the timber toward golden-neutral medium oak, opens the broad-face grain and pores slightly, and softens the satin sheen while preserving all geometry and pointer behaviour. Approved and locked by Nick on 23 September 2026: Carved Oak F3A.1 is the second real Korniza variant and the first locked timber variant.
+The idle world light comes from above-left. Pointer motion only changes material highlights, never the artwork or frame position. Gold keeps a richer response than timber. Updates are batched into animation frames with no React state updates or idle animation loop. Leaving/cancelling a pointer, disabling the prop, changing reduced-motion preference and losing window focus restore the baseline. Touch and coarse-only pointers use static lighting. User handlers can call `preventDefault()` to suppress a light update.
 
-## Dark Walnut (F4A)
+No keyboard interaction is needed for the decorative light. Supply accessible labels for your own content and controls. Long content remains scrollable; choose an automatic-height opening when that provides a better reading experience. See [QA.md](QA.md) for tested conditions and limitations.
 
-```tsx
-import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut'
+## Architecture and packaging
 
-<DarkWalnut ratio="4 / 5">
-  <GalleryArtwork src="/artwork.jpg" alt="Description of the artwork" />
-</DarkWalnut>
-```
+- `src/index.ts`: intentional public exports.
+- `src/Frame.tsx` and `src/variants.ts`: six-variant dispatch and canonical metadata.
+- `src/components/GalleryFrame.tsx`: width container, eight frame slices and one content opening.
+- `src/components/usePointerLight.ts`: shared event-driven lighting and cleanup.
+- `src/variants/`: isolated material profiles, lightweight composition and locked SVG geometry.
+- `src/main.tsx`, `src/style.css`: demo only, excluded from the package.
+- `vite.lib.config.ts`, `tsconfig.lib.json`: ESM, declarations, external React, standalone CSS.
 
-A distinct 25–48px walnut profile: rounded outer moulding, deep narrow channel, broad warm-brown face, polished inner bolection, very thin antique-gold slip and near-black rabbet. Fine flowing grain and small pores use two non-tiled vector assets, with no raster textures, filters, botanical decoration or runtime dependencies. Full-board surfaces retain directional grain through slice boundaries and terminate at mitres. The slip occupies approximately 3% of the moulding width (0.75–1.44 CSS pixels), subordinate to the timber.
+`npm run build` produces the demo in `dist/`; `npm run build:lib` produces the library in `dist-lib/`. Import the stylesheet once. Material SVG textures are embedded in the library CSS, so consumers need no asset-copy step. The package ships no demo photographs, React runtime or global page reset. The ESM entry includes a client boundary for React server-component hosts; normal server rendering is also supported. Multiple frames use unique SVG IDs.
 
-The existing event-driven pointer-light pattern is retained locally: broad faces respond weakly, raised mouldings catch warmer polish, and the liner receives a faint glint. Recesses and artwork remain static. Touch/reduced-motion use fixed light; leave/cancel and unmount clean up pending work. The shared shell, artwork recess and wall shadows are unchanged, as are the locked Oak and Gold variants. Only the shared TypeScript variant union is extended.
+Modern browsers with CSS container queries, masks and aspect ratio are required. The unrounded rail declaration is a fallback for browsers lacking CSS `round()`. This is not a legacy-browser compatibility library.
 
-The fourth demo study includes portrait, square and landscape using the same artwork for comparison. Approved and locked by Nick on 23 September 2026: Dark Walnut F4A is the third finished Korniza variant. The approved baseline includes the final 5% grain-opacity lift; preserve its material, profile, polish and thin antique-gold liner. No heavier ornament milestone has begun.
+`private: true` and `UNLICENSED` intentionally remain until the owner selects a license and approves publication. Packing and installing locally are supported. Before a public release, select the license, confirm package-name availability and version, and complete the remaining browser/device checks in QA.md. Nothing is published by the build commands.
 
-## Delivery
+## Demo asset credits
 
-The Build workflow runs `npm ci` and `npm run build` for pushes and pull requests. The manually dispatched Pages workflow builds and deploys `dist`; set repository Pages source to GitHub Actions. Relative asset paths support the `/korniza/` project URL and custom domains.
+- Vincent van Gogh, *Wheat Field with Cypresses* (1889), [The Metropolitan Museum of Art, 1993.132](https://www.metmuseum.org/art/collection/search/436535), public-domain collection image.
+- *The Blue Marble* (1972), Apollo 17 crew / [NASA](https://www.nasa.gov/image-article/apollo-17-blue-marble/). Used as a photographic content fixture; no NASA endorsement implied.
+- `still-land.svg`: original graphic study included with the project.
 
-The original `KORNIZA_SPEC.md` describes the broader roadmap. It does not imply later milestones are implemented. The demo landscape is an original lightweight SVG, not an external image dependency.
-
-See [QA.md](QA.md) for verification and limits.
+The historic design brief remains in `KORNIZA_SPEC.md`; the current API and scope are documented here.

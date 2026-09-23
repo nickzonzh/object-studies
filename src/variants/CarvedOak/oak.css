@@ -2,10 +2,8 @@
    Oak cross-section: rounded edge, cut channel, broad gently sloped face,
    double reed, recessed liner and dark rabbet. No shared geometry overrides. */
 .gallery-frame[data-variant='carved-oak'] {
-  --frame-width: clamp(23px, 3vw, 44px);
-  --frame-width: round(nearest, clamp(23px, 3vw, 44px), 1px);
-  --light-x: 26%;
-  --light-y: 16%;
+  --frame-width: clamp(12px, 8.462cqw, 44px);
+  --frame-width: round(nearest, clamp(12px, 8.462cqw, 44px), 1px);
   --profile: #4c3725 0%, #82603d 2%, #be9865 6%, #b18b5c 10%,
     #7f5b3c 16%, #4e3926 18%, #674a31 23%, #a37d52 26%,
     #b89262 29%, #a78356 35%, #9d794e 49%, #926f47 64%,
@@ -51,5 +49,5 @@
 }
 .oak-material::before { inset: calc(var(--frame-width) * .025); padding: calc(var(--frame-width) * .10); }
 .oak-material::after { inset: calc(var(--frame-width) * .73); padding: calc(var(--frame-width) * .055); }
-@media (max-width: 600px) { .oak-board { background-size: 145% 100%, 100% 100%; } .oak-board--left, .oak-board--right { background-size: 100% 145%, 100% 100%; } }
+@container (max-width: 300px) { .oak-board { background-size: 145% 100%, 100% 100%; } .oak-board--left, .oak-board--right { background-size: 100% 145%, 100% 100%; } }
 @media (prefers-reduced-motion: reduce) { .gallery-frame[data-variant='carved-oak'] { --light-x: 26% !important; --light-y: 16% !important; } }
