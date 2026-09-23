@@ -74,12 +74,14 @@ export function useToolInteraction() {
           .focus({ preventScroll: true })
     }
     const pose = (point: Point): Pose => {
+      const maxTilt = active === 'duster' ? 3 : 8
       const tilt = last
-        ? Math.max(-8, Math.min(8, (point.x - last.x) * 0.35))
+        ? Math.max(-maxTilt, Math.min(maxTilt, (point.x - last.x) * 0.35))
         : 0
       return {
         ...clampPoint(point, rect),
-        angle: (active === 'duster' ? -3 : -48) + tilt,
+        // The writing end stays anchored; the grip extends towards 4–5 o'clock.
+        angle: (active === 'duster' ? 0 : 45) + tilt,
       }
     }
     const pointFrom = (event: PointerEvent): Point => ({

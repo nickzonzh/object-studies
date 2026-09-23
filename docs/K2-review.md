@@ -4,7 +4,7 @@
 
 - Four physical chalk buttons and the duster, with selected states and separate 44px touch targets. The active tool's original place is empty.
 - Interruptible pickup and return; rapid switches return the old tool without cloning or leaving ghosts. Chalk lifts in 160ms, the duster in 180ms; returns take 190ms and 220ms respectively.
-- Chalk follows lightly at roughly 48 degrees, pivoting around its left contact end. The duster follows with more weight and slight directional rotation. Pressing snaps the contact anchor to the pointer, tightens shadows and compresses the felt slightly.
+- Chalk follows lightly with its grip pointing down and right at roughly 45 degrees (4–5 o'clock), pivoting around its left contact end. The held duster presents its broad wooden top with a thin felt edge, following with more weight and at most 3 degrees of directional tilt. Its projection settles back to the side view on the rail. Pressing snaps the contact anchor to the pointer, tightens shadows and compresses the felt slightly.
 - Same-tool toggle, Put back and Escape. Keyboard activation focuses the slate; arrow keys move, Shift increases the step, and Space/Enter holds contact. Escape restores focus to the selected tool's rail button.
 - Pointer capture, single-pointer ownership, touch cancellation, outside release, resize/scroll recovery, window blur cleanup and reduced motion.
 
@@ -27,6 +27,8 @@ Browser interaction checks cover:
 Chromium desktop and touch emulation passed without page exceptions or failed asset requests. Mobile WebKit 26.6 also passed touch selection, surface contact, keyboard control and return. A 30fps recording and sampled frames were inspected for tool/rail continuity; the K1 material layers remain unchanged. Physical phone feel is still a hands-on acceptance check.
 
 ![Chalk in hand](images/k2-chalk.png)
+
+![Duster held against the slate](images/k2-duster.png)
 
 ![Mobile contact](images/k2-mobile.png)
 
