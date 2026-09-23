@@ -3,6 +3,10 @@ import { clampPoint } from '../tools/geometry'
 import { createToolMotion } from '../tools/toolMotion'
 import { createDrawingSurface } from '../drawing/drawingSurface'
 import { pressureFor } from '../drawing/chalkSampler'
+import { createBoardStorage, type SaveStatus } from '../drawing/boardStorage'
+import { type HistoryState } from '../drawing/history'
+import { type DrawingStroke } from '../drawing/types'
+import { createBoardPng, downloadBoardPng } from '../drawing/exportPng'
 import {
   type Activation,
   type Point,
@@ -14,6 +18,9 @@ type Controller = {
   select: (id: ToolId, activation: Activation) => void
   putBack: (keyboard?: boolean) => void
   clear: () => void
+  undo: () => void
+  redo: () => void
+  savePng: () => void
 }
 
 export function useToolInteraction() {
@@ -23,13 +30,46 @@ export function useToolInteraction() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const controller = useRef<Controller | null>(null)
   const [selected, setSelected] = useState<ToolId | null>(null)
-  const [hasMarks, setHasMarks] = useState(false)
+  const [history, setHistory] = useState<HistoryState>({
+    hasMarks: false,
+    canUndo: false,
+    canRedo: false,
+  })
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [exportStatus, setExportStatus] = useState<
+    'idle' | 'exporting' | 'error'
+  >('idle')
 
   useEffect(() => {
     const board = boardRef.current!
     const surface = surfaceRef.current!
     const motion = createToolMotion(board, overlayRef.current!)
-    const drawing = createDrawingSurface(canvasRef.current!, setHasMarks)
+    const storage = createBoardStorage(() => window.localStorage)
+    const restored = storage.load()
+    let saveTimer: ReturnType<typeof setTimeout> | undefined
+    let pendingSave: DrawingStroke[] | null = null
+    let disposed = false
+    let exporting = false
+    const flushSave = () => {
+      clearTimeout(saveTimer)
+      if (pendingSave === null) return
+      const status = storage.save(pendingSave)
+      pendingSave = null
+      if (!disposed) setSaveStatus(status)
+    }
+    const drawing = createDrawingSurface(
+      canvasRef.current!,
+      (state, strokes) => {
+        setHistory(state)
+        setSaveStatus('saving')
+        pendingSave = strokes
+        clearTimeout(saveTimer)
+        saveTimer = setTimeout(flushSave, 250)
+      },
+      restored.strokes,
+    )
+    setHistory(drawing.state())
+    setSaveStatus(restored.status)
     const parkedDuster = board.querySelector<HTMLElement>(
       '[data-slot="duster"] .duster',
     )!
@@ -156,6 +196,34 @@ export function useToolInteraction() {
         drawing.clear()
         if (active) ready(true)
       },
+      undo() {
+        releaseCapture()
+        drawing.undo()
+        if (active) ready(true)
+      },
+      redo() {
+        releaseCapture()
+        drawing.redo()
+        if (active) ready(true)
+      },
+      async savePng() {
+        if (exporting) return
+        releaseCapture()
+        if (active) ready(true)
+        exporting = true
+        setExportStatus('exporting')
+        try {
+          const blob = await createBoardPng(canvasRef.current!)
+          if (!disposed) {
+            downloadBoardPng(blob)
+            setExportStatus('idle')
+          }
+        } catch {
+          if (!disposed) setExportStatus('error')
+        } finally {
+          exporting = false
+        }
+      },
     }
 
     surface.addEventListener(
@@ -250,6 +318,7 @@ export function useToolInteraction() {
     surface.addEventListener(
       'keydown',
       (event) => {
+        if (event.ctrlKey || event.metaKey || event.altKey) return
         if (!active || pointer !== null) return
         if (event.key === ' ' || event.key === 'Enter') {
           event.preventDefault()
@@ -328,6 +397,26 @@ export function useToolInteraction() {
     document.addEventListener(
       'keydown',
       (event) => {
+        const target = event.target
+        if (
+          target instanceof HTMLElement &&
+          target.closest('.object-study') &&
+          !target.closest(
+            'input, textarea, select, [contenteditable="true"]',
+          ) &&
+          (event.ctrlKey || event.metaKey) &&
+          !event.altKey
+        ) {
+          const key = event.key.toLowerCase()
+          if (key === 'z' || (key === 'y' && !event.shiftKey)) {
+            event.preventDefault()
+            if (!event.repeat) {
+              if (key === 'y' || event.shiftKey) controller.current?.redo()
+              else controller.current?.undo()
+            }
+            return
+          }
+        }
         if (event.key === 'Escape' && active) {
           event.preventDefault()
           putBack(true)
@@ -339,7 +428,18 @@ export function useToolInteraction() {
     document.addEventListener(
       'visibilitychange',
       () => {
-        if (document.hidden) putBack(false, true)
+        if (document.hidden) {
+          putBack(false, true)
+          flushSave()
+        }
+      },
+      options,
+    )
+    window.addEventListener(
+      'pagehide',
+      () => {
+        releaseCapture()
+        flushSave()
       },
       options,
     )
@@ -367,6 +467,8 @@ export function useToolInteraction() {
     phase('idle')
     return () => {
       releaseCapture()
+      flushSave()
+      disposed = true
       events.abort()
       resize.disconnect()
       motion.destroy()
@@ -381,10 +483,15 @@ export function useToolInteraction() {
     overlayRef,
     canvasRef,
     selected,
-    hasMarks,
+    ...history,
+    saveStatus,
+    exportStatus,
     select: (id: ToolId, activation: Activation) =>
       controller.current?.select(id, activation),
     putBack: (keyboard = false) => controller.current?.putBack(keyboard),
     clear: () => controller.current?.clear(),
+    undo: () => controller.current?.undo(),
+    redo: () => controller.current?.redo(),
+    savePng: () => controller.current?.savePng(),
   }
 }

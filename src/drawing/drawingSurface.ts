@@ -4,15 +4,18 @@ import { clipSegment } from './clip'
 import { createDusterSampler } from './dusterSampler'
 import { createDusterRenderer } from './dusterRenderer'
 import type { ChalkPoint, DrawingStroke, DrawingTool } from './types'
+import { createDrawingHistory, type HistoryState } from './history'
 
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,
-  onChange: (hasMarks: boolean) => void,
+  onChange: (state: HistoryState, strokes: DrawingStroke[]) => void,
+  initial: DrawingStroke[] = [],
 ) {
   const ctx = canvas.getContext('2d')!
   const brushes = createChalkBrushes()
   const duster = createDusterRenderer(canvas)
-  const strokes: DrawingStroke[] = []
+  const history = createDrawingHistory(initial)
+  let gesture: DrawingStroke[] = []
   let active: DrawingStroke | null = null
   let sampler: {
     add: (point: ChalkPoint) => void
@@ -22,10 +25,11 @@ export function createDrawingSurface(
   let width = 1
   let height = 1
   let dpr = 1
-  let id = 0
+  let id = initial.reduce((max, stroke) => Math.max(max, stroke.id), 0)
   let lastInput: ChalkPoint | null = null
   let tool: DrawingTool | null = null
   let footprint = { width: 126, height: 48 }
+  const changed = () => onChange(history.state(), history.strokes())
 
   const makeSampler = (stroke: DrawingStroke) => {
     if (stroke.tool === 'duster') {
@@ -66,6 +70,11 @@ export function createDrawingSurface(
     endStroke()
     lastInput = null
     tool = null
+    if (gesture.length) {
+      history.commit(gesture)
+      gesture = []
+      changed()
+    }
   }
   const beginStroke = (chosen: DrawingTool, point: ChalkPoint) => {
     const common = {
@@ -83,11 +92,10 @@ export function createDrawingSurface(
             color: chosen,
             width: Math.max(4.5, Math.min(7.5, width * 0.0075)),
           }
-    strokes.push(active)
+    gesture.push(active)
     sampler = makeSampler(active)
     sampler.add(point)
     sampler.flush()
-    if (strokes.length === 1) onChange(true)
   }
   const addPoint = (point: ChalkPoint) => {
     if (!active || !sampler) return
@@ -100,14 +108,23 @@ export function createDrawingSurface(
     ctx.resetTransform()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
+  const replay = () => {
+    clearPixels()
+    for (const stroke of history.strokes()) {
+      const samples = makeSampler(stroke)
+      stroke.points.forEach((point) => samples.add(point))
+      samples.end()
+    }
+  }
   return {
+    state: history.state,
     begin(
       chosen: DrawingTool,
       point: ChalkPoint,
       size?: { width: number; height: number },
     ) {
       end()
-      if (chosen === 'duster' && strokes.length === 0) return
+      if (chosen === 'duster' && !history.state().hasMarks) return
       tool = chosen
       if (size) footprint = size
       lastInput = point
@@ -137,21 +154,31 @@ export function createDrawingSurface(
       dpr = nextDpr
       canvas.width = Math.round(width * dpr)
       canvas.height = Math.round(height * dpr)
-      for (const stroke of strokes) {
-        const replay = makeSampler(stroke)
-        stroke.points.forEach((point) => replay.add(point))
-        replay.end()
-      }
+      replay()
     },
     clear() {
       end()
-      strokes.length = 0
+      if (!history.state().hasMarks) return
+      history.clear()
       clearPixels()
-      onChange(false)
+      changed()
+    },
+    undo() {
+      end()
+      if (!history.state().canUndo) return
+      history.undo()
+      replay()
+      changed()
+    },
+    redo() {
+      end()
+      if (!history.state().canRedo) return
+      history.redo()
+      replay()
+      changed()
     },
     destroy() {
       end()
-      strokes.length = 0
       brushes.clear()
       duster.destroy()
     },

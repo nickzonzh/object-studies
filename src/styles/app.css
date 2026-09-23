@@ -68,10 +68,11 @@ h1 {
   margin: 0;
 }
 figcaption {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 8px 16px;
   margin-top: 51px;
   font-size: 11px;
   color: #69695e;

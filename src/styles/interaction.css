@@ -164,6 +164,27 @@
   align-items: center;
   gap: 12px;
 }
+.utility-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+}
+.board-utilities .put-back {
+  padding: 8px;
+  margin: 0;
+  min-width: 44px;
+}
+.board-utilities {
+  margin-left: -8px;
+}
+.save-note {
+  color: #727469;
+  font-size: 10px;
+  line-height: 1.5;
+}
 .put-back:disabled {
   color: #797a70;
   cursor: default;
@@ -211,6 +232,10 @@
   }
   .board-utilities {
     gap: 4px;
+  }
+  .save-note {
+    flex-basis: 100%;
+    min-height: 15px;
   }
   .tool-flight--duster:not(.is-ready) {
     --face-offset: 3px;
