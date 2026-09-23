@@ -1,0 +1,12 @@
+{
+  "results": [
+    "Mouse pickup, exact contact anchor, fast movement, capture and outside release",
+    "Rapid switches, duster contact and complete return without duplicate tools",
+    "Keyboard selection, focus transfer, arrow movement, Space contact and Escape",
+    "Reduced motion immediate pickup and return",
+    "Resize and lost-window-focus recovery",
+    "Touch pickup, dragging, secondary-finger rejection, cancellation, duster and return",
+    "Nonoverlapping 44px targets and no overflow at 320px and 390px"
+  ],
+  "errors": []
+}

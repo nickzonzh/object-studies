@@ -15,16 +15,7 @@ export default function App() {
           THE OBJECT STUDIES<span>No. 01 — Slate & oak</span>
         </p>
       </header>
-      <figure className="object-study">
-        <Chalkboard />
-        <figcaption>
-          <span className="material-note">
-            <span className="material-swatch" />
-            Dark slate. Aged oak.
-          </span>
-          <span className="study-note">A still life, for now.</span>
-        </figcaption>
-      </figure>
+      <Chalkboard />
       <footer className="showcase-footer">
         <span>κιμωλία</span> Greek for chalk.
       </footer>
