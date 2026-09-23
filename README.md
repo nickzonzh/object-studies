@@ -2,7 +2,7 @@
 
 Frames for things worth looking at. A React component collection, with a small gallery demo.
 
-This implementation covers **F0, polished F1, and F2A**. The neutral prototype establishes scalable geometry; Baroque Gold adds layered gilded moulding. Botanical ornament and F2B are intentionally absent.
+This implementation covers **F0, polished F1, F2A / F2A.1, and the F2B hero corner**. The neutral prototype establishes scalable geometry; Baroque Gold adds antique gilded moulding and one authored top-left acanthus/scroll relief. The other corners and full rail ornament remain unimplemented.
 
 ## Develop
 
@@ -45,7 +45,7 @@ Shared profile stops form an outer lip, recessed sweep, front bead and dark rabb
 
 The frame structure is hidden from assistive technology. Child semantics, pointer events and keyboard focus remain native.
 
-## Baroque Gold (F2A)
+## Baroque Gold (F2A / F2B)
 
 ```tsx
 import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
@@ -58,6 +58,8 @@ import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
 Use the `BaroqueGold` wrapper to load its scoped material CSS and pointer lighting. It accepts the same div/content props as `GalleryFrame`, with the variant fixed. Generic geometry and its 20–38px scaling remain unchanged; gold owns a 26–53px width token. Shared corner/rail profiles describe the outer lip, convex moulding, patinated channel, secondary roll, relief fillet, inner liner and dark rabbet.
 
 A small local SVG supplies faint leaf variation without raster textures or filters. A masked highlight affects the raised outer moulding only. Pointer events schedule at most one pending animation frame, with no idle loop; leave/cancel restores above-left light. Touch and reduced-motion users receive static light. The frame and artwork never move. Caller pointer handlers are preserved.
+
+F2B adds `BaroqueCorner.tsx`, with authored geometry in `cornerGeometry.ts` and material/relief layers in the component. The generic shell's optional `decoration` slot sits outside the content opening; it changes no grid tracks. `BaroqueGold` owns that slot. The square SVG scales at 3.2 times frame thickness (50 drawing units per thickness), independent of artwork ratio. Only the top-left receives a composition: a lobed diagonal acanthus, a folded heel, unequal scrolls and short rail tails. Solid offset copies supply contact relief; stable brown cuts separate folds; pale edge catches respond to the existing pointer handler. There are 28 unique authored paths, 32 path elements including definitions, four uses and two gradients per corner; no filters or external ornament assets.
 
 ## Delivery
 

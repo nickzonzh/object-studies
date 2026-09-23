@@ -1,18 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { GalleryFrame, type GalleryFrameProps } from '../../components/GalleryFrame'
 import './baroque.css'
+import { BaroqueCorner } from './BaroqueCorner'
 
 /** A stationary shell: only the raised gilding responds to a fine pointer. */
-export function BaroqueGold({ onPointerMove, onPointerLeave, onPointerCancel, ...props }: Omit<GalleryFrameProps, 'variant'>) {
+export function BaroqueGold({ onPointerMove, onPointerLeave, onPointerCancel, ...props }: Omit<GalleryFrameProps, 'variant' | 'decoration'>) {
   const pending = useRef<number | null>(null)
   const reset = (element: HTMLDivElement) => {
     if (pending.current !== null) cancelAnimationFrame(pending.current)
     pending.current = null
     element.style.removeProperty('--light-x')
     element.style.removeProperty('--light-y')
+    element.style.removeProperty('--relief-light')
+    element.style.removeProperty('--relief-return')
   }
   useEffect(() => () => { if (pending.current !== null) cancelAnimationFrame(pending.current) }, [])
-  return <GalleryFrame {...props} variant="baroque-gold"
+  return <GalleryFrame {...props} variant="baroque-gold" decoration={<BaroqueCorner />}
     onPointerMove={event => {
       onPointerMove?.(event)
       if (event.defaultPrevented || event.pointerType === 'touch' || matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -24,6 +27,8 @@ export function BaroqueGold({ onPointerMove, onPointerLeave, onPointerCancel, ..
       pending.current = requestAnimationFrame(() => {
         element.style.setProperty('--light-x', `${18 + x * 46}%`)
         element.style.setProperty('--light-y', `${8 + y * 44}%`)
+        element.style.setProperty('--relief-light', `${.18 + (1 - (x + y) / 2) * .64}`)
+        element.style.setProperty('--relief-return', `${.08 + (x + y) / 2 * .32}`)
         pending.current = null
       })
     }}

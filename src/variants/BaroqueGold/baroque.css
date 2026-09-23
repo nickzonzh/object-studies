@@ -57,3 +57,23 @@
 @media (prefers-reduced-motion: reduce) {
   .gallery-frame[data-variant='baroque-gold'] { --light-x: 26% !important; --light-y: 16% !important; }
 }
+
+/* 50 SVG units = one frame width. An absolute square prevents ratio distortion.
+   Roots end on the 29% crown; only the folded heel crosses the opening edge. */
+.baroque-corner {
+  position: absolute;
+  left: calc(var(--frame-width) * -.16);
+  top: calc(var(--frame-width) * -.16);
+  width: calc(var(--frame-width) * 3.2);
+  height: calc(var(--frame-width) * 3.2);
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+}
+.baroque-corner__light { opacity: var(--relief-light, .65); }
+.baroque-corner__return { opacity: var(--relief-return, .12); }
+@media (max-width: 600px) { .baroque-corner__micro { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) {
+  .baroque-corner__light { opacity: .65; }
+  .baroque-corner__return { opacity: .12; }
+}

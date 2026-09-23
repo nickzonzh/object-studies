@@ -1,5 +1,37 @@
 # F0 + F1 verification
 
+## F2B single hero corner — 23 September 2026
+
+Implemented one top-left ornament per Baroque Gold specimen, with no ornament on the other corners. The existing demo, moulding profiles, antique material field, width tokens, inner liner, recess and shadows are unchanged. The generic component gains only an optional decorative overlay slot outside its semantic content opening; the nine-slice grid and CSS are untouched.
+
+Structure: `cornerGeometry.ts` holds four closed masses, eleven fold planes, six groove paths and six highlight paths. `BaroqueCorner.tsx` adds the sparse bole path and builds the gold material, directional offset contact relief, stable cuts and reactive edge catches. `baroque.css` positions an absolute square at 3.2 times frame thickness. `BaroqueGold.tsx` extends its existing single pending animation-frame callback with two relief-light variables, resetting both on leave/cancel. No state updates, independent motion, filters or new dependencies.
+
+Complexity: 28 unique authored paths; 32 DOM path elements (four body paths occur both in definitions and the material group), four `<use>` instances and two linear gradients per SVG. Approximately 42 painted path instances after reuse. Unique per-component SVG IDs verified across all specimens. This is a modest starting cost for later duplication; four-corner and full-rail runtime performance has not been measured.
+
+Verification:
+
+- Production build and strict TypeScript pass; `git diff --check` passes.
+- Chrome at 1920, 1440, 768, 375 and 320 CSS pixels: all seven frames' outer sizes, opening sizes, corner sizes and scroll states exactly match the recorded F2A.1 measurements. `output/playwright/f2b/compare.cjs` compares the actual recorded results.
+- All gold frames have exactly one SVG; prototype frames have none. SVG width equals height at every ratio and viewport, and is 3.2 times thickness within pixel rounding. No horizontal document overflow; mobile protrusions remain visible.
+- Real mouse movement changes upper-left edge opacity from 0.8008 to 0.212 and the return-edge opacity from 0.0896 to 0.384. Frame bounds remain identical. Brown cavities do not receive the moving light layers. Leave/cancel clear the variables; touch skips updates; reduced motion keeps static 0.65 highlight opacity.
+- The live child button still updates its status. SVGs are decorative, unfocusable and pointer-transparent. Browser console contains only the React development-tools information message, no errors or warnings.
+
+Screenshots captured and visually inspected in `output/playwright/f2b/`: `gallery.png` (all ratios), `portrait.png`, `square.png`, `landscape.png`, `corner.png`, `light-upper-left.png`, `light-lower-right.png`, and `viewport-320.png`, `viewport-375.png`, `viewport-768.png`. `capture.js` and `results.txt` preserve the reproducible browser checks. The raw scale field in results is null because the computed custom property retains `round()` syntax; `compare.cjs` computes the verified scale using the actual corner width instead.
+
+Visual assessment before F2C:
+
+- **Complex enough?** Yes for a hero-corner proof: diagonal lobed leaf, central spine, curled heel and unequal volutes establish an architectural/botanical composition. A rosette would add density without a clear structural purpose.
+- **Too busy?** No as one corner. At tablet size fine grooves become quiet, but the silhouette and scrolls survive. Four corners plus elaborate rails could become busy, particularly in the narrow portrait specimen.
+- **Deep enough?** Yes at normal size: warm grooves, rolled shoulders, bright fold crests and localized contact shadows distinguish planes. The underside of the curled heel is the deepest accent.
+- **Gold at ornament scale?** Consistent with the moulding palette. Broad surfaces remain smoother and more regular than real hand-carved gilding; bole is deliberately barely visible. Pointer response is subtle and concentrated on edges, not a full normal-mapped relighting model.
+- **Physical connection?** The leaf overlaps the outer profile, the heel crosses the inner edge slightly, and tapered roots settle onto the rail crown. No rectangular bounds or uniform shadow halo. Root-to-rail junctions are still the simplest part of the carving and could gain richer occlusion in a later refinement.
+- **Rail direction?** Both tails suggest a sensible continuation. Their long, tapered forms should lead into sparse repeating accents, not another continuous dense leaf cluster.
+- **Safe to duplicate visually?** Plausible, with controlled rail density, but not proven until F2C. The top tail already occupies nearly half the narrow portrait rail. Opposite tails will need deliberate spacing in that later milestone.
+
+Recommendation: ready to propose F2C after visual approval of this hero corner. Do not add more hero microdetail first. Carry the current silhouette and relief language forward, then assess four-corner density before designing full rails. No other corners or rail families were implemented here. Browser coverage is Chrome on Windows; Safari, Firefox and physical mobile devices remain unverified.
+
+---
+
 ## F2A.1 material-ageing pass — 23 September 2026
 
 This follow-up changes only `src/variants/BaroqueGold/baroque.css` and `leaf.svg` in product code. Frame widths, profile boundary percentages, mitres, generic shell, content slot, demo layout and pointer handlers remain unchanged.
