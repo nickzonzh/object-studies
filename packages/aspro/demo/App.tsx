@@ -1,16 +1,18 @@
 import { Whiteboard } from '../src/index.js'
+import './app.css'
 
 export default function App() {
   return (
-    <main className="app-shell">
-      <header className="app-header">
+    <main className="demo">
+      <header className="demo-header">
         <div>
-          <p className="eyebrow">ASPRO</p>
+          <p className="demo-eyebrow">ASPRO</p>
           <h1>Pick up a marker.</h1>
         </div>
-        <p className="app-note">A tiny whiteboard that behaves like the real thing.</p>
+        <p className="demo-note">A tiny whiteboard that behaves like the real thing.</p>
       </header>
-      <Whiteboard />
+      <Whiteboard className="demo-board" persistence={{ key: 'aspro:whiteboard:v2' }} />
+      <p className="demo-hint">Pick a marker from the tray, then draw directly on the board.</p>
     </main>
   )
 }
