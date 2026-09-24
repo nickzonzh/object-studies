@@ -1,0 +1,72 @@
+/* F6A: firm quarter-round, narrow quirk, descending bevel, calm fascia,
+   inner bead, aged gold slip and a dark rabbet. Outside → artwork. */
+.gallery-frame[data-variant='ebonised-black'] {
+  --frame-width: clamp(12px, 8.846cqw, 46px);
+  --frame-width: round(nearest, clamp(12px, 8.846cqw, 46px), 1px);
+  --profile: #120f0e 0%, #312b27 2%, #514740 4%, #5a4a43 7%,
+    #403832 11%, #312b27 16%, #241f1c 19%, #090807 21%,
+    #120f0e 25%, #39322d 27%, #494039 29%, #312b27 34%,
+    #292421 39%, #272320 49%, #241f1d 62%, #211c19 70%,
+    #120f0e 73%, #090807 75%, #312a25 77%, #51453d 80%,
+    #3b322b 83%, #171310 86%, #120f0e 88%, #62563d 89%,
+    #92805d 90%, #81704e 92%, #493e2b 93%, #171310 94%, #090807 100%;
+  --profile-shadow: #0e0c0b 0%, #26221f 2%, #403831 4%, #493d36 7%,
+    #332d28 11%, #282320 16%, #1c1916 19%, #080706 21%,
+    #0e0c0b 25%, #2e2823 27%, #3b332c 29%, #29231f 34%,
+    #221e1b 39%, #201d1a 49%, #1d1917 62%, #1a1614 70%,
+    #0e0c0b 73%, #080706 75%, #27211c 77%, #40362f 80%,
+    #302821 83%, #120f0c 86%, #0e0c0b 88%, #51462f 89%,
+    #7c6b4b 90%, #6c5c3e 92%, #3c3222 93%, #120f0c 94%, #080706 100%;
+  background: #120f0e;
+}
+.ebonised-material { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.ebonised-board { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; }
+/* Each veneer is a complete, non-tiled board, clipped at the actual mitres.
+   Its grain ends before the metal and rabbet. */
+.ebonised-board--top, .ebonised-board--bottom {
+  left: 0; right: 0; height: var(--frame-width);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--frame-width)) 100%, var(--frame-width) 100%);
+  background-image: url('./grain.svg'), linear-gradient(to bottom, var(--profile));
+}
+.ebonised-board--top { top: 0; }
+.ebonised-board--bottom { bottom: 0; transform: scale(-1); background-image: url('./grain.svg'), linear-gradient(to bottom, var(--profile-shadow)); }
+.ebonised-board--left, .ebonised-board--right {
+  top: 0; bottom: 0; width: var(--frame-width);
+  clip-path: polygon(0 0, 100% var(--frame-width), 100% calc(100% - var(--frame-width)), 0 100%);
+  background-image: url('./grain-vertical.svg'), linear-gradient(to right, var(--profile));
+}
+.ebonised-board--left { left: 0; }
+.ebonised-board--right { right: 0; transform: scale(-1); background-image: url('./grain-vertical.svg'), linear-gradient(to right, var(--profile-shadow)); }
+/* Low-energy satin catches on the two raised mouldings only. */
+.ebonised-material::before, .ebonised-material::after,
+.gallery-frame[data-variant='ebonised-black']::before {
+  content: ''; position: absolute; pointer-events: none; z-index: 3;
+  background: radial-gradient(ellipse at var(--light-x) var(--light-y), #ddcbbb1b, #c2ac9205 38%, transparent 72%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.ebonised-material::before { inset: calc(var(--frame-width) * .035); padding: calc(var(--frame-width) * .10); }
+.ebonised-material::after { inset: calc(var(--frame-width) * .77); padding: calc(var(--frame-width) * .06); }
+.gallery-frame[data-variant='ebonised-black']::before {
+  inset: calc(var(--frame-width) * .89); padding: calc(var(--frame-width) * .035);
+  background: radial-gradient(ellipse at var(--light-x) var(--light-y), #d6c39b15, transparent 64%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-frame[data-variant='ebonised-black'] { --light-x: 26% !important; --light-y: 16% !important; }
+}
+
+/* Fine timber fibres emerge in grazing light; the finish stays quiet elsewhere.
+   The mask follows frame-space light, reversed on the reflected boards. */
+.ebonised-board::before {
+  content: ''; position: absolute; inset: 0;
+  background: url('./grain.svg') 0 0 / 100% 100% no-repeat;
+  opacity: .3;
+  clip-path: polygon(0 39%, 100% 39%, 100% 70%, 0 70%);
+  mask-image: radial-gradient(ellipse at var(--light-x) var(--light-y), #fff, transparent 68%);
+}
+.ebonised-board--bottom::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
+.ebonised-board--left::before, .ebonised-board--right::before {
+  background-image: url('./grain-vertical.svg');
+  clip-path: polygon(39% 0, 70% 0, 70% 100%, 39% 100%);
+}
+.ebonised-board--right::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
