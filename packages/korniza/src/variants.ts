@@ -2,7 +2,7 @@
 export const frameVariants = [
   { variant: 'baroque-gold', name: 'Baroque Gold', description: 'Carved gilt · generous relief' },
   { variant: 'champagne-rococo', name: 'Champagne Rococo', description: 'Pale champagne · lighter carving' },
-  { variant: 'carved-oak', name: 'Carved Oak', description: 'Oiled timber · quiet warmth' },
+  { variant: 'carved-oak', name: 'Carved Oak', description: 'Waxed oak · leaf-and-flower torus' },
   { variant: 'dark-walnut', name: 'Dark Walnut', description: 'Deep walnut · antique-gold slip' },
   { variant: 'ebonised-black', name: 'Ebonised Black', description: 'Blackened timber · fine gold lip' },
   { variant: 'modern-black', name: 'Modern Black', description: 'Blackened ash · broad, cut planes' },

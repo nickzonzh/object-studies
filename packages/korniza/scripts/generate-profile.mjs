@@ -64,7 +64,7 @@ function surface(members) {
 }
 
 /** Lambert, cast shadow and ambient occlusion, all from the one key light. */
-function shading(z, { gloss, key, expose }) {
+function shading(z, { gloss, key, expose, gamma = GAMMA }) {
   const shade = new Float64Array(SAMPLES)
   const window = Math.round(SAMPLES * .13)
   // A camera exposes for the broad flat face, so that is what lands mid-ramp;
@@ -97,7 +97,7 @@ function shading(z, { gloss, key, expose }) {
     const ao = 1 - Math.min(1, (high - z[i]) / .085) * .6
     const diffuse = AMBIENT * ao + key * lambert * shadow
     const specular = gloss * (key / KEY) * shadow * Math.max(0, normal.x * half.x + normal.z * half.z) ** 24
-    shade[i] = Math.min(1, expose * (diffuse / flat) ** GAMMA + specular)
+    shade[i] = Math.min(1, expose * (diffuse / flat) ** gamma + specular)
   }
   return shade
 }
@@ -164,8 +164,10 @@ function simplify(colours, tolerance) {
 const timber = {
   // Quartersawn oak, waxed: honey ground, amber in the recesses, pale silver
   // ray fleck on the crests. Anchored on quercus-alba-qs, whose median #9f7c54
-  // holds a red:green:blue of 1 : .78 : .53 — any more saturation reads brass.
-  oak: ramp([[0, '#251a0e'], [.16, '#43301c'], [.34, '#6b5032'], [.54, '#8f6f4b'], [.76, '#b8966e'], [1, '#decca8']]),
+  // holds a red:green:blue of 1 : .78 : .53 — any more saturation reads brass,
+  // and so does a crest that climbs to cream: waxed oak tops out at a pale
+  // straw, and its hollows go to a warm umber rather than black.
+  oak: ramp([[0, '#2e1d10'], [.16, '#4a321c'], [.34, '#6e4f30'], [.54, '#916c45'], [.76, '#b08a5e'], [1, '#d0b188']]),
   // American black walnut under wax: cool chocolate core, warm tan crests.
   walnut: ramp([[0, '#130b07'], [.17, '#2d1c13'], [.37, '#523223'], [.57, '#7b5138'], [.78, '#ab8055'], [1, '#dcbc8e']]),
   // Ebonised fruitwood: black that still returns a grey, never a blue, sheen.
@@ -178,17 +180,22 @@ const timber = {
 
 const sections = {
   'carved-oak': {
+    // A Louis XIII torus frame cut in oak and waxed rather than gilded: one
+    // broad torus that carries the acanthus corners and centres, a quirk, a
+    // plain frieze, and a leaf-tip ogee at the sight. Wax gives a soft, wide
+    // response, so the tone curve is gentler than the gilt and ebonised
+    // sections: a narrow, peaked highlight is what made the old oak read metal.
     file: 'CarvedOak/oak.css',
-    ramp: 'oak', gloss: .08, expose: .62,
+    ramp: 'oak', gloss: .03, expose: .6, gamma: 1.45,
     members: [
-      { kind: 'chamfer', span: .035, amp: .012 },                 // back edge
-      { kind: 'round', span: .130, amp: .058 },                   // outer torus
-      { kind: 'cove', span: .070, amp: .040 },                    // quirk
-      { kind: 'round', span: .340, amp: .012, slope: -.010 },     // broad face
-      { kind: 'cove', span: .075, amp: .038 },                    // hollow
-      { kind: 'round', span: .120, amp: .052, step: .004 },       // carved reed
-      { kind: 'chamfer', span: .040, amp: .014 },                 // fillet
-      { kind: 'cove', span: .120, amp: .050, slope: -.030 },      // sight cove
+      { kind: 'chamfer', span: .030, amp: .010 },                 // back edge
+      { kind: 'round', span: .390, amp: .080 },                   // torus
+      { kind: 'cove', span: .060, amp: .036 },                    // quirk
+      { kind: 'flat', span: .165, slope: -.014 },                 // frieze
+      { kind: 'cove', span: .025, amp: .010 },                    // quirk
+      { kind: 'round', span: .180, amp: .040, step: .004 },       // leaf-tip ogee
+      { kind: 'cove', span: .045, amp: .022 },                    // hollow
+      { kind: 'round', span: .035, amp: .010 },                   // sight bead
       { kind: 'flat', span: .070, step: -.090, ink: .28 },        // rabbet
     ],
   },
@@ -237,7 +244,7 @@ const sections = {
 /** One stop list. `key` is the share of the key light this rail still sees. */
 function gradient(section, { key, tolerance }) {
   const { z, owner } = surface(section.members)
-  const shade = shading(z, { gloss: section.gloss, key, expose: section.expose ?? MID })
+  const shade = shading(z, { gloss: section.gloss, key, expose: section.expose ?? MID, gamma: section.gamma })
   const colours = []
   for (let i = 0; i < SAMPLES; i++) {
     const member = owner[i]
@@ -255,7 +262,7 @@ function gradient(section, { key, tolerance }) {
 /** A 24-bucket luminance read of the section, for eyeballing against a photo. */
 const readout = section => {
   const { z, owner } = surface(section.members)
-  const shade = shading(z, { gloss: section.gloss, key: KEY, expose: section.expose ?? MID })
+  const shade = shading(z, { gloss: section.gloss, key: KEY, expose: section.expose ?? MID, gamma: section.gamma })
   const buckets = []
   for (let b = 0; b < 24; b++) {
     let sum = 0

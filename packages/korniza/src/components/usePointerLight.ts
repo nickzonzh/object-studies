@@ -50,11 +50,12 @@ export function usePointerLight(enabled: boolean, variant: string) {
          far rails, not hover near the middle. */
       element.style.setProperty('--light-x', `${4 + x * 92}%`)
       element.style.setProperty('--light-y', `${4 + y * 92}%`)
-      if (variant === 'baroque-gold' || variant === 'champagne-rococo') {
+      if (variant === 'baroque-gold' || variant === 'champagne-rococo' || variant === 'carved-oak') {
         const gold = variant === 'baroque-gold'
+        const oak = variant === 'carved-oak'
         const distance = (x + y) / 2
-        element.style.setProperty('--relief-light', `${(gold ? .18 : .22) + (1 - distance) * (gold ? .64 : .28)}`)
-        element.style.setProperty('--relief-return', `${(gold ? .08 : .06) + distance * (gold ? .32 : .12)}`)
+        element.style.setProperty('--relief-light', `${(gold ? .18 : oak ? .2 : .22) + (1 - distance) * (gold ? .64 : oak ? .26 : .28)}`)
+        element.style.setProperty('--relief-return', `${(gold ? .08 : oak ? .05 : .06) + distance * (gold ? .32 : oak ? .1 : .12)}`)
       }
     })
   }

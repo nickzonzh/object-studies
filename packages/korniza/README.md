@@ -27,7 +27,7 @@ The stylesheet is a single file and must be imported once, anywhere in your app.
 | --- | --- | --- |
 | `baroque-gold` | Baroque Gold | Ornate antique gilt with a carved gadroon; paintings and expressive compositions |
 | `champagne-rococo` | Champagne Rococo | Pale airy ornament; delicate artwork and typography |
-| `carved-oak` | Carved Oak | Warm oiled timber with a carved rope on the inner moulding; photography and everyday content |
+| `carved-oak` | Carved Oak | Waxed oak carved in the Louis XIII manner: a leaf-and-flower torus, acanthus corners and centres, a leaf-tip sight edge; landscapes, still life and everyday content |
 | `dark-walnut` | Dark Walnut | Rich formal timber with an antique-gold slip; traditional artwork and portraits |
 | `ebonised-black` | Ebonised Black | Severe classical blackened timber with a fine gold lip |
 | `modern-black` | Modern Black | Contemporary architectural minimalism; photography and graphics |

@@ -129,12 +129,12 @@ const timbers = [
     // disappear into each other once the board is squeezed onto a rail.
     directory: 'variants/CarvedOak', name: 'grain', seed: 21, wander: 3.0,
     lines: [
-      { color: '#241705', width: '2.6', count: 14, from: .34, to: .58 },
-      { color: '#57390f', width: '1.7', count: 10, from: .22, to: .40 },
+      { color: '#241705', width: '2.6', count: 16, from: .42, to: .66 },
+      { color: '#57390f', width: '1.7', count: 12, from: .26, to: .44 },
       { color: '#f2dcb0', width: '1.7', count: 8, from: .20, to: .38 },
     ],
-    figures: 5, figure: { color: '#241705', belly: 4.4, from: .10, to: .20 },
-    rays: 44, ray: { color: '#eddbb4', from: .10, to: .24 },
+    figures: 5, figure: { color: '#241705', belly: 4.4, from: .12, to: .24 },
+    rays: 52, ray: { color: '#eddbb4', from: .12, to: .28 },
   },
   {
     // Black walnut: long streaky figure that swings across the board, and the
