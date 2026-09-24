@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { clampPoint } from '../tools/geometry'
-import { createToolMotion } from '../tools/toolMotion'
-import { createDrawingSurface } from '../drawing/drawingSurface'
-import { pressureFor } from '../drawing/chalkSampler'
-import { createBoardStorage, type SaveStatus } from '../drawing/boardStorage'
-import { type HistoryState } from '../drawing/history'
-import { type DrawingStroke } from '../drawing/types'
-import { createBoardPng, downloadBoardPng } from '../drawing/exportPng'
+import { clampPoint } from '../tools/geometry.js'
+import { createToolMotion } from '../tools/toolMotion.js'
+import { createDrawingSurface } from '../drawing/drawingSurface.js'
+import { pressureFor } from '../drawing/chalkSampler.js'
+import { createBoardStorage, type SaveStatus } from '../drawing/boardStorage.js'
+import { type HistoryState } from '../drawing/history.js'
+import { type DrawingStroke } from '../drawing/types.js'
+import { createBoardPng, downloadBoardPng } from '../drawing/exportPng.js'
 import {
   type Activation,
   type Point,
   type Pose,
   type ToolId,
-} from '../tools/types'
+} from '../tools/types.js'
 
 type Controller = {
   select: (id: ToolId, activation: Activation) => void

@@ -1,4 +1,4 @@
-import type { DrawingStroke } from './types'
+import type { DrawingStroke } from './types.js'
 
 export const STORAGE_KEY = 'kimolia:board:v1'
 const MAX_CHARACTERS = 2_000_000

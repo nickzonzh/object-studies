@@ -1,5 +1,5 @@
-import { random } from './random'
-import type { ChalkPoint, DusterStroke } from './types'
+import { random } from './random.js'
+import type { ChalkPoint, DusterStroke } from './types.js'
 
 function feltBrush(brush: HTMLCanvasElement, seed: number) {
   const ctx = brush.getContext('2d')!

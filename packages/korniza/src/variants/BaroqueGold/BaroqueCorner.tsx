@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { masses, folds, cuts, edges, undercuts } from './cornerGeometry'
+import { masses, folds, cuts, edges, undercuts } from './cornerGeometry.js'
 
 /** One geometry library per frame; reflected carving retains world-space light. */
 export function BaroqueCorner() {

@@ -1,0 +1,40 @@
+{
+  "name": "object-studies",
+  "private": true,
+  "type": "module",
+  "description": "Tactile, physical-object React components: Aspro (whiteboard), Kimolia (chalkboard) and Korniza (gallery frames).",
+  "license": "MIT",
+  "workspaces": [
+    "packages/core",
+    "packages/korniza",
+    "packages/kimolia",
+    "packages/aspro"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:packages": "npm run check:package --workspaces --if-present",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:packages"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@napi-rs/canvas": "^1.0.9",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "publint": "^0.3.24",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,4 +1,4 @@
-import type { ChalkPoint } from './types.ts'
+import type { ChalkPoint } from './types.js'
 
 // Clip the travelled segment, rather than pinning outside motion to an edge.
 export function clipSegment(

@@ -1,10 +1,10 @@
-import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold'
-import { ChampagneRococo } from './variants/ChampagneRococo/ChampagneRococo'
-import { CarvedOak } from './variants/CarvedOak/CarvedOak'
-import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut'
-import { EbonisedBlack } from './variants/EbonisedBlack/EbonisedBlack'
-import { ModernBlack } from './variants/ModernBlack/ModernBlack'
-import type { GalleryFrameProps } from './components/GalleryFrame'
+import { BaroqueGold } from './variants/BaroqueGold/BaroqueGold.js'
+import { ChampagneRococo } from './variants/ChampagneRococo/ChampagneRococo.js'
+import { CarvedOak } from './variants/CarvedOak/CarvedOak.js'
+import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut.js'
+import { EbonisedBlack } from './variants/EbonisedBlack/EbonisedBlack.js'
+import { ModernBlack } from './variants/ModernBlack/ModernBlack.js'
+import type { GalleryFrameProps } from './components/GalleryFrame.js'
 
 export type FrameProps = Omit<GalleryFrameProps, 'decoration'>
 const components = {

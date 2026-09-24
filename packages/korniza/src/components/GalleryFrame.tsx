@@ -1,7 +1,7 @@
 import type { CSSProperties, ComponentPropsWithoutRef, ReactNode } from 'react'
 import './gallery-frame.css'
-import { usePointerLight } from './usePointerLight'
-import type { FrameVariant } from '../variants'
+import { usePointerLight } from './usePointerLight.js'
+import type { FrameVariant } from '../variants.js'
 
 export type GalleryFrameProps = ComponentPropsWithoutRef<'div'> & {
   variant: FrameVariant

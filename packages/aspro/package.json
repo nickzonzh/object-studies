@@ -1,28 +1,52 @@
 {
   "name": "aspro",
-  "private": true,
   "version": "0.1.0",
+  "description": "A tactile whiteboard for React: physical markers, a felt eraser and pressure-aware ink on an aluminium-framed board.",
+  "license": "MIT",
+  "author": "Nick <nick@zonnioshunt.com.au>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickzonzh/object-studies.git",
+    "directory": "packages/aspro"
+  },
+  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/aspro#readme",
+  "bugs": "https://github.com/nickzonzh/object-studies/issues",
+  "keywords": [
+    "react",
+    "whiteboard",
+    "drawing",
+    "canvas",
+    "skeuomorphic",
+    "component"
+  ],
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit --pretty false",
-    "preview": "vite preview"
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:package": "publint --strict && attw --pack --profile esm-only"
   },
   "dependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "object-studies-core": "^0.1.0"
   },
-  "devDependencies": {
-    "@napi-rs/canvas": "^1.0.9",
-    "@types/react": "^19.1.16",
-    "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.4",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.7"
-  },
-  "engines": {
-    "node": ">=20"
+  "peerDependencies": {
+    "react": "^19.0.0"
   }
 }

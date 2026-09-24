@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tgz
+*.local
+*.log
+coverage/
+output/
+.playwright-cli/
+test-results/
+playwright-report/
+.npm-cache/
+.DS_Store
+.vscode/*
+__omp_shell(".vscode/extensions.json")
+.idea

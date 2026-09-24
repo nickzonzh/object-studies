@@ -1,5 +1,5 @@
-import { random } from './random.ts'
-import type { ChalkColor, ChalkStamp } from './types.ts'
+import { random } from './random.js'
+import type { ChalkColor, ChalkStamp } from './types.js'
 
 export const chalkColors: Record<ChalkColor, string> = {
   white: '#f3eddc',

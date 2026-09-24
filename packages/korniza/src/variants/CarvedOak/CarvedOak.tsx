@@ -1,4 +1,4 @@
-import { GalleryFrame, type GalleryFrameProps } from '../../components/GalleryFrame'
+import { GalleryFrame, type GalleryFrameProps } from '../../components/GalleryFrame.js'
 import './oak.css'
 
 

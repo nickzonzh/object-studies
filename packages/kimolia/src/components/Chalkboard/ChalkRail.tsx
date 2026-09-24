@@ -1,7 +1,7 @@
-import { ChalkPiece } from './ChalkPiece'
-import { Duster } from './Duster'
+import { ChalkPiece } from './ChalkPiece.js'
+import { Duster } from './Duster.js'
 import { useRef, type HTMLAttributes } from 'react'
-import { toolLabels, type Activation, type ToolId } from '../../tools/types'
+import { toolLabels, type Activation, type ToolId } from '../../tools/types.js'
 
 const chalkColors = ['white', 'yellow', 'blue', 'pink'] as const
 
