@@ -61,6 +61,9 @@ export function useBoard({
   const strokes = controlled ?? snapshot.strokes
   // What the handlers and the render loop need to see, without re-binding them.
   const latestRef = useRef({ strokes, labels, onStrokesChange, markers })
+  // The last drawing this board handed out, so a controlled owner echoing it
+  // back is not mistaken for a replacement.
+  const publishedRef = useRef(controlled)
   useEffect(() => {
     latestRef.current = { strokes, labels, onStrokesChange, markers }
   })
@@ -174,6 +177,7 @@ export function useBoard({
   const publish = useCallback((message?: string) => {
     const history = historyRef.current
     const next = snapshotOf(history)
+    publishedRef.current = next.strokes
     setSnapshot(next)
     latestRef.current.onStrokesChange?.(next.strokes)
     const store = storeRef.current
@@ -222,13 +226,15 @@ export function useBoard({
     return () => { storeRef.current = null }
   }, [storageKey])
 
-  // A controlled board follows its prop: a drawing the owner did not accept is
-  // not an undo step, it is a different document.
+  // A controlled board follows its prop. A drawing the owner replaced is a
+  // different document, not an undo step — but the drawings we handed them and
+  // got back unchanged are exactly the ones we already have.
   useEffect(() => {
-    if (!controlled || controlled === snapshot.strokes) return
+    if (!controlled || controlled === publishedRef.current) return
+    publishedRef.current = controlled
     historyRef.current = createGestureHistory<Stroke>(controlled)
     setSnapshot(snapshotOf(historyRef.current))
-  }, [controlled, snapshot.strokes])
+  }, [controlled])
 
   /* ── tools ────────────────────────────────────────────────────────────── */
 
