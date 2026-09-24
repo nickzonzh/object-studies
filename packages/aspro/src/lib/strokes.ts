@@ -205,34 +205,97 @@ function paintStreaks(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bou
   ctx.restore()
 }
 
-function hasRepeatedCoverage(stroke: Stroke) {
-  if (stroke.tool !== 'eraser' || stroke.points.length < 3) return false
-  const minimumTravel = stroke.width * 0.8
-  const proximity = stroke.width * 0.5
-  let segmentStart = 0
-  const travelled: number[] = []
-  for (let i = 0; i < stroke.points.length; i++) {
-    const point = stroke.points[i]
-    if (point.breakBefore) {
-      segmentStart = i
-      travelled.length = 0
+type CellEntry = { x: number; y: number; travel: number; segment: number }
+type RevisitState = {
+  cellSize: number
+  processed: number
+  segment: number
+  travel: number
+  revisited: boolean[]
+  cells: Map<string, CellEntry[]>
+  lastCellTravel: Map<string, number>
+}
+
+const revisitStates = new WeakMap<Stroke, RevisitState>()
+
+const cellKey = (x: number, y: number) => `${Math.floor(x)}:${Math.floor(y)}`
+
+function revisitStateFor(stroke: Stroke) {
+  let state = revisitStates.get(stroke)
+  if (!state) {
+    state = {
+      cellSize: Math.max(1, stroke.width),
+      processed: 0,
+      segment: 0,
+      travel: 0,
+      revisited: [],
+      cells: new Map(),
+      lastCellTravel: new Map(),
     }
+    revisitStates.set(stroke, state)
+  }
+  const minimumTravel = state.cellSize * 0.8
+  const proximity = state.cellSize * 0.5
+  for (let i = state.processed; i < stroke.points.length; i++) {
+    const point = stroke.points[i]
     const previous = stroke.points[i - 1]
-    travelled[i - segmentStart] = i === segmentStart
-      ? 0
-      : travelled[i - segmentStart - 1] + Math.hypot(point.x - previous.x, point.y - previous.y)
-    for (let j = segmentStart; j < i - 1; j++) {
-      if (travelled[i - segmentStart] - travelled[j - segmentStart] < minimumTravel) continue
-      if (Math.hypot(point.x - stroke.points[j].x, point.y - stroke.points[j].y) <= proximity) return true
+    if (i === 0 || point.breakBefore) {
+      if (i > 0) state.segment++
+      state.travel = 0
+    } else {
+      state.travel += Math.hypot(point.x - previous.x, point.y - previous.y)
+    }
+    let revisited = false
+    if (i > 0 && !point.breakBefore) {
+      const cellX = Math.floor(point.x / state.cellSize)
+      const cellY = Math.floor(point.y / state.cellSize)
+      for (let dx = -1; dx <= 1 && !revisited; dx++) {
+        for (let dy = -1; dy <= 1 && !revisited; dy++) {
+          const entries = state.cells.get(`${cellX + dx}:${cellY + dy}`)
+          for (const entry of entries ?? []) {
+            if (entry.segment !== state.segment || state.travel - entry.travel < minimumTravel) continue
+            if (Math.hypot(point.x - entry.x, point.y - entry.y) <= proximity) {
+              revisited = true
+              break
+            }
+          }
+        }
+      }
+    }
+    state.revisited[i] = revisited
+    const key = cellKey(point.x / state.cellSize, point.y / state.cellSize)
+    const entries = state.cells.get(key) ?? []
+    const last = state.lastCellTravel.get(key)
+    if (last === undefined || point.breakBefore || state.travel - last >= state.cellSize * 0.4) {
+      entries.push({ x: point.x, y: point.y, travel: state.travel, segment: state.segment })
+      state.cells.set(key, entries)
+      state.lastCellTravel.set(key, state.travel)
     }
   }
-  return false
+  state.processed = stroke.points.length
+  return state
+}
+
+function paintRevisited(
+  ctx: CanvasRenderingContext2D, stroke: Stroke, state: RevisitState,
+  region: Bounds, from: number,
+) {
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(region.left, region.top, region.right - region.left, region.bottom - region.top)
+  ctx.clip()
+  inkStyle(ctx, stroke)
+  for (let i = Math.max(1, from); i < stroke.points.length; i++) {
+    if (!state.revisited[i] || stroke.points[i].breakBefore) continue
+    paintEraserSegment(ctx, stroke, stroke.points[i - 1], stroke.points[i])
+  }
+  ctx.restore()
 }
 
 // Lift coverage away again. Marker ink keeps a little of the board showing
 // through; the eraser leaves a faint ghost of whatever it passed over, while
 // sustained scrubbing gets a second opaque lift over the revisited path.
-function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds) {
+function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds, from = 1) {
   const { density } = washFor(ctx, stroke)
   const x = region.left, y = region.top, width = region.right - x, height = region.bottom - y
   ctx.save()
@@ -241,12 +304,12 @@ function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds
   ctx.fillRect(x, y, width, height)
   ctx.restore()
   paintStreaks(ctx, stroke, region)
-  if (hasRepeatedCoverage(stroke)) {
+  if (stroke.tool === 'eraser') {
+    const state = revisitStateFor(stroke)
     ctx.save()
     ctx.globalCompositeOperation = 'source-over'
     ctx.globalAlpha = 1
-    paintContact(ctx, stroke)
-    paintRange(ctx, stroke, 1, stroke.points.length)
+    paintRevisited(ctx, stroke, state, region, from)
     ctx.restore()
   }
 }
@@ -330,7 +393,20 @@ function paintContactAt(ctx: CanvasRenderingContext2D, stroke: Stroke, point: Po
   ctx.arc(point.x, point.y, (stroke.tool === 'marker' ? inkWidth(stroke, point) : stroke.width) / 2, 0, Math.PI * 2)
   ctx.fill()
 }
-
+function paintEraserSegment(ctx: CanvasRenderingContext2D, stroke: Stroke, previous: Point, current: Point) {
+  const rotation = Math.abs((current.angle ?? 0) - (previous.angle ?? 0)) * Math.PI / 180 * stroke.width / 2
+  const steps = Math.max(1, Math.ceil(
+    (Math.hypot(current.x - previous.x, current.y - previous.y) + rotation) / Math.max(1, stroke.height! / 8)))
+  for (let step = 1; step <= steps; step++) {
+    const t = step / steps
+    stampEraser(ctx, {
+      x: previous.x + (current.x - previous.x) * t,
+      y: previous.y + (current.y - previous.y) * t,
+      pressure: 0.5,
+      angle: (previous.angle ?? 0) + ((current.angle ?? 0) - (previous.angle ?? 0)) * t,
+    }, stroke)
+  }
+}
 function paintContact(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   paintContactAt(ctx, stroke, stroke.points[0])
 }
@@ -350,18 +426,7 @@ function paintRange(ctx: CanvasRenderingContext2D, stroke: Stroke, from: number,
       continue
     }
     if (stroke.tool === 'eraser' && stroke.height) {
-      const rotation = Math.abs((current.angle ?? 0) - (previous.angle ?? 0)) * Math.PI / 180 * stroke.width / 2
-      const steps = Math.max(1, Math.ceil(
-        (Math.hypot(current.x - previous.x, current.y - previous.y) + rotation) / Math.max(1, stroke.height / 8)))
-      for (let step = 1; step <= steps; step++) {
-        const t = step / steps
-        stampEraser(ctx, {
-          x: previous.x + (current.x - previous.x) * t,
-          y: previous.y + (current.y - previous.y) * t,
-          pressure: 0.5,
-          angle: (previous.angle ?? 0) + ((current.angle ?? 0) - (previous.angle ?? 0)) * t,
-        }, stroke)
-      }
+      paintEraserSegment(ctx, stroke, previous, current)
       continue
     }
     const start = i === 1 || points[i - 2].breakBefore ? previous : midpoint(points[i - 2], previous)
@@ -444,7 +509,6 @@ export function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, covera
   composite(ctx, stroke, coverage, rect)
 }
 
-
 /**
  * Keeps committed ink in its own layer. Appending a stroke paints only that
  * stroke; a live stroke repaints only the box its newest samples touched.
@@ -497,6 +561,7 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
     const ink = settledInk.getContext('2d')!
     boardTransform(ink)
     if (settled === 0) paintContact(ink, stroke)
+    const revisitFrom = Math.max(1, settled - 2)
     paintRange(ink, stroke, settled, stroke.points.length)
     // Segment i draws from points i - 2, so fresh pixels start two samples back.
     const fresh = liveFromScratch
@@ -518,7 +583,7 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
     scratch.drawImage(settledInk, rect.x, rect.y, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height)
     boardTransform(scratch)
     paintTail(scratch, stroke)
-    applyWash(scratch, stroke, dirty)
+    applyWash(scratch, stroke, dirty, revisitFrom)
     paintPools(scratch, stroke)
     composite(canvas.getContext('2d')!, stroke, coverage, rect)
   }

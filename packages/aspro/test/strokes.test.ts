@@ -146,6 +146,19 @@ test('a wipe ghosts once, but scrubbing or three passes make it transparent', ()
   assert.equal(alpha(repeated, 200, 100), 0, 'Three separate passes clear their path')
 })
 
+test('a scrub only clears the path that is revisited', () => {
+  const board = canvas(400, 240)
+  context(board).fillRect(0, 0, 400, 240)
+  paint(board, eraser([
+    point(100, 120, 0.5, 0),
+    point(300, 120, 0.5, 0),
+    point(300, 190, 0.5, 0),
+    point(300, 120, 0.5, 0),
+  ]))
+  assert.ok(alpha(board, 100, 120) > 3, 'A once-wiped start keeps its ghost')
+  assert.equal(alpha(board, 300, 120), 0, 'The revisited end is fully lifted')
+})
+
 test('an active stroke painted sample by sample matches its committed replay', () => {
   withDocument()
   const live = canvas(456, 283)
