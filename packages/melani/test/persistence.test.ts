@@ -4,8 +4,8 @@ import type { StorageLike } from 'object-studies-core'
 import { createBoardPersistence } from '../src/lib/persistence.ts'
 import type { Stroke } from '../src/lib/strokes.ts'
 
-const KEY = 'aspro:whiteboard:v2'
-const LEGACY = 'aspro:whiteboard:v1'
+const KEY = 'melani:whiteboard:v2'
+const LEGACY = 'melani:whiteboard:v1'
 
 const store = (initial: Record<string, string> = {}) => {
   const data = new Map(Object.entries(initial))

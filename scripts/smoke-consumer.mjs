@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const packages = ['core', 'korniza', 'kimolia', 'aspro']
+const packages = ['core', 'korniza', 'kimolia', 'melani']
 const rootManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const dev = rootManifest.devDependencies
 const dir = mkdtempSync(join(tmpdir(), 'object-studies-consumer-'))
@@ -50,13 +50,13 @@ try {
     join(dir, 'ssr.mjs'),
     `import { createElement as h } from 'react'
 import { renderToString } from 'react-dom/server'
-import { Whiteboard } from 'aspro'
+import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, frameVariants } from 'korniza'
 import { Frame as ModernBlack } from 'korniza/modern-black'
 
 const checks = [
-  ['aspro', renderToString(h(Whiteboard, { persistence: { key: 'smoke' } }))],
+  ['melani', renderToString(h(Whiteboard, { persistence: { key: 'smoke' } }))],
   ['kimolia', renderToString(h(Chalkboard, { persistence: { key: 'smoke' } }))],
   ...frameVariants.map(({ variant }) => ['korniza', renderToString(h(Frame, { variant, mat: true, glazing: true }, h(FrameImage, { src: 'a.jpg', alt: 'A' })))]),
   ['korniza', renderToString(h(ModernBlack, null, 'content'))],
@@ -73,11 +73,11 @@ console.log('ssr: ' + checks.length + ' renders ok')
   writeFileSync(
     join(dir, 'consumer.tsx'),
     `import { useRef } from 'react'
-import { Whiteboard, type WhiteboardHandle, type Stroke } from 'aspro'
+import { Whiteboard, type WhiteboardHandle, type Stroke } from 'melani'
 import { Chalkboard, type ChalkboardHandle, type DrawingStroke } from 'kimolia'
 import { Frame, FrameImage, type FrameVariant } from 'korniza'
 import { Frame as WalnutFrame } from 'korniza/dark-walnut'
-import 'aspro/style.css'
+import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
 
@@ -118,10 +118,10 @@ export function Consumer({ variant }: { variant: FrameVariant }) {
     join(dir, 'main.js'),
     `import { createElement as h } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Whiteboard } from 'aspro'
+import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame } from 'korniza'
-import 'aspro/style.css'
+import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
 createRoot(document.getElementById('root')).render([

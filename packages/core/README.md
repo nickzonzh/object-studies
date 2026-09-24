@@ -1,7 +1,7 @@
 # object-studies-core
 
 Framework-agnostic engine shared by the Object Studies boards
-([kimolia](../kimolia), [aspro](../aspro)): the parts of a physical drawing
+([kimolia](../kimolia), [melani](../melani)): the parts of a physical drawing
 surface that have nothing to do with chalk or ink — seeded randomness, tool
 motion, gesture history, replay caching, cooperative scheduling and validated
 persistence.

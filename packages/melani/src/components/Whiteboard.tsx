@@ -31,10 +31,10 @@ export function Whiteboard({
   strokes,
   onStrokesChange,
   persistence = false,
-  exportFileName = 'aspro-board.png',
+  exportFileName = 'melani-board.png',
   showControls = true,
   labels,
-  brand = 'ASPRO',
+  brand = 'MELANI',
   className,
   style,
   ref,
@@ -53,40 +53,40 @@ export function Whiteboard({
   return (
     <div
       ref={rootRef}
-      className={['aspro', activeTool ? 'aspro--holding' : '', showControls ? '' : 'aspro--bare', className].filter(Boolean).join(' ')}
+      className={['melani', activeTool ? 'melani--holding' : '', showControls ? '' : 'melani--bare', className].filter(Boolean).join(' ')}
       style={{ ...TOOL_VARIABLES, ...style }}
       role="group"
       aria-label={text.board}
     >
-      <div className="aspro-object" ref={objectRef} {...objectProps}>
-        <div className="aspro-frame">
-          <span className="aspro-frame-sheen" aria-hidden="true" />
+      <div className="melani-object" ref={objectRef} {...objectProps}>
+        <div className="melani-frame">
+          <span className="melani-frame-sheen" aria-hidden="true" />
           {CORNERS.map((corner) => (
-            <span key={corner} className={`aspro-cap aspro-cap--${corner}`} aria-hidden="true" />
+            <span key={corner} className={`melani-cap melani-cap--${corner}`} aria-hidden="true" />
           ))}
           <div
-            className={`aspro-surface${activeTool ? ' aspro-surface--armed' : ''}`}
+            className={`melani-surface${activeTool ? ' melani-surface--armed' : ''}`}
             ref={surfaceRef}
           >
-            <span className="aspro-gloss" aria-hidden="true" />
+            <span className="melani-gloss" aria-hidden="true" />
             <canvas
               ref={canvasRef}
-              className="aspro-canvas"
+              className="melani-canvas"
               aria-label={text.surface}
               aria-describedby={instructionsId}
               {...surfaceProps}
             />
-            {brand ? <span className="aspro-watermark" aria-hidden="true">{brand}</span> : null}
+            {brand ? <span className="melani-watermark" aria-hidden="true">{brand}</span> : null}
           </div>
         </div>
-        <div className="aspro-tray" role="group" aria-label={text.tools}>
-          <div className="aspro-tray-well">
+        <div className="melani-tray" role="group" aria-label={text.tools}>
+          <div className="melani-tray-well">
             {markers.map((marker) => (
               <button
                 key={marker.id}
                 type="button"
-                className="aspro-slot aspro-slot--marker"
-                data-aspro-slot={marker.id}
+                className="melani-slot melani-slot--marker"
+                data-melani-slot={marker.id}
                 aria-label={marker.label}
                 aria-pressed={activeTool === marker.id}
                 {...slotProps}
@@ -96,8 +96,8 @@ export function Whiteboard({
             ))}
             <button
               type="button"
-              className="aspro-slot aspro-slot--eraser"
-              data-aspro-slot={ERASER_ID}
+              className="melani-slot melani-slot--eraser"
+              data-melani-slot={ERASER_ID}
               aria-label={text.eraser}
               aria-pressed={activeTool === ERASER_ID}
               {...slotProps}
@@ -105,26 +105,26 @@ export function Whiteboard({
               <EraserArt brand={brand} />
             </button>
           </div>
-          <span className="aspro-tray-lip" aria-hidden="true" />
+          <span className="melani-tray-lip" aria-hidden="true" />
         </div>
       </div>
 
       {showControls ? (
-        <div className="aspro-controls" role="group" aria-label={text.actions}>
+        <div className="melani-controls" role="group" aria-label={text.actions}>
           <button type="button" onClick={undo} disabled={!canUndo}>{text.undo}</button>
           <button type="button" onClick={redo} disabled={!canRedo}>{text.redo}</button>
-          <span className="aspro-controls-divider" aria-hidden="true" />
+          <span className="melani-controls-divider" aria-hidden="true" />
           <button type="button" onClick={clear} disabled={!hasMarks}>{text.clear}</button>
           <button type="button" onClick={save}>{text.save}</button>
         </div>
       ) : null}
 
-      <p className="aspro-offscreen" id={instructionsId}>{text.instructions}</p>
-      <p className="aspro-offscreen" role="status">{announcement}</p>
+      <p className="melani-offscreen" id={instructionsId}>{text.instructions}</p>
+      <p className="melani-offscreen" role="status">{announcement}</p>
 
       {tools.map((id) => (
-        <div key={id} className="aspro-flight" data-aspro-flight={id} aria-hidden="true" hidden>
-          <span className="aspro-flight-body">
+        <div key={id} className="melani-flight" data-melani-flight={id} aria-hidden="true" hidden>
+          <span className="melani-flight-body">
             {id === ERASER_ID
               ? <EraserArt brand={brand} />
               : <MarkerArt marker={markers.find((marker) => marker.id === id)!} brand={brand} />}

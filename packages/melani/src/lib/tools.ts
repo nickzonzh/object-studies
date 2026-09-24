@@ -22,14 +22,14 @@ export const ERASER_ART: ToolArt = { width: 94, height: 42, tipX: 47, tipY: 25 }
 
 /** One source of truth: the stylesheet reads these, the motion layer imports them. */
 export const TOOL_VARIABLES = {
-  '--aspro-marker-width': `${MARKER_ART.width}px`,
-  '--aspro-marker-ratio': `${MARKER_ART.width} / ${MARKER_ART.height}`,
-  '--aspro-marker-tip-x': `${MARKER_ART.tipX}px`,
-  '--aspro-marker-tip-y': `${MARKER_ART.tipY}px`,
-  '--aspro-eraser-width': `${ERASER_ART.width}px`,
-  '--aspro-eraser-ratio': `${ERASER_ART.width} / ${ERASER_ART.height}`,
-  '--aspro-eraser-tip-x': `${ERASER_ART.tipX}px`,
-  '--aspro-eraser-tip-y': `${ERASER_ART.tipY}px`,
+  '--melani-marker-width': `${MARKER_ART.width}px`,
+  '--melani-marker-ratio': `${MARKER_ART.width} / ${MARKER_ART.height}`,
+  '--melani-marker-tip-x': `${MARKER_ART.tipX}px`,
+  '--melani-marker-tip-y': `${MARKER_ART.tipY}px`,
+  '--melani-eraser-width': `${ERASER_ART.width}px`,
+  '--melani-eraser-ratio': `${ERASER_ART.width} / ${ERASER_ART.height}`,
+  '--melani-eraser-tip-x': `${ERASER_ART.tipX}px`,
+  '--melani-eraser-tip-y': `${ERASER_ART.tipY}px`,
 } as CSSProperties
 
 export const DEFAULT_MARKERS: readonly Marker[] = [

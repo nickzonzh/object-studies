@@ -6,11 +6,11 @@ import { Whiteboard } from '../src/index.ts'
 // No window, no document, no localStorage: this is the whole point of the test.
 test('the board renders on the server without reaching for the browser', () => {
   const html = renderToString(
-    <Whiteboard persistence={{ key: 'aspro:whiteboard:v2' }} brand="ASPRO" />,
+    <Whiteboard persistence={{ key: 'melani:whiteboard:v2' }} brand="MELANI" />,
   )
-  assert.match(html, /class="aspro[ "]/)
-  assert.match(html, /data-aspro-slot="black"/)
-  assert.match(html, /data-aspro-flight="eraser"/)
+  assert.match(html, /class="melani[ "]/)
+  assert.match(html, /data-melani-slot="black"/)
+  assert.match(html, /data-melani-flight="eraser"/)
   assert.match(html, /<canvas/)
 })
 
@@ -26,5 +26,5 @@ test('a server-rendered board shows the drawing it was given', () => {
   assert.match(html, /aria-label="Tableau blanc"/)
   assert.match(html, /aria-label="Effaceur"/)
   assert.ok(!html.includes('Save PNG'), 'showControls={false} removes the control bar')
-  assert.ok(!html.includes('ASPRO'), 'brand="" removes the printed name')
+  assert.ok(!html.includes('MELANI'), 'brand="" removes the printed name')
 })
