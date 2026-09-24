@@ -1,0 +1,68 @@
+/* F7A: outside → opening. Hard stops describe cut planes, never rounded rolls.
+   7–78% is a broad satin face; the inner step and rabbet occupy the last 22%. */
+.gallery-frame[data-variant='modern-black'] {
+  --frame-width: clamp(12px, 7.885cqw, 41px);
+  --frame-width: round(nearest, clamp(12px, 7.885cqw, 41px), 1px);
+  --profile: #181615 0%, #181615 2%, #4b4540 2%, #38332f 7%,
+    #2b2725 7%, #252220 40%, #211e1c 78%,
+    #3a3531 78%, #3a3531 80%, #181615 80%, #181615 90%,
+    #24211f 90%, #24211f 94%, #0f0e0d 94%, #0f0e0d 100%;
+  --profile-shadow: #121110 0%, #121110 2%, #37322e 2%, #292523 7%,
+    #221f1d 7%, #1f1c1b 40%, #1c1918 78%,
+    #302b28 78%, #302b28 80%, #131211 80%, #131211 90%,
+    #1c1918 90%, #1c1918 94%, #0f0e0d 94%, #0f0e0d 100%;
+  background: #181615;
+  border-radius: 0;
+  /* Existing contact/ambient hierarchy, less spread for a shallow gallery box. */
+  box-shadow: 0 1px 1px #18161566, 1px 4px 4px -2px #18161555,
+    3px 10px 12px -7px #24211e38, 5px 18px 24px -15px #24211e24;
+}
+.gallery-frame[data-variant='modern-black']::after {
+  box-shadow: inset 1px 1px 2px #0f0e0d55, inset -1px -2px 2px #0f0e0d70,
+    inset 0 -3px 4px #0f0e0d20;
+}
+/* Full-length boards keep subtle grain continuous across nine-slice joins. */
+.modern-material { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.modern-board { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; }
+.modern-board--top, .modern-board--bottom {
+  left: 0; right: 0; height: var(--frame-width);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--frame-width)) 100%, var(--frame-width) 100%);
+  background-image: url('./surface.svg'), linear-gradient(to bottom, var(--profile));
+}
+.modern-board--top { top: 0; }
+.modern-board--bottom { bottom: 0; transform: scale(-1); background-image: url('./surface.svg'), linear-gradient(to bottom, var(--profile-shadow)); }
+.modern-board--left, .modern-board--right {
+  top: 0; bottom: 0; width: var(--frame-width);
+  clip-path: polygon(0 0, 100% var(--frame-width), 100% calc(100% - var(--frame-width)), 0 100%);
+  background-image: url('./surface-vertical.svg'), linear-gradient(to right, var(--profile));
+}
+.modern-board--left { left: 0; }
+.modern-board--right { right: 0; transform: scale(-1); background-image: url('./surface-vertical.svg'), linear-gradient(to right, var(--profile-shadow)); }
+/* Low-energy satin response confined to cut edges. No moving face sheen. */
+.modern-material::before, .modern-material::after {
+  content: ''; position: absolute; pointer-events: none;
+  background: radial-gradient(ellipse at var(--light-x) var(--light-y), #e8ded414, #e8ded403 38%, transparent 70%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.modern-material::before { inset: calc(var(--frame-width) * .02); padding: calc(var(--frame-width) * .05); }
+.modern-material::after { inset: calc(var(--frame-width) * .78); padding: calc(var(--frame-width) * .02); }
+@media (prefers-reduced-motion: reduce) {
+  .gallery-frame[data-variant='modern-black'] { --light-x: 26% !important; --light-y: 16% !important; }
+}
+
+/* Fine timber fibres emerge in grazing light; the finish stays quiet elsewhere.
+   The mask follows frame-space light, reversed on the reflected boards. */
+.modern-board::before {
+  content: ''; position: absolute; inset: 0;
+  background: url('./surface.svg') 0 0 / 100% 100% no-repeat;
+  opacity: .8;
+  clip-path: polygon(0 7%, 100% 7%, 100% 78%, 0 78%);
+  mask-image: radial-gradient(ellipse at var(--light-x) var(--light-y), #fff, transparent 68%);
+}
+.modern-board--bottom::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
+.modern-board--left::before, .modern-board--right::before {
+  background-image: url('./surface-vertical.svg');
+  clip-path: polygon(7% 0, 78% 0, 78% 100%, 7% 100%);
+}
+.modern-board--right::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
