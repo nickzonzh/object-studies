@@ -1,4 +1,4 @@
-import { random } from './random.js'
+import { seededRandom } from 'object-studies-core'
 import type { ChalkPoint, ChalkStamp } from './types.js'
 
 export function pressureFor(pointerType: string, pressure: number) {
@@ -14,7 +14,7 @@ export function createChalkSampler(
   seed: number,
   emit: (stamp: ChalkStamp) => void,
 ) {
-  const next = random(seed)
+  const next = seededRandom(seed)
   const spacing = width * 0.18
   let previous: ChalkPoint | null = null
   let remaining = spacing

@@ -1,8 +1,6 @@
-import type { DrawingStroke } from './types.js'
-
-type Action =
-  | { kind: 'draw'; strokes: DrawingStroke[] }
-  | { kind: 'clear'; strokes: DrawingStroke[] }
+type Action<Stroke> =
+  | { kind: 'draw'; strokes: Stroke[] }
+  | { kind: 'clear'; strokes: Stroke[] }
 
 export type HistoryState = {
   hasMarks: boolean
@@ -10,20 +8,35 @@ export type HistoryState = {
   canRedo: boolean
 }
 
-// One action per gesture, even when clipping splits it into several strokes.
-// Clear retains the preceding records; snapshots never duplicate point arrays.
-export function createDrawingHistory(initial: DrawingStroke[] = []) {
+export type GestureHistory<Stroke> = {
+  strokes: () => Stroke[]
+  state: () => HistoryState
+  commit: (gesture: Stroke[]) => void
+  clear: () => void
+  undo: () => void
+  redo: () => void
+}
+
+/**
+ * One action per gesture, even when clipping splits it into several strokes.
+ * Clear retains the preceding records; snapshots never duplicate point arrays.
+ * Strokes are compared by identity, so callers must treat them as immutable
+ * once committed.
+ */
+export function createGestureHistory<Stroke>(
+  initial: readonly Stroke[] = [],
+): GestureHistory<Stroke> {
   let strokes = [...initial]
-  const past: Action[] = []
-  const future: Action[] = []
+  const past: Action<Stroke>[] = []
+  const future: Action<Stroke>[] = []
   return {
     strokes: () => strokes,
-    state: (): HistoryState => ({
+    state: () => ({
       hasMarks: strokes.length > 0,
       canUndo: past.length > 0,
       canRedo: future.length > 0,
     }),
-    commit(gesture: DrawingStroke[]) {
+    commit(gesture: Stroke[]) {
       if (!gesture.length) return
       past.push({ kind: 'draw', strokes: gesture })
       strokes.push(...gesture)

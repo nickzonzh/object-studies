@@ -1,27 +1,36 @@
-import type { DrawingStroke } from './types.js'
-
 export const CHECKPOINT_INTERVAL = 24
 const MAX_BYTES = 32 * 1024 * 1024
 const MAX_IMAGES = 4
 
-type Snapshot = {
-  strokes: DrawingStroke[]
+type Snapshot<Stroke> = {
+  strokes: Stroke[]
   image: HTMLCanvasElement
   checkpoint: boolean
 }
 
-// A few completed raster prefixes accelerate replay; stroke records remain
-// authoritative. Budget excludes the main canvas and the duster's scratch pair.
-export function createReplayCache(canvas: HTMLCanvasElement) {
-  const snapshots: Snapshot[] = []
-  const samePrefix = (snapshot: Snapshot, strokes: DrawingStroke[]) =>
+export type ReplayCache<Stroke> = {
+  /** Stores the canvas as the raster of `strokes`, if it is worth keeping. */
+  capture: (strokes: readonly Stroke[], checkpoint?: boolean) => void
+  /** Paints the longest usable prefix and returns how many strokes it covers. */
+  restore: (strokes: readonly Stroke[]) => number
+  clear: () => void
+}
+
+/**
+ * A few completed raster prefixes accelerate replay; stroke records remain
+ * authoritative. Prefixes match by stroke identity, so a new branch after Undo
+ * or Clear can never reuse an unrelated image. Budget excludes the main canvas
+ * and any scratch surfaces the caller keeps.
+ */
+export function createReplayCache<Stroke>(
+  canvas: HTMLCanvasElement,
+): ReplayCache<Stroke> {
+  const snapshots: Snapshot<Stroke>[] = []
+  const samePrefix = (snapshot: Snapshot<Stroke>, strokes: readonly Stroke[]) =>
     snapshot.strokes.length <= strokes.length &&
     snapshot.strokes.every((stroke, index) => stroke === strokes[index])
-  const release = (snapshot: Snapshot) => {
-    snapshot.image.width = snapshot.image.height = 0
-  }
   return {
-    capture(strokes: DrawingStroke[], checkpoint = false) {
+    capture(strokes, checkpoint = false) {
       if (!strokes.length) return
       const capacity = Math.min(
         MAX_IMAGES,
@@ -63,8 +72,8 @@ export function createReplayCache(canvas: HTMLCanvasElement) {
       ctx.drawImage(canvas, 0, 0)
       snapshots.push({ strokes: [...strokes], image, checkpoint })
     },
-    restore(strokes: DrawingStroke[]) {
-      let best: Snapshot | undefined
+    restore(strokes) {
+      let best: Snapshot<Stroke> | undefined
       for (const snapshot of snapshots) {
         if (
           (!best || snapshot.strokes.length > best.strokes.length) &&
@@ -83,7 +92,8 @@ export function createReplayCache(canvas: HTMLCanvasElement) {
       return best.strokes.length
     },
     clear() {
-      snapshots.forEach(release)
+      for (const snapshot of snapshots)
+        snapshot.image.width = snapshot.image.height = 0
       snapshots.length = 0
     },
   }

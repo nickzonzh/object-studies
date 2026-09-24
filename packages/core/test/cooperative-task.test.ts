@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { createCooperativeTask } from '../src/drawing/cooperativeTask.js'
+import { createCooperativeTask } from '../src/cooperativeTask.js'
 
 function fixture() {
   let now = 0

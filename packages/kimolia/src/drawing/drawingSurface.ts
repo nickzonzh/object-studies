@@ -4,9 +4,13 @@ import { clipSegment } from './clip.js'
 import { createDusterSampler } from './dusterSampler.js'
 import { createDusterRenderer } from './dusterRenderer.js'
 import type { ChalkPoint, DrawingStroke, DrawingTool } from './types.js'
-import { createDrawingHistory, type HistoryState } from './history.js'
-import { createReplayCache, CHECKPOINT_INTERVAL } from './replayCache.js'
-import { createCooperativeTask } from './cooperativeTask.js'
+import {
+  createCooperativeTask,
+  createGestureHistory,
+  createReplayCache,
+  CHECKPOINT_INTERVAL,
+  type HistoryState,
+} from 'object-studies-core'
 
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,
@@ -17,7 +21,7 @@ export function createDrawingSurface(
   const ctx = canvas.getContext('2d')!
   const brushes = createChalkBrushes()
   const duster = createDusterRenderer(canvas)
-  const history = createDrawingHistory(initial)
+  const history = createGestureHistory(initial)
   const cache = createReplayCache(canvas)
   const replayTask = createCooperativeTask(onBusy)
   let gesture: DrawingStroke[] = []

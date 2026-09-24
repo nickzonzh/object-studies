@@ -1,4 +1,8 @@
-export function random(seed: number) {
+/**
+ * mulberry32. Small, fast and stable across engines, so a stroke seed replays
+ * the same grain on every device and in every session.
+ */
+export function seededRandom(seed: number): () => number {
   let value = seed >>> 0
   return () => {
     value = (value + 0x6d2b79f5) | 0
