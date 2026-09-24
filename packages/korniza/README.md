@@ -76,7 +76,7 @@ import { Frame, FrameImage } from 'korniza/carved-oak'
 import 'korniza/style.css'
 ```
 
-The subpath exports the same component under the name `Frame` with its `variant` fixed, plus `FrameImage`, `FrameProps` and `FrameMat`. Subpaths are `korniza/baroque-gold`, `korniza/champagne-rococo`, `korniza/carved-oak`, `korniza/dark-walnut`, `korniza/ebonised-black` and `korniza/modern-black`. The stylesheet is not split: `korniza/style.css` carries all six materials (~105 kB raw, ~31 kB gzipped, textures included).
+The subpath exports the same component under the name `Frame` with its `variant` fixed, plus `FrameImage`, `FrameProps` and `FrameMat`. Subpaths are `korniza/baroque-gold`, `korniza/champagne-rococo`, `korniza/carved-oak`, `korniza/dark-walnut`, `korniza/ebonised-black` and `korniza/modern-black`. The stylesheet is not split: `korniza/style.css` carries all six materials (125 kB raw, 37 kB gzipped, every inlined texture included).
 
 ## Theming
 
