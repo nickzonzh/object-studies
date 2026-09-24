@@ -58,8 +58,11 @@ Versions and changelogs are managed with [Changesets](https://github.com/changes
 2. On `main`, the Release workflow opens a "Version packages" pull request. Merging it publishes
    the changed packages to npm with provenance.
 
-The workflow needs an `NPM_TOKEN` repository secret with publish rights. The very first release can
-also be done locally: `npm login`, then `npm run release`.
+Publishing uses npm trusted publishing: npm accepts releases from this repository's `release.yml`
+workflow, so there is no npm token to store or rotate. Trusted publishing can only be configured on
+a package that already exists, so the very first release is done locally with `npm login`, then
+`npm run release`; after that, each package's npm settings name `nickzonzh/object-studies` and
+`release.yml` as its trusted publisher.
 
 ## License
 

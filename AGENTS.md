@@ -24,9 +24,9 @@ Run `npm run check` before saying you're done. `smoke:consumer` packs the real t
 
 ## Rules
 
-- Packages are ESM-only, target React 19, ship their own types and a single stylesheet, and must keep working with server-side rendering. The SSR tests guard this.
+- Packages are ESM-only, target React 19, ship their own types and a combined stylesheet (korniza also ships one per variant), and must keep working with server-side rendering. The SSR tests guard this.
 - Every user-facing change needs a changeset.
-- Publishing to npm (`npm run release`, or the release workflow with `NPM_TOKEN`) is public and permanent. Only Nick triggers it.
+- Publishing to npm (`npm run release`, or the release workflow via trusted publishing) is public and permanent. Only Nick triggers it.
 - Pushing to `main` redeploys the demo site. Push only when Nick asks.
 - The gallery images in `apps/site/public/gallery` are pre-committed. `apps/site/scripts/build-gallery-images.mjs` calls the Met Museum API, so run it only when asked.
 - Generated textures and assets have a documented generator. Regenerate them that way and never hand-edit them.
