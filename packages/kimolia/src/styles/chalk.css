@@ -1,0 +1,149 @@
+.chalk-set {
+  position: absolute;
+  left: 8%;
+  top: 12px;
+  display: flex;
+  gap: clamp(12px, 2.3vw, 26px);
+  align-items: center;
+}
+.chalk-piece {
+  position: relative;
+  width: clamp(48px, 6.9vw, 76px);
+  height: 13px;
+  filter: drop-shadow(1px 2px 1px #261f19b3);
+  transform: rotate(-3deg);
+}
+.chalk-body {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px 3px 3px 4px;
+  clip-path: polygon(
+    2% 5%,
+    17% 2%,
+    29% 5%,
+    54% 0,
+    78% 3%,
+    96% 0,
+    100% 13%,
+    98% 30%,
+    100% 65%,
+    97% 90%,
+    78% 95%,
+    54% 92%,
+    22% 100%,
+    3% 94%,
+    0 69%,
+    1% 40%,
+    0 16%
+  );
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff1f,
+      #ffffff24 22%,
+      transparent 47%,
+      #342b222b 87%,
+      #30251e38
+    ),
+    var(--chalk-color);
+  box-shadow:
+    inset 3px 0 2px #fff3,
+    inset -3px 0 1px #51453538;
+}
+.chalk-body::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../assets/noise.svg') center / 130px;
+  opacity: 0.24;
+  mix-blend-mode: multiply;
+}
+.chalk-piece--white {
+  --chalk-color: #eee8d5;
+}
+.chalk-piece--yellow {
+  --chalk-color: #dccd7a;
+  width: clamp(44px, 6.1vw, 68px);
+  transform: translateY(1px) rotate(2deg);
+}
+.chalk-piece--blue {
+  --chalk-color: #88aec0;
+  width: clamp(45px, 6.4vw, 71px);
+  transform: rotate(-1.5deg);
+}
+.chalk-piece--pink {
+  --chalk-color: #d39a9e;
+  width: clamp(42px, 5.9vw, 65px);
+  transform: translateY(1px) rotate(4deg);
+}
+.chalk-piece--yellow .chalk-body {
+  clip-path: polygon(
+    3% 1%,
+    38% 5%,
+    67% 0,
+    98% 4%,
+    96% 31%,
+    100% 44%,
+    96% 96%,
+    72% 94%,
+    39% 100%,
+    1% 91%,
+    0 40%
+  );
+}
+.chalk-piece--blue .chalk-body {
+  clip-path: polygon(
+    1% 6%,
+    39% 0,
+    76% 4%,
+    97% 0,
+    100% 21%,
+    96% 40%,
+    98% 94%,
+    61% 100%,
+    26% 95%,
+    2% 100%,
+    0 74%
+  );
+}
+.chalk-piece--pink .chalk-body {
+  clip-path: polygon(
+    0 12%,
+    4% 0,
+    28% 4%,
+    61% 1%,
+    97% 8%,
+    100% 35%,
+    96% 94%,
+    68% 99%,
+    34% 94%,
+    1% 90%,
+    2% 62%
+  );
+}
+@media (max-width: 700px) {
+  .chalk-set {
+    left: 6%;
+    gap: 13px;
+  }
+}
+@media (max-width: 520px) {
+  .chalk-set {
+    top: 10px;
+    left: 5%;
+    gap: clamp(8px, 2.5vw, 13px);
+  }
+  .chalk-piece {
+    width: clamp(29px, 8.7vw, 44px);
+    height: 9px;
+  }
+  .chalk-piece--yellow {
+    width: clamp(26px, 8vw, 40px);
+  }
+  .chalk-piece--blue {
+    width: clamp(28px, 8.3vw, 42px);
+  }
+  .chalk-piece--pink {
+    width: clamp(25px, 7.5vw, 38px);
+  }
+}
