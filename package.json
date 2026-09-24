@@ -17,10 +17,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:packages": "npm run check:package --workspaces --if-present",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:packages"
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:packages",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && npm run check:packages && changeset publish"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
+    "@changesets/cli": "^3.0.3",
     "@napi-rs/canvas": "^1.0.9",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
