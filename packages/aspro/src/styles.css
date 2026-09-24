@@ -1,598 +1,712 @@
-:root {
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #272827;
-  background: #deddd9;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
+/*
+ * Aspro — a tactile whiteboard.
+ *
+ * Every rule is scoped to `.aspro`; nothing here styles the page. The object is
+ * lit from the upper left, so every cast shadow falls down and slightly right
+ * at roughly x:y = 1:2, and tightens where a tool touches the board.
+ *
+ * Sizes inside the object are container units of `.aspro-object`, so the board,
+ * its tray and the tools scale together at any width. Consumers constrain the
+ * height with `--aspro-height`.
+ */
 
-* {
-  box-sizing: border-box;
-}
+.aspro {
+  /* ── theming surface ─────────────────────────────────────────────────── */
+  --aspro-frame-metal: #b2b8bb;
+  --aspro-frame-highlight: #f3f6f7;
+  --aspro-frame-shadow: #767d81;
+  --aspro-frame-edge: #545b5f;
+  --aspro-cap-colour: #565c60;
+  --aspro-board-paper: #f7f8f6;
+  --aspro-board-tint: #e9ece8;
+  --aspro-control-ink: #4e504e;
+  --aspro-control-surface: rgba(246, 245, 242, 0.62);
+  /* Maximum height for the whole component, controls included. */
+  --aspro-height: 100000px;
+  --aspro-max-width: 100%;
 
-html {
-  min-width: 320px;
-  background: #deddd9;
-}
+  /* ── internal geometry ───────────────────────────────────────────────── */
+  --aspro-frame-pad: 1.5cqw;
+  --aspro-radius: max(5px, 0.62cqw);
+  --aspro-cap-size: 2.1cqw;
+  --aspro-tray-inset: 6.5%;
+  --aspro-tray-height: 4.1cqw;
+  --aspro-tray-overlap: 1.1cqw;
+  --aspro-tray-lip: 1.35cqw;
+  --aspro-controls-space: 58px;
+  /* Width ÷ height of the board object with its tray; keep in step with the
+     padding, tray height and overlap above. */
+  --aspro-object-aspect: 1.512;
+  --aspro-light-x: 34%;
+  --aspro-light-y: 14%;
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 52% 14%, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 34rem),
-    linear-gradient(180deg, #e6e5e2 0%, #d8d7d3 100%);
-}
-
-button,
-canvas {
-  -webkit-tap-highlight-color: transparent;
-}
-
-button {
-  font: inherit;
-}
-
-button:focus-visible {
-  outline: 2px solid #2f3434;
-  outline-offset: 3px;
-}
-
-.app-shell {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 48px 0 64px;
-}
-
-.app-header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 0 8px 30px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 11px;
-  font-weight: 760;
-  letter-spacing: 0.22em;
-  color: #686a68;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(30px, 4vw, 54px);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-  font-weight: 620;
-}
-
-.app-note {
-  max-width: 310px;
-  margin: 0 0 3px;
-  color: #696b69;
-  font-size: 14px;
-  line-height: 1.45;
-  text-align: right;
-}
-
-.whiteboard-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  color: var(--aspro-control-ink);
+  font-family: inherit;
 }
 
-.whiteboard {
-  --light-x: 36%;
-  --light-y: 18%;
-  --light-shift: -1px;
-  position: relative;
-  width: 100%;
-  padding: 0 0 46px;
+.aspro--bare {
+  --aspro-controls-space: 0px;
 }
 
-.board-frame {
+/* Board, tray and tools scale from one width, so constraining the height is
+   simply a width cap: the object never grows past the space it was given. */
+.aspro-object {
+  container-type: inline-size;
   position: relative;
-  width: 100%;
-  filter: drop-shadow(0 28px 28px rgba(36, 37, 35, 0.13));
-  padding: clamp(11px, 1.7vw, 20px);
-  border-radius: clamp(12px, 1.6vw, 19px);
+  display: flex;
+  flex-direction: column;
+  width: min(
+    100%,
+    var(--aspro-max-width),
+    calc((var(--aspro-height) - var(--aspro-controls-space)) * var(--aspro-object-aspect))
+  );
+}
+
+/* ── frame: anodised aluminium extrusion ───────────────────────────────── */
+
+.aspro-frame {
+  position: relative;
+  z-index: 1;
+  padding: var(--aspro-frame-pad);
+  border-radius: var(--aspro-radius);
   background:
-    linear-gradient(90deg, rgba(255,255,255,.62), transparent 8%, transparent 90%, rgba(34,35,34,.14)),
-    linear-gradient(180deg, #fafafa 0%, #c9ccca 9%, #8f9391 49%, #dfe1df 83%, #949895 100%);
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03) 0 1.5px,
+      rgba(28, 34, 38, 0.02) 1.5px 3px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0) 5%,
+      rgba(22, 28, 32, 0.07) 94%,
+      rgba(22, 28, 32, 0.2)
+    ),
+    linear-gradient(
+      180deg,
+      var(--aspro-frame-highlight) 0%,
+      color-mix(in srgb, var(--aspro-frame-metal) 64%, white) 4%,
+      var(--aspro-frame-metal) 22%,
+      color-mix(in srgb, var(--aspro-frame-metal) 82%, black) 56%,
+      color-mix(in srgb, var(--aspro-frame-metal) 94%, white) 78%,
+      var(--aspro-frame-shadow) 100%
+    );
   box-shadow:
-    0 2px 1px rgba(255, 255, 255, 0.84) inset,
-    0 -2px 2px rgba(35, 37, 36, 0.26) inset,
-    0 1px 0 rgba(28, 29, 28, 0.35),
-    0 14px 24px rgba(34, 35, 33, 0.12);
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -0.5px 0 rgba(18, 24, 28, 0.5),
+    inset 0 0 0 0.5px rgba(40, 47, 51, 0.35),
+    0.5cqw 1cqw 1.6cqw rgba(24, 29, 33, 0.17),
+    0.1cqw 0.2cqw 0.3cqw rgba(24, 29, 33, 0.13);
   isolation: isolate;
 }
 
-.board-frame::before,
-.board-frame::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.board-frame::before {
-  inset: 1px;
-  border-radius: inherit;
-  border: 1px solid rgba(255,255,255,.58);
-  box-shadow: inset 0 0 0 1px rgba(58,60,59,.12);
-}
-
-.board-frame::after {
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    circle 22rem at var(--light-x) var(--light-y),
-    rgba(255, 255, 255, 0.38),
-    rgba(255, 255, 255, 0.09) 38%,
-    transparent 68%
-  );
-  mix-blend-mode: screen;
-  opacity: .66;
-}
-
-.frame-reflection {
+/* The sharp specular line an extruded, brushed edge throws back. */
+.aspro-frame-sheen {
   position: absolute;
   z-index: 4;
-  left: 7%;
-  right: 7%;
-  top: 3px;
-  height: 4px;
+  left: 3%;
+  right: 3%;
+  top: calc(var(--aspro-frame-pad) * 0.2);
+  height: 0.16cqw;
   pointer-events: none;
   border-radius: 999px;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255,255,255,.18) 16%,
-    rgba(255,255,255,.88) 43%,
-    rgba(255,255,255,.25) 68%,
+    rgba(255, 255, 255, 0.25) 10%,
+    rgba(255, 255, 255, 0.96) calc(var(--aspro-light-x) * 0.75 + 12%),
+    rgba(255, 255, 255, 0.3) 78%,
     transparent
   );
-  transform: translateX(var(--light-shift));
-  opacity: .7;
+  opacity: 0.85;
 }
 
-.board-surface {
+/* Moulded corner caps: matte plastic over the mitre. */
+.aspro-cap {
+  position: absolute;
+  z-index: 3;
+  width: var(--aspro-cap-size);
+  height: var(--aspro-cap-size);
+  pointer-events: none;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--aspro-cap-colour) 62%, white),
+      var(--aspro-cap-colour) 42%,
+      color-mix(in srgb, var(--aspro-cap-colour) 74%, black)
+    );
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22),
+    0 0.08cqw 0.16cqw rgba(20, 24, 27, 0.3);
+}
+
+.aspro-cap--nw {
+  left: 0;
+  top: 0;
+  border-radius: var(--aspro-radius) 0 65% 0;
+}
+
+.aspro-cap--ne {
+  right: 0;
+  top: 0;
+  border-radius: 0 var(--aspro-radius) 0 65%;
+}
+
+.aspro-cap--se {
+  right: 0;
+  bottom: 0;
+  border-radius: 65% 0 var(--aspro-radius) 0;
+}
+
+.aspro-cap--sw {
+  left: 0;
+  bottom: 0;
+  border-radius: 0 65% 0 var(--aspro-radius);
+}
+
+/* ── board surface ─────────────────────────────────────────────────────── */
+
+.aspro-surface {
   position: relative;
   width: 100%;
   aspect-ratio: 1140 / 707;
   overflow: hidden;
-  border-radius: clamp(5px, .75vw, 9px);
+  border-radius: calc(var(--aspro-radius) * 0.5);
   cursor: default;
   background:
-    radial-gradient(ellipse at 32% 12%, rgba(255,255,255,.9), rgba(255,255,255,0) 64%),
-    linear-gradient(160deg, #fbfcfa 0%, #f5f6f3 52%, #eef0ed 100%);
+    radial-gradient(ellipse at 32% 12%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 64%),
+    linear-gradient(160deg, var(--aspro-board-paper) 0%, var(--aspro-board-paper) 46%, var(--aspro-board-tint) 100%);
   box-shadow:
-    inset 0 2px 5px rgba(25, 28, 26, 0.18),
+    inset 0 0.22cqw 0.5cqw rgba(25, 28, 26, 0.24),
     inset 0 0 0 1px rgba(45, 48, 45, 0.22),
-    inset 0 0 38px rgba(86, 92, 86, 0.07);
+    inset 0 0 3cqw rgba(86, 92, 86, 0.07);
 }
 
-.board-surface::after {
+.aspro-surface::after {
   content: "";
   position: absolute;
   inset: 0;
-  pointer-events: none;
   z-index: 3;
-  opacity: .14;
+  pointer-events: none;
+  opacity: 0.14;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
 }
 
-.surface-gloss {
+.aspro-gloss {
   position: absolute;
   z-index: 5;
+  inset: 0;
   pointer-events: none;
-  inset: 0;
+  opacity: 0.7;
   background:
-    radial-gradient(ellipse 56% 34% at var(--light-x) var(--light-y), rgba(255,255,255,.065), transparent 74%),
-    linear-gradient(118deg, transparent 0 31%, rgba(255,255,255,.085) 40%, rgba(255,255,255,.025) 48%, transparent 57% 100%);
-  opacity: .7;
+    radial-gradient(ellipse 56% 34% at var(--aspro-light-x) var(--aspro-light-y), rgba(255, 255, 255, 0.07), transparent 74%),
+    linear-gradient(118deg, transparent 0 31%, rgba(255, 255, 255, 0.085) 40%, rgba(255, 255, 255, 0.025) 48%, transparent 57% 100%);
 }
 
-.board-surface.has-active-tool,
-.board-surface.has-active-tool .drawing-canvas {
-  cursor: none;
-}
-
-.drawing-canvas {
+.aspro-canvas {
   position: absolute;
-  inset: 0;
   z-index: 4;
+  inset: 0;
   width: 100%;
   height: 100%;
   touch-action: none;
   cursor: default;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.board-mark {
+.aspro-surface--armed,
+.aspro-surface--armed .aspro-canvas {
+  cursor: none;
+}
+
+.aspro-watermark {
   position: absolute;
   z-index: 5;
-  right: 18px;
-  bottom: 13px;
-  font-size: clamp(8px, .8vw, 10px);
+  right: 1.6cqw;
+  bottom: 1.2cqw;
+  font-size: max(8px, 0.82cqw);
   font-weight: 780;
-  letter-spacing: .19em;
-  color: rgba(48, 53, 50, .28);
+  letter-spacing: 0.19em;
+  color: rgba(48, 53, 50, 0.26);
   pointer-events: none;
   user-select: none;
 }
 
-.marker-tray {
-  position: absolute;
-  z-index: 8;
-  left: 7%;
-  right: 7%;
-  bottom: -34px;
-  height: 43px;
-  padding: 5px 14px 8px;
-  border-radius: 4px 4px 10px 10px;
-  background:
-    linear-gradient(90deg, rgba(255,255,255,.62), transparent 18%, transparent 82%, rgba(30,31,30,.13)),
-    linear-gradient(180deg, #dfe2e0 0%, #a7aaa8 18%, #d8dad8 54%, #858986 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.8),
-    inset 0 -2px 2px rgba(35,36,35,.24),
-    0 8px 10px rgba(36, 37, 35, .16),
-    0 1px 1px rgba(36, 37, 35, .25);
-}
+/* ── tray: a trough with a front lip the tools sit behind ──────────────── */
 
-.marker-tray::after {
-  content: "";
-  position: absolute;
-  left: 2%;
-  right: 2%;
-  top: 5px;
-  height: 10px;
-  border-radius: 2px 2px 7px 7px;
-  background: linear-gradient(180deg, rgba(66,68,66,.26), rgba(255,255,255,.22));
-  box-shadow: inset 0 2px 3px rgba(30,31,30,.22);
-  pointer-events: none;
-}
-
-.tray-inner {
+.aspro-tray {
   position: relative;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  height: 100%;
+  height: var(--aspro-tray-height);
+  margin: calc(var(--aspro-tray-overlap) * -1) var(--aspro-tray-inset) 0;
+  border-radius: 0 0 calc(var(--aspro-radius) * 1.3) calc(var(--aspro-radius) * 1.3);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0) 6%,
+      rgba(22, 28, 32, 0.08) 93%,
+      rgba(22, 28, 32, 0.22)
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--aspro-frame-metal) 86%, black) 0%,
+      color-mix(in srgb, var(--aspro-frame-metal) 92%, black) 34%,
+      var(--aspro-frame-metal) 74%,
+      var(--aspro-frame-shadow) 100%
+    );
+  box-shadow:
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.45),
+    0.4cqw 0.8cqw 1cqw rgba(24, 29, 33, 0.18),
+    0.08cqw 0.16cqw 0.24cqw rgba(24, 29, 33, 0.22);
 }
 
-.marker-rack {
-  flex: 1;
-  max-width: 502px;
-  min-width: 0;
+/* The channel itself: dark at the back wall, lighter towards the lip. */
+.aspro-tray-well {
+  position: absolute;
+  z-index: 1;
+  inset: calc(var(--aspro-tray-overlap) * 0.4) 1.3cqw 0.25cqw;
   display: flex;
-  align-items: center;
-  gap: clamp(2px, .6vw, 10px);
+  align-items: flex-end;
+  gap: 0.6cqw;
+  border-radius: 0.3cqw 0.3cqw 0 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--aspro-frame-edge) 82%, black) 0%,
+    color-mix(in srgb, var(--aspro-frame-shadow) 88%, black) 34%,
+    color-mix(in srgb, var(--aspro-frame-metal) 74%, black) 76%,
+    color-mix(in srgb, var(--aspro-frame-metal) 96%, black) 100%
+  );
+  box-shadow:
+    inset 0 0.3cqw 0.4cqw rgba(14, 18, 21, 0.6),
+    inset 0 -0.12cqw 0.24cqw rgba(255, 255, 255, 0.16);
 }
 
-.marker-slot,
-.eraser-slot {
+/* Front wall of the trough, drawn over the tools lying in it. */
+.aspro-tray-lip {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--aspro-tray-lip);
+  pointer-events: none;
+  border-radius: 0 0 calc(var(--aspro-radius) * 1.3) calc(var(--aspro-radius) * 1.3);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.42),
+      rgba(255, 255, 255, 0) 6%,
+      rgba(22, 28, 32, 0.07) 93%,
+      rgba(22, 28, 32, 0.2)
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--aspro-frame-metal) 30%, white) 0%,
+      color-mix(in srgb, var(--aspro-frame-metal) 92%, white) 8%,
+      var(--aspro-frame-metal) 38%,
+      color-mix(in srgb, var(--aspro-frame-metal) 70%, black) 84%,
+      color-mix(in srgb, var(--aspro-frame-shadow) 74%, black) 100%
+    );
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -0.5px 0 rgba(18, 24, 28, 0.45),
+    /* The tools stand in the shade of the wall in front of them. */
+    0 -0.3cqw 0.45cqw rgba(14, 18, 21, 0.3);
+}
+
+.aspro-slot {
   position: relative;
-  height: 38px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
   border: 0;
   background: transparent;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.marker-slot {
-  flex: 1;
-  min-width: 0;
-  max-width: 118px;
-  padding: 0;
+.aspro-slot--eraser {
+  flex: 0 1 12%;
 }
 
-.marker-slot .marker-object {
+.aspro-slot:focus-visible {
+  outline: 2px solid var(--aspro-frame-highlight);
+  outline-offset: -2px;
+  border-radius: 0.3cqw;
+}
+
+.aspro-slot .aspro-marker,
+.aspro-slot .aspro-eraser {
   position: absolute;
-  left: 2px;
-  top: 7px;
-  transform: scale(var(--slot-scale, .78));
-  transform-origin: left center;
+  bottom: 0;
   transition: transform 150ms ease;
+  /* Lying on the floor of the channel: a close, tight contact shadow. */
+  filter: drop-shadow(0 0.9cqw 0.7cqw rgba(10, 13, 15, 0.5));
+}
+
+.aspro-slot .aspro-marker {
+  left: 0;
+  width: min(100%, calc(var(--aspro-marker-width) * 0.8));
+  transform: translateY(-0.9cqw);
+}
+
+.aspro-slot .aspro-eraser {
+  right: 0;
+  width: min(100%, calc(var(--aspro-eraser-width) * 0.78));
+  transform: translateY(0.1cqw);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .marker-slot:hover .marker-object {
-    transform: translateY(-2px) scale(var(--slot-scale, .78));
+  .aspro-slot:hover .aspro-marker {
+    transform: translateY(-1.3cqw);
   }
-  .eraser-slot:hover .eraser-object {
-    transform: translateY(-2px) scale(var(--slot-scale, .72));
+
+  .aspro-slot:hover .aspro-eraser {
+    transform: translateY(-0.7cqw);
   }
 }
 
-.eraser-slot {
-  flex: 0 0 86px;
-}
+/* ── marker ────────────────────────────────────────────────────────────── */
 
-.eraser-slot .eraser-object {
-  position: absolute;
-  right: 0;
-  top: 5px;
-  transform: scale(var(--slot-scale, .72));
-  transform-origin: right center;
-  transition: transform 150ms ease;
-}
-
-.marker-object {
+.aspro-marker {
+  container-type: inline-size;
   display: block;
   position: relative;
-  width: 142px;
-  height: 24px;
-  filter: drop-shadow(0 1px .65px rgba(29,30,29,.38)) drop-shadow(1px 2px 1.5px rgba(29,30,29,.16));
+  width: var(--aspro-marker-width);
+  aspect-ratio: var(--aspro-marker-ratio);
+  filter:
+    drop-shadow(0 0.7cqw 0.45cqw rgba(14, 18, 20, 0.42))
+    drop-shadow(0.7cqw 1.4cqw 1cqw rgba(14, 18, 20, 0.22));
 }
 
-.marker-nib {
+.aspro-marker-nib {
   position: absolute;
-  left: -3px;
-  top: 8px;
-  width: 14px;
-  height: 9px;
-  border-radius: 5px 1px 1px 5px;
+  left: -2.113cqw;
+  top: 5.634cqw;
+  width: 9.859cqw;
+  height: 6.338cqw;
+  border-radius: 3.521cqw 0.704cqw 0.704cqw 3.521cqw;
   clip-path: polygon(0 34%, 76% 0, 100% 18%, 100% 82%, 76% 100%, 0 66%);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--marker) 78%, white), var(--marker) 55%, color-mix(in srgb, var(--marker) 80%, black));
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.18);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--aspro-tool-colour) 78%, white),
+    var(--aspro-tool-colour) 55%,
+    color-mix(in srgb, var(--aspro-tool-colour) 80%, black)
+  );
 }
 
-.marker-neck {
+.aspro-marker-neck {
   position: absolute;
-  left: 8px;
-  top: 5px;
-  width: 14px;
-  height: 15px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #d7d8d4, #8f928f 54%, #c6c8c4);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.65), inset 0 -1px 0 rgba(28,29,28,.22);
+  left: 5.634cqw;
+  top: 3.521cqw;
+  width: 9.859cqw;
+  height: 10.563cqw;
+  border-radius: 2.113cqw;
+  background: linear-gradient(180deg, #d9dbd8, #8f928f 54%, #c6c8c4);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -0.5px 0 rgba(28, 29, 28, 0.22);
 }
 
-.marker-barrel {
+.aspro-marker-barrel {
   position: absolute;
-  left: 18px;
-  top: 2px;
-  width: 102px;
-  height: 20px;
-  border-radius: 6px 3px 3px 6px;
+  left: 12.676cqw;
+  top: 1.408cqw;
+  width: 71.831cqw;
+  height: 14.085cqw;
   overflow: hidden;
+  border: 0.5px solid rgba(55, 58, 55, 0.22);
+  border-radius: 4.225cqw 2.113cqw 2.113cqw 4.225cqw;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.44) 15%, transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.44) 15%, transparent 38%),
     linear-gradient(180deg, #ededeb 0%, #c8cbc8 42%, #f0f0ed 72%, #aeb1ae 100%);
-  border: 1px solid rgba(55,58,55,.22);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.8), inset 0 -2px 2px rgba(46,48,46,.12);
+  box-shadow:
+    inset 0 0.5px 0.5px rgba(255, 255, 255, 0.8),
+    inset 0 -1.4cqw 1.4cqw rgba(46, 48, 46, 0.12);
 }
 
-.marker-brand {
+.aspro-marker-brand {
   position: absolute;
-  left: 28px;
-  top: 5px;
-  color: rgba(37,40,38,.54);
-  font-size: 7px;
+  left: 19.718cqw;
+  top: 3.521cqw;
+  color: rgba(37, 40, 38, 0.54);
+  font-size: 4.93cqw;
   font-weight: 840;
-  letter-spacing: .16em;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
 }
 
-.marker-band {
+.aspro-marker-band {
   position: absolute;
-  right: 8px;
+  right: 5.634cqw;
   top: 0;
-  width: 11px;
+  width: 7.746cqw;
   height: 100%;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--marker) 84%, white), var(--marker) 56%, color-mix(in srgb, var(--marker) 80%, black));
-  box-shadow: inset 1px 0 rgba(255,255,255,.2), inset -1px 0 rgba(0,0,0,.12);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--aspro-tool-colour) 84%, white),
+    var(--aspro-tool-colour) 56%,
+    color-mix(in srgb, var(--aspro-tool-colour) 80%, black)
+  );
 }
 
-.marker-cap {
+.aspro-marker-cap {
   position: absolute;
-  left: 117px;
-  top: 1px;
-  width: 25px;
-  height: 22px;
-  border-radius: 2px 7px 7px 2px;
+  left: 82.394cqw;
+  top: 0.704cqw;
+  width: 17.606cqw;
+  height: 15.493cqw;
+  border-radius: 1.408cqw 4.93cqw 4.93cqw 1.408cqw;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.18), transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--marker) 84%, white), var(--marker) 58%, color-mix(in srgb, var(--marker) 82%, black));
-  box-shadow: inset 0 1px rgba(255,255,255,.25), inset 0 -2px rgba(0,0,0,.13);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 38%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--aspro-tool-colour) 84%, white),
+      var(--aspro-tool-colour) 58%,
+      color-mix(in srgb, var(--aspro-tool-colour) 82%, black)
+    );
 }
 
-.marker-cap::after {
+.aspro-marker-cap::after {
   content: "";
   position: absolute;
-  right: 4px;
-  top: 4px;
-  width: 2px;
-  height: 13px;
-  border-radius: 2px;
-  background: rgba(255,255,255,.16);
+  right: 2.817cqw;
+  top: 2.817cqw;
+  width: 1.408cqw;
+  height: 9.155cqw;
+  border-radius: 1.408cqw;
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.eraser-object {
+/* ── eraser ────────────────────────────────────────────────────────────── */
+
+.aspro-eraser {
+  container-type: inline-size;
   display: block;
   position: relative;
-  width: 94px;
-  height: 42px;
-  filter: drop-shadow(0 1px .75px rgba(28,29,28,.34)) drop-shadow(1px 3px 2px rgba(28,29,28,.18));
+  width: var(--aspro-eraser-width);
+  aspect-ratio: var(--aspro-eraser-ratio);
+  filter:
+    drop-shadow(0 1.1cqw 0.7cqw rgba(14, 18, 20, 0.4))
+    drop-shadow(1.1cqw 2.2cqw 1.6cqw rgba(14, 18, 20, 0.2));
 }
 
-.eraser-shell {
+.aspro-eraser-shell {
   position: absolute;
-  inset: 0 0 8px 0;
+  inset: 0 0 8.511cqw 0;
   display: grid;
   place-items: center;
-  border-radius: 7px 7px 4px 4px;
+  border: 0.5px solid rgba(50, 52, 50, 0.24);
+  border-radius: 7.447cqw 7.447cqw 4.255cqw 4.255cqw;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.82), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), transparent 26%),
     linear-gradient(180deg, #d8dad6 0%, #aeb2ad 54%, #888c88 100%);
-  border: 1px solid rgba(50,52,50,.24);
-  color: rgba(40,43,40,.45);
-  font-size: 7px;
+  color: rgba(40, 43, 40, 0.45);
+  font-size: 7.447cqw;
   font-weight: 850;
-  letter-spacing: .17em;
-  box-shadow: inset 0 1px rgba(255,255,255,.7), inset 0 -2px rgba(33,34,33,.15);
+  letter-spacing: 0.17em;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -2.1cqw 2.1cqw rgba(33, 34, 33, 0.15);
   transform-origin: center bottom;
   transition: transform 85ms ease-out;
 }
 
-.eraser-felt {
+.aspro-eraser-felt {
   position: absolute;
   z-index: -1;
-  left: 5px;
-  right: 5px;
+  left: 5.319cqw;
+  right: 5.319cqw;
   bottom: 0;
-  height: 14px;
-  border-radius: 2px 2px 5px 5px;
+  height: 14.894cqw;
+  border-radius: 2.128cqw 2.128cqw 5.319cqw 5.319cqw;
   background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px),
     linear-gradient(180deg, #484b49, #252725);
-  box-shadow: inset 0 -1px rgba(255,255,255,.08);
 }
 
-.tool-flight {
+/* ── tools in the air ──────────────────────────────────────────────────── */
+
+.aspro-flight {
   position: fixed;
-  display: none;
-  z-index: 12;
+  z-index: 30;
   left: 0;
   top: 0;
   width: 0;
   height: 0;
-  opacity: 0;
   pointer-events: none;
-  filter: drop-shadow(7px 12px 5px rgba(30,31,30,.22));
+  filter: drop-shadow(6px 12px 6px rgba(26, 30, 33, 0.24));
 }
 
-.tool-flight.is-drawing {
-  filter: drop-shadow(2.25px 3px 1.5px rgba(30,31,30,.27));
+.aspro-flight[hidden] {
+  display: none;
 }
 
-.tool-flight[data-tool-flight="eraser"].is-drawing {
-  filter: drop-shadow(.5px 1px .65px rgba(25,27,25,.4)) drop-shadow(1.5px 2px 1.5px rgba(30,31,30,.2));
-}
-
-.tool-flight.is-drawing .eraser-shell {
-  transform: translateY(1px) scaleY(.965);
-}
-
-.tool-flight .marker-object {
+.aspro-flight-body {
   position: absolute;
-  left: 3px;
-  top: -12.5px;
-  transform-origin: -3px 12.5px;
-  filter: none;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
 }
 
-.tool-flight .eraser-object {
+.aspro-flight .aspro-marker,
+.aspro-flight .aspro-eraser {
   position: absolute;
-  left: -47px;
-  top: -25px;
-  transform-origin: 47px 25px;
   filter: none;
+  transition: none;
 }
 
-.utility-bar {
+.aspro-flight .aspro-marker {
+  left: calc(-1 * var(--aspro-marker-tip-x));
+  top: calc(-1 * var(--aspro-marker-tip-y));
+  width: var(--aspro-marker-width);
+}
+
+.aspro-flight .aspro-eraser {
+  left: calc(-1 * var(--aspro-eraser-tip-x));
+  top: calc(-1 * var(--aspro-eraser-tip-y));
+  width: var(--aspro-eraser-width);
+}
+
+/* Touching the board pulls the shadow in tight underneath. */
+.aspro-flight[data-state="contact"] {
+  filter: drop-shadow(2px 4px 2px rgba(26, 30, 33, 0.3));
+}
+
+.aspro-flight[data-aspro-flight="eraser"][data-state="contact"] {
+  filter:
+    drop-shadow(0.5px 1px 0.75px rgba(22, 26, 28, 0.42))
+    drop-shadow(1.5px 3px 2px rgba(26, 30, 33, 0.2));
+}
+
+.aspro-flight[data-state="contact"] .aspro-eraser-shell {
+  transform: translateY(1.06cqw) scaleY(0.965);
+}
+
+.aspro-flight[data-direct] .aspro-eraser-shell {
+  transition: none;
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+
+.aspro-controls {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 4px;
   min-height: 40px;
   margin-top: 18px;
   padding: 4px;
-  border: 1px solid rgba(55, 57, 54, .12);
+  border: 1px solid rgba(55, 57, 54, 0.12);
   border-radius: 999px;
-  background: rgba(246, 245, 242, .62);
-  box-shadow: inset 0 1px rgba(255,255,255,.7), 0 7px 18px rgba(37,38,36,.055);
+  background: var(--aspro-control-surface);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.7),
+    0 3px 7px rgba(37, 38, 36, 0.055);
   backdrop-filter: blur(12px);
 }
 
-.utility-bar button {
+.aspro-controls button {
   min-height: 32px;
   padding: 0 13px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #4e504e;
+  color: var(--aspro-control-ink);
+  font: inherit;
   font-size: 12px;
   font-weight: 620;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.utility-bar button:disabled {
-  opacity: .32;
+.aspro-controls button:disabled {
+  opacity: 0.32;
   cursor: default;
 }
 
+.aspro-controls button:focus-visible,
+.aspro-slot:focus-visible {
+  outline-offset: 2px;
+}
+
+.aspro-controls button:focus-visible {
+  outline: 2px solid var(--aspro-control-ink);
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .utility-bar button:not(:disabled):hover {
-    background: rgba(255,255,255,.72);
-    color: #242624;
+  .aspro-controls button:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.72);
+    color: color-mix(in srgb, var(--aspro-control-ink) 70%, black);
   }
 }
 
-.utility-divider {
+.aspro-controls-divider {
   width: 1px;
   height: 18px;
   margin: 0 3px;
-  background: rgba(55,57,54,.13);
+  background: rgba(55, 57, 54, 0.13);
 }
 
-.board-hint {
-  margin: 12px 0 0;
-  color: rgba(55,57,54,.52);
-  font-size: 11px;
-  text-align: center;
+.aspro-offscreen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
-@media (max-width: 720px) {
-  .app-shell {
-    width: calc(100% - 12px);
-    padding-top: 24px;
+/* ── input and motion preferences ──────────────────────────────────────── */
+
+@media (pointer: coarse) {
+  .aspro {
+    /* Room under the board for finger-sized targets, and for the controls. */
+    --aspro-controls-space: 80px;
   }
 
-  .app-header {
-    align-items: start;
-    flex-direction: column;
-    gap: 12px;
-    padding-bottom: 20px;
+  /* The target a tool answers to reaches down into the space under the board,
+     never over the drawing surface, and never as far as the controls. */
+  .aspro-slot::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(-1 * max(0px, var(--aspro-frame-pad) - var(--aspro-tray-overlap)));
+    bottom: -34px;
+    min-width: 44px;
   }
 
-  .app-note {
-    text-align: left;
+  .aspro-controls {
+    margin-top: 36px;
   }
 
-  .whiteboard {
-    padding-bottom: 38px;
-  }
-
-  .board-frame {
-    padding: 8px;
-  }
-
-  .marker-tray {
-    left: 4%;
-    right: 4%;
-    bottom: -30px;
-    height: 38px;
-    padding-inline: 8px;
-  }
-
-  .tray-inner { gap: 8px; }
-  .eraser-slot { flex-basis: 58px; }
-
-  .utility-bar {
-    flex-wrap: wrap;
+  .aspro-controls button {
+    min-height: 44px;
+    padding: 0 16px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
+  .aspro,
+  .aspro *,
+  .aspro *::before,
+  .aspro *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
