@@ -1,4 +1,4 @@
-import { random } from './random.js'
+import { seededRandom } from 'object-studies-core'
 import type { ChalkColor, ChalkStamp } from './types.js'
 
 export const chalkColors: Record<ChalkColor, string> = {
@@ -10,7 +10,7 @@ export const chalkColors: Record<ChalkColor, string> = {
 
 export function createChalkBrushes() {
   const size = 48
-  const next = random(0xc4a1c)
+  const next = seededRandom(0xc4a1c)
   const mask = new Float32Array(size * size)
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {

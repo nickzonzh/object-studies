@@ -1,10 +1,10 @@
-import { random } from './random.js'
+import { seededRandom } from 'object-studies-core'
 import type { ChalkPoint, DusterStroke } from './types.js'
 
 function feltBrush(brush: HTMLCanvasElement, seed: number) {
   const ctx = brush.getContext('2d')!
   const image = ctx.createImageData(brush.width, brush.height)
-  const next = random(seed)
+  const next = seededRandom(seed)
   const fibres = Array.from({ length: brush.height }, () =>
     next() < 0.12 ? 0.1 + next() * 0.1 : 0.84 + next() * 0.16,
   )

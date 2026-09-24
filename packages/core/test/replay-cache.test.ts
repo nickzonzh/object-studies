@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { createReplayCache } from '../src/drawing/replayCache.js'
-import type { DrawingStroke } from '../src/drawing/types.js'
+import { createReplayCache } from '../src/replayCache.js'
+
+type Stroke = { id: number }
 
 // Lightweight raster stand-in for cache ownership, prefix and allocation tests.
 // Pixel correctness is checked against actual Canvas replay in browser QA.
@@ -30,13 +31,13 @@ Object.defineProperty(globalThis, 'document', {
   },
   configurable: true,
 })
-const stroke = (id: number) => ({ id }) as DrawingStroke
+const stroke = (id: number): Stroke => ({ id })
 const board = (width = 968, height = 578) => {
   allocated.length = 0
   const main = canvas(width, height)
   return {
     main,
-    cache: createReplayCache(main as unknown as HTMLCanvasElement),
+    cache: createReplayCache<Stroke>(main as unknown as HTMLCanvasElement),
   }
 }
 
@@ -70,7 +71,7 @@ test('new branches and Clear-era drawings never reuse an unrelated prefix', () =
 
 test('recycles recent images, bounds checkpoint count and releases buffers on reset', () => {
   const { main, cache } = board()
-  const strokes: DrawingStroke[] = []
+  const strokes: Stroke[] = []
   for (let i = 1; i <= 100; i++) {
     strokes.push(stroke(i))
     main.content = String(i)

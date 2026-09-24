@@ -70,24 +70,24 @@
 .tool-flight--duster {
   filter: drop-shadow(4px 6px 3px #16221c70);
 }
-.tool-flight.is-contact {
+.tool-flight[data-state='contact'] {
   filter: drop-shadow(1px 1px 0.65px #13201abe);
 }
-.tool-flight.is-ready {
+.tool-flight[data-state='ready'] {
   filter: drop-shadow(1px 3px 1.5px #231b1980);
 }
 .tool-lift {
   transform: translateY(-3px);
   transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.tool-flight.is-ready .tool-lift,
-.tool-flight.is-contact .tool-lift {
+.tool-flight[data-state='ready'] .tool-lift,
+.tool-flight[data-state='contact'] .tool-lift {
   transform: translateY(0);
 }
-.tool-flight.is-contact .tool-lift {
+.tool-flight[data-state='contact'] .tool-lift {
   transition: none;
 }
-.tool-flight.is-direct .tool-lift {
+.tool-flight[data-direct] .tool-lift {
   transition: none;
 }
 .tool-rotation {
@@ -116,14 +116,14 @@
   --felt-scale: 1;
   --contact-offset: 0px;
 }
-.tool-flight--duster:not(.is-ready) {
+.tool-flight--duster:not([data-state='ready']) {
   --face-offset: 4px;
   --face-scale: 1.6;
   --stamp-scale: 0.625;
   --felt-offset: 5px;
   --felt-scale: 0.2;
 }
-.tool-flight--duster.is-contact {
+.tool-flight--duster[data-state='contact'] {
   --contact-offset: 1px;
 }
 .tool-flight .duster-handle {
@@ -142,9 +142,9 @@
 .tool-flight .duster-felt {
   transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.tool-flight.is-direct .duster-handle,
-.tool-flight.is-direct .duster-handle span,
-.tool-flight.is-direct .duster-felt {
+.tool-flight[data-direct] .duster-handle,
+.tool-flight[data-direct] .duster-handle span,
+.tool-flight[data-direct] .duster-felt {
   transition: none;
 }
 .put-back {
@@ -237,7 +237,7 @@
     flex-basis: 100%;
     min-height: 15px;
   }
-  .tool-flight--duster:not(.is-ready) {
+  .tool-flight--duster:not([data-state='ready']) {
     --face-offset: 3px;
     --felt-offset: 4px;
   }

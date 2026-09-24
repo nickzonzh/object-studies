@@ -1,8 +1,10 @@
-type Clock = {
+export type CooperativeClock = {
   now: () => number
+  /** Schedules one resumption and returns its canceller. */
   schedule: (callback: () => void) => () => void
 }
-const browserClock: Clock = {
+
+const browserClock: CooperativeClock = {
   now: () => performance.now(),
   schedule(callback) {
     const timer = setTimeout(callback, 0)
@@ -10,13 +12,21 @@ const browserClock: Clock = {
   },
 }
 
-// Keep short replays synchronous. Larger jobs yield between small units of
-// drawing work, allowing input, layout and paint to run without a long freeze.
+export type CooperativeTask = {
+  isBusy: () => boolean
+  cancel: () => void
+  run: (iterator: Iterator<unknown>) => void
+}
+
+/**
+ * Keep short replays synchronous. Larger jobs yield between small units of
+ * drawing work, allowing input, layout and paint to run without a long freeze.
+ */
 export function createCooperativeTask(
   onBusy: (busy: boolean) => void,
-  clock = browserClock,
+  clock: CooperativeClock = browserClock,
   budgetMs = 6,
-) {
+): CooperativeTask {
   let work: Iterator<unknown> | null = null
   let cancelScheduled: (() => void) | null = null
   let generation = 0

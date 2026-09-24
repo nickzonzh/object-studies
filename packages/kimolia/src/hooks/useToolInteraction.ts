@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { clampPoint } from '../tools/geometry.js'
+import {
+  clampPoint,
+  type HistoryState,
+  type PersistenceStatus,
+} from 'object-studies-core'
 import { createToolMotion } from '../tools/toolMotion.js'
 import { createDrawingSurface } from '../drawing/drawingSurface.js'
 import { pressureFor } from '../drawing/chalkSampler.js'
-import { createBoardStorage, type SaveStatus } from '../drawing/boardStorage.js'
-import { type HistoryState } from '../drawing/history.js'
+import { createBoardStorage } from '../drawing/boardStorage.js'
 import { type DrawingStroke } from '../drawing/types.js'
 import { createBoardPng, downloadBoardPng } from '../drawing/exportPng.js'
 import {
@@ -35,7 +38,7 @@ export function useToolInteraction() {
     canUndo: false,
     canRedo: false,
   })
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [saveStatus, setPersistenceStatus] = useState<PersistenceStatus>('idle')
   const [rendering, setRendering] = useState(false)
   const [exportStatus, setExportStatus] = useState<
     'idle' | 'exporting' | 'error'
@@ -45,7 +48,7 @@ export function useToolInteraction() {
     const board = boardRef.current!
     const surface = surfaceRef.current!
     const motion = createToolMotion(board, overlayRef.current!)
-    const storage = createBoardStorage(() => window.localStorage)
+    const storage = createBoardStorage('kimolia:board:v1')
     const restored = storage.load()
     let saveTimer: ReturnType<typeof setTimeout> | undefined
     let pendingSave: DrawingStroke[] | null = null
@@ -56,25 +59,25 @@ export function useToolInteraction() {
       if (pendingSave === null) return
       const status = storage.save(pendingSave)
       pendingSave = null
-      if (!disposed) setSaveStatus(status)
+      if (!disposed) setPersistenceStatus(status)
     }
     const drawing = createDrawingSurface(
       canvasRef.current!,
       (state, strokes) => {
         setHistory(state)
-        setSaveStatus('saving')
+        setPersistenceStatus('saving')
         pendingSave = strokes
         clearTimeout(saveTimer)
         saveTimer = setTimeout(flushSave, 250)
       },
-      restored.strokes,
+      restored.value ?? [],
       (busy) => {
         surface.setAttribute('aria-busy', String(busy))
         setRendering(busy)
       },
     )
     setHistory(drawing.state())
-    setSaveStatus(restored.status)
+    setPersistenceStatus(restored.status)
     const parkedDuster = board.querySelector<HTMLElement>(
       '[data-slot="duster"] .duster',
     )!
