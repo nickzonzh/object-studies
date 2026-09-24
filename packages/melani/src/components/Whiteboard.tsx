@@ -42,7 +42,7 @@ export function Whiteboard({
   const text = { ...DEFAULT_LABELS, ...labels }
   const instructionsId = useId()
   const {
-    rootRef, objectRef, surfaceRef, canvasRef, objectProps, surfaceProps, slotProps,
+    rootRef, objectRef, surfaceRef, lightRef, sheenRef, canvasRef, objectProps, surfaceProps, slotProps,
     activeTool, announcement, canUndo, canRedo, hasMarks, undo, redo, clear, save,
   } = useBoard({
     markers, defaultStrokes, strokes, onStrokesChange, persistence,
@@ -60,7 +60,7 @@ export function Whiteboard({
     >
       <div className="melani-object" ref={objectRef} {...objectProps}>
         <div className="melani-frame">
-          <span className="melani-frame-sheen" aria-hidden="true" />
+          <span className="melani-frame-sheen" ref={sheenRef} aria-hidden="true" />
           {CORNERS.map((corner) => (
             <span key={corner} className={`melani-cap melani-cap--${corner}`} aria-hidden="true" />
           ))}
@@ -68,7 +68,7 @@ export function Whiteboard({
             className={`melani-surface${activeTool ? ' melani-surface--armed' : ''}`}
             ref={surfaceRef}
           >
-            <span className="melani-gloss" aria-hidden="true" />
+            <span className="melani-gloss" ref={lightRef} aria-hidden="true" />
             <canvas
               ref={canvasRef}
               className="melani-canvas"
