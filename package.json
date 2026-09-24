@@ -8,7 +8,8 @@
     "packages/core",
     "packages/korniza",
     "packages/kimolia",
-    "packages/aspro"
+    "packages/aspro",
+    "apps/site"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
@@ -17,10 +18,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:packages": "npm run check:package --workspaces --if-present",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:packages",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:packages && npm run smoke:consumer",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build && npm run check:packages && changeset publish"
+    "release": "npm run build && npm run check:packages && changeset publish",
+    "dev:site": "npm run build --workspace object-studies-core --workspace korniza --workspace kimolia --workspace aspro && npm run dev --workspace object-studies-site",
+    "smoke:consumer": "node scripts/smoke-consumer.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

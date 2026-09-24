@@ -1,0 +1,66 @@
+# The Object Studies
+
+Open-source React components that behave like the physical things they are named after.
+
+| Package | What it is | |
+| --- | --- | --- |
+| [`kimolia`](packages/kimolia) | κιμωλία, chalk. A slate chalkboard in an oak frame, with textured chalk and a felt duster. | `npm install kimolia` |
+| [`aspro`](packages/aspro) | άσπρο, white. An aluminium-framed whiteboard with four markers and an eraser in the tray. | `npm install aspro` |
+| [`korniza`](packages/korniza) | κορνίζα, frame. Six dimensional gallery frames for images or any React content, with an optional mat and glazing. | `npm install korniza` |
+
+Live demo: https://nickzonzh.github.io/object-studies/
+
+```tsx
+import { Chalkboard } from 'kimolia'
+import 'kimolia/style.css'
+
+export function Lesson() {
+  return <Chalkboard persistence={{ key: 'lesson-board' }} />
+}
+```
+
+Every package is ESM-only, targets React 19, ships its own types and one stylesheet, and
+renders on the server. The two boards share an engine,
+[`object-studies-core`](packages/core), which is installed automatically.
+
+## Repository layout
+
+```
+packages/core      object-studies-core: tool motion, gesture history, validated persistence
+packages/kimolia   chalkboard
+packages/aspro     whiteboard
+packages/korniza   gallery frames
+apps/site          the demo site, built from the packages exactly as npm users get them
+```
+
+Each package has `src/` (the library), `demo/` (its own development page) and `test/`.
+
+## Development
+
+Requires Node 24 (see `.nvmrc`).
+
+```sh
+npm ci
+npm run dev --workspace kimolia   # a package's demo page (also aspro, korniza)
+npm run dev:site                  # build the packages, then run the demo site
+npm run check                     # lint, typecheck, test, build, package lint, consumer smoke test
+```
+
+`npm run check` ends with `smoke:consumer`: it packs every package, installs the tarballs into a
+fresh project, renders all three components on the server, type-checks a consumer with
+`moduleResolution: nodenext` and bundles a browser consumer with Vite.
+
+## Releasing
+
+Versions and changelogs are managed with [Changesets](https://github.com/changesets/changesets).
+
+1. Describe each user-facing change with `npm run changeset` and commit the generated file.
+2. On `main`, the Release workflow opens a "Version packages" pull request. Merging it publishes
+   the changed packages to npm with provenance.
+
+The workflow needs an `NPM_TOKEN` repository secret with publish rights. The very first release can
+also be done locally: `npm login`, then `npm run release`.
+
+## License
+
+[MIT](LICENSE)
