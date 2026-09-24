@@ -5,7 +5,7 @@ import {
 import {
   createGestureHistory, createTapActivation, createToolMotion,
   type ActivationSource, type GestureHistory, type Pose,
-  type TapActivation, type ToolMotion,
+  type TapResult, type ToolMotion,
 } from 'object-studies-core'
 import {
   BOARD_WIDTH, ERASER_HEIGHT, ERASER_WIDTH, boardPoint, createBoardRenderer,
@@ -285,23 +285,22 @@ export function useBoard({
     moveTool(pointer.x, pointer.y, false)
   }, [])
 
-  const tapRef = useRef<TapActivation | null>(null)
-  // Created on first use: a tool is only ever chosen from an event.
-  const tap = () => (tapRef.current ??= createTapActivation(
-    (source, target) => select(target.dataset.asproSlot!, source),
-  ))
+  const [tap] = useState(createTapActivation)
+  const activate = (hit: TapResult | null) => {
+    if (hit) select(hit.target.dataset.asproSlot!, hit.source)
+  }
 
   const slotProps = {
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
       lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      tap().pointerDown(event)
+      tap.pointerDown(event)
     },
     onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
       lastPointerRef.current = { x: event.clientX, y: event.clientY }
-      tap().pointerUp(event)
+      activate(tap.pointerUp(event))
     },
-    onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => tap().pointerCancel(event),
-    onClick: (event: ReactMouseEvent<HTMLButtonElement>) => tap().click(event),
+    onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => tap.pointerCancel(event),
+    onClick: (event: ReactMouseEvent<HTMLButtonElement>) => activate(tap.click(event)),
   }
 
   /* ── drawing ──────────────────────────────────────────────────────────── */

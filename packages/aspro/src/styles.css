@@ -342,6 +342,8 @@
   outline: 2px solid var(--aspro-frame-highlight);
   outline-offset: -2px;
   border-radius: 0.3cqw;
+  /* Legible against both the dark channel and a light tray. */
+  box-shadow: 0 0 0 1px rgba(16, 20, 23, 0.7) inset;
 }
 
 .aspro-slot .aspro-marker,
@@ -637,13 +639,9 @@
   cursor: default;
 }
 
-.aspro-controls button:focus-visible,
-.aspro-slot:focus-visible {
-  outline-offset: 2px;
-}
-
 .aspro-controls button:focus-visible {
   outline: 2px solid var(--aspro-control-ink);
+  outline-offset: 2px;
 }
 
 @media (hover: hover) and (pointer: fine) {

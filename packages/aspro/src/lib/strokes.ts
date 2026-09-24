@@ -1,3 +1,5 @@
+import { seededRandom } from 'object-studies-core'
+
 export type Point = { x: number; y: number; pressure: number; angle?: number }
 export type StrokeTool = 'marker' | 'eraser'
 export type Stroke = {
@@ -175,11 +177,7 @@ function buildWash(ctx: CanvasRenderingContext2D, stroke: Stroke): Wash {
   // Slow, board-anchored density variation: one pass lays ink down unevenly,
   // a crossing pass builds up on top of it.
   const density = ctx.createLinearGradient(0, 0, BOARD_WIDTH, BOARD_HEIGHT * 0.42)
-  let noise = seed
-  const random = () => {
-    noise = Math.imul(noise, 1664525) + 1013904223 | 0
-    return (noise >>> 0) / 4294967296
-  }
+  const random = seededRandom(seed)
   const depth = eraser ? 0.05 : 0.075
   for (let i = 0; i <= 80; i++) density.addColorStop(i / 80, `rgba(0,0,0,${random() * depth})`)
 
