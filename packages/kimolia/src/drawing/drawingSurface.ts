@@ -10,6 +10,7 @@ import type {
   DrawingTool,
 } from './types.js'
 import {
+  backingScale,
   createCooperativeTask,
   createGestureHistory,
   createReplayCache,
@@ -224,15 +225,24 @@ export function createDrawingSurface(
       replay()
     },
     resize(nextWidth: number, nextHeight: number) {
-      const nextDpr = Math.min(window.devicePixelRatio || 1, 3)
-      if (width === nextWidth && height === nextHeight && dpr === nextDpr)
+      const safeWidth = Math.max(1, nextWidth)
+      const safeHeight = Math.max(1, nextHeight)
+      const nextDpr = backingScale(safeWidth, safeHeight, window.devicePixelRatio, 3)
+      // Layout churn often moves a board by a fraction of a pixel without
+      // changing its backing store; that must not tear down and replay the
+      // whole drawing.
+      if (
+        dpr === nextDpr &&
+        Math.round(safeWidth * nextDpr) === Math.round(width * dpr) &&
+        Math.round(safeHeight * nextDpr) === Math.round(height * dpr)
+      )
         return
       end()
       replayTask.cancel()
       cache.clear()
       hold()
-      width = Math.max(1, nextWidth)
-      height = Math.max(1, nextHeight)
+      width = safeWidth
+      height = safeHeight
       dpr = nextDpr
       canvas.width = Math.round(width * dpr)
       canvas.height = Math.round(height * dpr)
