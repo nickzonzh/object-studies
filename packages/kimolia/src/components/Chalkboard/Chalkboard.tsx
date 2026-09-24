@@ -73,6 +73,7 @@ export function Chalkboard({
     surfaceRef,
     overlayRef,
     canvasRef,
+    curtainRef,
     selected,
     hasMarks,
     canUndo,
@@ -187,6 +188,12 @@ export function Chalkboard({
                 className="kimolia-canvas"
                 ref={canvasRef}
                 aria-hidden="true"
+              />
+              <canvas
+                className="kimolia-canvas"
+                ref={curtainRef}
+                aria-hidden="true"
+                hidden
               />
             </div>
           </div>

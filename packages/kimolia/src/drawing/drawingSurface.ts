@@ -21,20 +21,33 @@ export type DrawingSurfaceOptions = {
   onChange: (state: HistoryState, strokes: DrawingStroke[]) => void
   initial?: readonly DrawingStroke[]
   onBusy?: (busy: boolean) => void
+  /**
+   * Shows the last finished picture while a long replay rebuilds the drawing
+   * out of sight, so a reload, resize or undo never plays the chalk back.
+   */
+  curtain?: HTMLCanvasElement | null
   /** Chalk colours resolved from the theme, so marks match the sticks. */
   colors?: Record<ChalkColor, string>
 }
 
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,
-  { onChange, initial = [], onBusy = () => {}, colors }: DrawingSurfaceOptions,
+  { onChange, initial = [], onBusy = () => {}, colors, curtain }: DrawingSurfaceOptions,
 ) {
   const ctx = canvas.getContext('2d')!
   const brushes = createChalkBrushes(colors)
   const duster = createDusterRenderer(canvas)
   let history = createGestureHistory(initial)
   const cache = createReplayCache<DrawingStroke>(canvas)
-  const replayTask = createCooperativeTask(onBusy)
+  const replayTask = createCooperativeTask((busy) => {
+    if (curtain) {
+      curtain.hidden = !busy
+      canvas.style.visibility = busy ? 'hidden' : ''
+    }
+    onBusy(busy)
+  })
+  // Whether the canvas holds a finished picture rather than a replay in progress.
+  let complete = true
   let gesture: DrawingStroke[] = []
   let active: DrawingStroke | null = null
   let sampler: {
@@ -134,7 +147,16 @@ export function createDrawingSurface(
     ctx.resetTransform()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
+  // Copied before pixels are cleared or resized. A replay interrupted by another
+  // keeps the curtain it already had instead of copying its half-drawn canvas.
+  const hold = () => {
+    if (!curtain || !complete) return
+    curtain.width = canvas.width
+    curtain.height = canvas.height
+    curtain.getContext('2d')!.drawImage(canvas, 0, 0)
+  }
   function* replaySteps() {
+    complete = false
     clearPixels()
     const strokes = history.strokes()
     const start = cache.restore(strokes)
@@ -152,8 +174,12 @@ export function createDrawingSurface(
       yield
     }
     cache.capture(strokes)
+    complete = true
   }
-  const replay = () => replayTask.run(replaySteps())
+  const replay = () => {
+    hold()
+    replayTask.run(replaySteps())
+  }
   return {
     state: () => history.state(),
     strokes: () => history.strokes(),
@@ -204,12 +230,13 @@ export function createDrawingSurface(
       end()
       replayTask.cancel()
       cache.clear()
+      hold()
       width = Math.max(1, nextWidth)
       height = Math.max(1, nextHeight)
       dpr = nextDpr
       canvas.width = Math.round(width * dpr)
       canvas.height = Math.round(height * dpr)
-      replay()
+      replayTask.run(replaySteps())
     },
     clear() {
       end()
@@ -217,6 +244,7 @@ export function createDrawingSurface(
       if (!history.state().hasMarks) return
       history.clear()
       clearPixels()
+      complete = true
       changed()
     },
     undo() {
