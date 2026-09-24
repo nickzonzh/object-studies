@@ -1,34 +1,109 @@
-/* 0–12 eased outer bead; 12–52 shallow ogee; 52–65 recessed flute;
-   65–83 fine inner roll; 83–95 ivory-gold slip; 95–100 dark rabbet.
-   Champagne is built around warm ivory catches and rosy bronze cavities. */
+/* Champagne Rococo. The section is the English Rococo arrangement the
+   Gainsborough frame carries, read outward from the wall: 0–8% a leaf-tip back
+   edge, 8–46% the main ogee that takes the running carving and the corner
+   cartouches, 46–52% a fillet and its quirk, 52–74% a sanded frieze, 74–86% a
+   gadrooned sight roll, 86–94% a burnished slip, 94–100% the rabbet.
+
+   Champagne gilt is pale gold over white gesso, not the red-bole gold of the
+   Baroque ogee: the crests run to cream, the flats to a greyed ochre and the
+   hollows to a warm brown that never goes black. The ramp is stepped in small
+   increments through each member so the profile reads as turned surfaces
+   rather than a stack of ruled stripes, and only the burnished members — the
+   back-edge crest, the ogee crown, the sight roll and the slip — are allowed
+   to reach the top of the range. The sanded frieze between them stays matte
+   and deliberately narrow in value; that contrast of burnish against sand is
+   what a Rococo frame is finished for. */
 .korniza-frame[data-variant='champagne-rococo'] {
   --frame-width-base: clamp(12px, 7.500cqw, 39px);
-  --profile: #806044 0%, #bb9660 2%, #eedbb0 5%, #f5e9ca 7%,
-    #d3b477 10%, #95734e 13%, #b39160 17%, #d0b17d 24%,
-    #e1c993 33%, #ebd7a8 38%, #d9bf8a 43%, #b48d60 50%,
-    #8d684b 54%, #aa855e 58%, #b59671 61%, #89674b 65%,
-    #c3a16b 68%, #e7d2a1 73%, #f2e3bb 76%, #d4b981 80%,
-    #9e7b52 84%, #cfb887 87%, #e9d9b3 91%, #c0a47a 94%,
-    #705238 96%, #332a20 100%;
-  --profile-shadow: #71533d 0%, #ab8758 2%, #ddc697 5%, #e7d5b0 7%,
-    #c6a773 10%, #866348 13%, #a38359 17%, #bfa171 24%,
-    #d2b983 33%, #dec998 38%, #c9ae7b 43%, #a78058 50%,
-    #7c5b43 54%, #997654 58%, #a48863 61%, #7a5c44 65%,
-    #b18f5f 68%, #d6be8b 73%, #e3d0a7 76%, #c4a873 80%,
-    #8d6b49 84%, #c0a778 87%, #dac69f 91%, #ae916b 94%,
-    #5d4431 96%, #29231c 100%;
+  --profile:
+    #6a4f37 0%, #8d6c49 .8%, #a98455 1.5%, #c5a774 2.2%,
+    #ddc795 3%, #eadbb2 3.8%, #f3e7c4 4.5%, #ecdcb2 5.2%,
+    #e0cda2 6%, #cbb183 7%, #b18b60 8%, #95724b 9%, #785a3c 10%,
+    #967556 11.5%, #a9885d 13%, #b99a6c 15%, #c8ad7c 17%,
+    #d5ba8b 19%, #ddc79a 21%, #e4cfa5 23%, #e9d6ae 25.5%,
+    #e7d3aa 28%, #e2cca2 30%, #dac398 32.5%, #d2b98c 35%,
+    #c7ac80 37.5%, #bb9f72 40%, #ac9065 42.5%, #9c8058 45%,
+    #7e6244 46.5%, #5c4630 48%, #9c8058 49%, #c6ae83 50%,
+    #a58866 51%, #8d7150 52%, #9d8460 54%, #ab9269 56%,
+    #b2996f 59%, #b79e74 62%, #b59b70 65%, #b09669 68%,
+    #a68a5e 70.5%, #9b8054 73%, #8a7048 74.5%,
+    #6b5237 76%, #987c58 77.5%, #b4996d 79%, #cdb287 80.5%,
+    #ddc99b 82%, #d2bb8d 83.5%, #b99b6f 85%, #94744d 86%, #775b3b 87%,
+    #b9a47e 88%, #ddcda6 89.5%, #eddfbb 91%, #f2e6c8 92%, #ddcba6 93.5%,
+    #c0a67c 95%, #96784f 96%, #5b4329 97.5%, #3c2f23 99%, #241d15 100%;
+  --profile-shadow:
+    #5b4430 0%, #7b5e40 .8%, #937350 1.5%, #ab9168 2.2%,
+    #bfae86 3%, #cbbf9e 3.8%, #d3cbae 4.5%, #cdc09e 5.2%,
+    #c3b391 6%, #b09b77 7%, #9a7c56 8%, #836647 9%, #6d533a 10%,
+    #846a4d 11.5%, #957a55 13%, #a48a62 15%, #b09b71 17%,
+    #bba781 19%, #c2b28e 21%, #c8b998 23%, #cdc0a0 25.5%,
+    #cbbd9c 28%, #c7b795 30%, #c0af8b 32.5%, #b9a581 35%,
+    #b09a76 37.5%, #a58f6a 40%, #99825f 42.5%, #8b7453 45%,
+    #70593f 46.5%, #52422d 48%, #8b7453 49%, #ae9a79 50%,
+    #937d5f 51%, #7e674b 52%, #8c775a 54%, #988361 56%,
+    #9e8a67 59%, #a28e6b 62%, #a08b68 65%, #9b8762 68%,
+    #927c59 70.5%, #88724f 73%, #7a6445 74.5%,
+    #5f4a35 76%, #887257 79.5%, #a08a68 81%, #b3a17f 82.5%,
+    #a9947a 84%, #8d7659 85.5%, #6d5a3f 87%,
+    #a49173 88.5%, #c1b295 90%, #cfc3a6 91.5%, #d3c9ae 92.5%, #c2b394 94%,
+    #a89473 95%, #806848 96.5%, #4f3d29 98%, #342a1f 99%, #1f1a13 100%;
   /* Pale leaf gilding: bright, quick catches over a low ambient. */
   --sheen-hot: #fff6dd52;
   --sheen-warm: #f3dcae2a;
   --sheen-key: #fff3d21a;
   --sheen-shade: #4a331d2e;
-  background: #987550;
+  /* The band carries the whole ornamented face, 8%–86% of the section, and
+     rail.svg draws it. One drawing unit in that tile is one percent of the
+     section, so the tile's members land on the profile's own: a leaf-tip
+     moulding on the upper ogee (10–22%), a ring-punched ground carrying one
+     flowered sprig and one leaf pair on the lower ogee (26–52%), the sanded
+     frieze (52–74%) and a raking gadroon on the sight roll (74–86%). Between
+     the sprigs the ground is deliberately empty: a Rococo rail is mostly
+     articulated gilded ground, which is what keeps it lighter and airier than
+     the Baroque rinceau beside it in the collection.
+
+     Nothing in the tile is opaque. Its masses are translucent light and shade,
+     so the moulding's cross-section, the champagne tone and the travelling
+     pointer light all read through the carving. Leaf pitch, height and width
+     are each unequal, so the repeat cannot resolve into an even stripe; the
+     ring punching is the English way of articulating a gilded ground and the
+     sand is what stops the frieze flaring, both on pitches that divide the
+     tile so they are seamless across the repeat as well as within it. The
+     repeat is 2.08 frame widths and the wear below runs on a period unrelated
+     to it, so no two lengths finish alike.
+
+     The tile carries only a four-line comment of its own: it is inlined into
+     the stylesheet byte for byte, where these lines are stripped. */
+  --band-offset: calc(var(--frame-width) * .08);
+  --band-height: calc(var(--frame-width) * .78);
+  --band-step: calc(var(--frame-width) * 2.08);
+  --band-fade: 4%;
+  --band-wear-step: calc(var(--frame-width) * 3.7);
+  --band: url('./rail.svg');
+  --band-vertical: url('./rail-vertical.svg');
+  /* Age on a champagne frame: the gold rubs back to white gesso on the crests
+     rather than to red clay, dust settles warm in the hollows, and one length
+     keeps the burnish the rest of the rail has lost. */
+  --band-wear:
+    linear-gradient(86deg, #f6efdd00 0 5%, #f6efdd22 13%, #f6efdd00 22%,
+      #2b1f0e00 31%, #2b1f0e18 41%, #2b1f0e00 52%,
+      #fff4d400 60%, #fff4d41c 69%, #fff4d400 78%,
+      #8a684300 84%, #8a68431e 92%, #8a684300 100%);
+  --band-wear-vertical:
+    linear-gradient(176deg, #f6efdd00 0 5%, #f6efdd22 13%, #f6efdd00 22%,
+      #2b1f0e00 31%, #2b1f0e18 41%, #2b1f0e00 52%,
+      #fff4d400 60%, #fff4d41c 69%, #fff4d400 78%,
+      #8a684300 84%, #8a68431e 92%, #8a684300 100%);
+  background: #97795a;
 }
+/* One continuous surface avoids texture discontinuities at rail joins. The
+   mask covers the whole gilded face out to the slip, so burnished lengths and
+   matte ones vary slowly along a rail instead of stopping at the ogee. */
 .korniza-frame[data-variant='champagne-rococo']::before {
   content: '';
   position: absolute;
-  inset: calc(var(--frame-width) * .17);
-  padding: calc(var(--frame-width) * .28);
+  inset: calc(var(--frame-width) * .03);
+  padding: calc(var(--frame-width) * .88);
   z-index: 3;
   pointer-events: none;
   background:
@@ -40,28 +115,70 @@
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
-/* Forty drawing units = one moulding width. Each ornament includes its own
-   tapered rail continuation: fixed scale, no repeated motifs or stretched leaves. */
+/* The fillet at 46–52% is an arris turned on the same gilding, not a ruled
+   line drawn over it: relief, like every other member. */
+.korniza-frame[data-variant='champagne-rococo'] .korniza-bands::before {
+  content: ''; position: absolute; pointer-events: none;
+  inset: calc(var(--frame-width) * .478); padding: calc(var(--frame-width) * .012);
+  background: linear-gradient(112deg, #fff6dc3a, #fff6dc10 32%, #4a341b26 70%, #4a341b3e);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Centre cartouche: 80 units across the band, 200 along it, so it grows with
+   the frame width and keeps its proportion from a 140px frame to a 550px one.
+   It sits above the running tile and below the corners, which lap over it at
+   the mitres exactly as applied carving laps a joint. */
+.korniza-rococo-rail {
+  position: absolute;
+  z-index: 5;
+  overflow: visible;
+  pointer-events: none;
+}
+.korniza-rococo-rail--top, .korniza-rococo-rail--bottom {
+  left: 50%;
+  width: calc(var(--frame-width) * 2.08);
+  height: calc(var(--frame-width) * .8);
+  margin-left: calc(var(--frame-width) * -1.04);
+}
+.korniza-rococo-rail--left, .korniza-rococo-rail--right {
+  top: 50%;
+  height: calc(var(--frame-width) * 2.08);
+  width: calc(var(--frame-width) * .8);
+  margin-top: calc(var(--frame-width) * -1.04);
+}
+.korniza-rococo-rail--top { top: calc(var(--frame-width) * .06); }
+.korniza-rococo-rail--bottom { bottom: calc(var(--frame-width) * .06); transform: scaleY(-1); }
+.korniza-rococo-rail--left { left: calc(var(--frame-width) * .06); }
+.korniza-rococo-rail--right { right: calc(var(--frame-width) * .06); transform: scaleX(-1); }
+
+/* 50 drawing units = one frame width. An absolute square prevents ratio
+   distortion. The sweep wraps the mitre and its tendrils run out over the
+   running band; only the raffle leaves cross the back edge. */
 .korniza-rococo {
   position: absolute;
-  top: calc(var(--frame-width) * -.075);
-  left: calc(var(--frame-width) * -.075);
-  width: calc(var(--frame-width) * 2.85);
-  height: calc(var(--frame-width) * 2.85);
+  top: calc(var(--frame-width) * -.16);
+  left: calc(var(--frame-width) * -.16);
+  width: calc(var(--frame-width) * 3.2);
+  height: calc(var(--frame-width) * 3.2);
   overflow: visible;
   z-index: 6;
   pointer-events: none;
 }
 .korniza-rococo-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
-.korniza-rococo--tr, .korniza-rococo--br { left: auto; right: calc(var(--frame-width) * -.075); }
-.korniza-rococo--bl, .korniza-rococo--br { top: auto; bottom: calc(var(--frame-width) * -.075); }
+.korniza-rococo--tr, .korniza-rococo--br { left: auto; right: calc(var(--frame-width) * -.16); }
+.korniza-rococo--bl, .korniza-rococo--br { top: auto; bottom: calc(var(--frame-width) * -.16); }
 .korniza-rococo--tr { transform: scaleX(-1); }
 .korniza-rococo--bl { transform: scaleY(-1); }
 .korniza-rococo--br { transform: scale(-1); }
-.korniza-rococo__light { opacity: var(--relief-light, .43); }
+/* usePointerLight drives champagne between .22 and .50 for the catch and .06
+   and .18 for the bounce. The resting values are what the pointer produces at
+   the upper left, so the first movement continues the lighting instead of
+   stepping out of it, and reduced motion is pinned to that same rest. */
+.korniza-rococo__light { opacity: var(--relief-light, .48); }
 .korniza-rococo__return { opacity: var(--relief-return, .08); }
-@container (max-width: 300px) { .korniza-rococo__micro { opacity: .25; } }
+@container (max-width: 300px) { .korniza-rococo__micro { opacity: .22; } }
 @media (prefers-reduced-motion: reduce) {
-  .korniza-rococo__light { opacity: .43; }
+  .korniza-rococo__light { opacity: .48; }
   .korniza-rococo__return { opacity: .08; }
 }
