@@ -10,9 +10,9 @@
     #a18148 15%, #b49755 20%, #c3a662 26%, #d8bc78 29%,
     #c0a05a 33%, #ad8746 38%, #8e652f 43%, #5d3a20 47%,
     #3c281b 49%, #654326 52%, #826035 56%, #6b4828 59%, #38251a 61%,
-    #a07a3e 63%, #d0b16b 66%, #efdaa0 68%, #bea061 71%, #98733b 75%, #5b3b21 78%,
-    #bda166 80%, #dfc894 81.5%, #896432 84%, #573720 86%,
-    #ae9055 88%, #c9b27b 90%, #ddca97 92%, #886937 94%,
+    #a07a3e 63%, #cfb069 66%, #e6d094 68%, #bda05f 71%, #96713a 75%, #6a4527 78%,
+    #a5854a 80%, #b99a5c 81.5%, #8a6636 84%, #6b4a28 86%,
+    #a98b52 88%, #c0a771 90%, #cdb787 92%, #866936 94%,
     #402a1c 96%, #241b14 100%;
   --profile-shadow:
     #35251a 0%, #795124 1.5%, #b58c43 3%, #d5b56a 4.5%,
@@ -20,64 +20,53 @@
     #8c6b3b 15%, #a18346 20%, #af914f 26%, #c3a661 29%,
     #ac8b49 33%, #97733b 38%, #7d5429 43%, #4e301c 47%,
     #302118 49%, #50351f 52%, #694927 56%, #593a23 59%, #302017 61%,
-    #876532 63%, #b99b57 66%, #d9c18a 68%, #ab8c50 71%, #815e2e 75%, #4b301c 78%,
-    #a88a50 80%, #c4ab76 81.5%, #725028 84%, #462d1c 86%,
-    #97793f 88%, #b49c64 90%, #c7b180 92%, #75552d 94%,
+    #876532 63%, #b89a56 66%, #d1b880 68%, #a88a4f 71%, #7f5c2d 75%, #573822 78%,
+    #8f7240 80%, #a3854e 81.5%, #75552d 84%, #563c21 86%,
+    #927544 88%, #a68f5e 90%, #b29c71 92%, #72582d 94%,
     #332318 96%, #1c1712 100%;
   /* Burnished gilding: the brightest specular of the collection. */
   --sheen-hot: #fff3c664;
   --sheen-warm: #f5d99334;
   --sheen-key: #ffeeb81e;
   --sheen-shade: #3a230c3c;
-  /* Gadroon worked along the convex ogee. Three unequal lobes to a tile, cut
-     as light and shade alone so the ogee's own colour and cross-section carry
-     straight through the carving; the grooves close on the shaded side of each
-     lobe and the crests take a soft burnish rather than a specular edge. */
-  --band-offset: calc(var(--frame-width) * .135);
-  --band-height: calc(var(--frame-width) * .245);
-  --band-step: calc(var(--frame-width) * .9);
-  --band-fade: 12%;
-  --band-wear-step: calc(var(--frame-width) * 2.35);
-  --band:
-    linear-gradient(76deg, #fff4d500 0 4%, #fff4d558 15%, #fff4d514 24%, #fff4d500 30%,
-      #fff4d500 36%, #fff4d54e 48%, #fff4d512 58%, #fff4d500 65%,
-      #fff4d500 71%, #fff4d554 82%, #fff4d514 91%, #fff4d500 97%),
-    linear-gradient(76deg, #2b1a086c 0%, #2b1a0822 5%, #2b1a0800 12%,
-      #2b1a0800 19%, #2b1a081e 24%, #2b1a0844 28.5%, #2b1a0870 32%,
-      #2b1a0822 37%, #2b1a0800 44%, #2b1a0800 52%, #2b1a081c 58%, #2b1a0840 63%, #2b1a086a 67%,
-      #2b1a0822 72%, #2b1a0800 79%, #2b1a0800 87%, #2b1a0820 92%, #2b1a0846 96%, #2b1a086c 100%);
-  --band-vertical:
-    linear-gradient(166deg, #fff4d500 0 4%, #fff4d558 15%, #fff4d514 24%, #fff4d500 30%,
-      #fff4d500 36%, #fff4d54e 48%, #fff4d512 58%, #fff4d500 65%,
-      #fff4d500 71%, #fff4d554 82%, #fff4d514 91%, #fff4d500 97%),
-    linear-gradient(166deg, #2b1a086c 0%, #2b1a0822 5%, #2b1a0800 12%,
-      #2b1a0800 19%, #2b1a081e 24%, #2b1a0844 28.5%, #2b1a0870 32%,
-      #2b1a0822 37%, #2b1a0800 44%, #2b1a0800 52%, #2b1a081c 58%, #2b1a0840 63%, #2b1a086a 67%,
-      #2b1a0822 72%, #2b1a0800 79%, #2b1a0800 87%, #2b1a0820 92%, #2b1a0846 96%, #2b1a086c 100%);
-  /* Age, on a period unrelated to the tile so no two lobes finish alike: bole
-     reads through where the gilding has worn off a crest, dust settles in the
-     hollows, and one length keeps the burnish the rest of the rail has lost. */
+  /* The ornamented band covers the convex ogee, 10%–42% of the section, the
+     proportion a Louis XIV rail gives its carving. The tile is a scrolling
+     acanthus rinceau over a punched ground, drawn as translucent light and
+     shade so the moulding's own colour and cross-section carry through it;
+     see rail.svg. Its period is deliberately unrelated to the wear below. */
+  --band-offset: calc(var(--frame-width) * .1);
+  --band-height: calc(var(--frame-width) * .32);
+  --band-step: calc(var(--frame-width) * 1.92);
+  --band-fade: 9%;
+  --band-wear-step: calc(var(--frame-width) * 3.1);
+  --band: url('./rail.svg');
+  --band-vertical: url('./rail-vertical.svg');
+  /* Age, on a period unrelated to the tile so no two lengths finish alike:
+     bole reads through where the gilding has worn off a crest, dust settles in
+     the hollows, and one length keeps the burnish the rest of the rail lost. */
   --band-wear:
-    linear-gradient(84deg, #81432000 0 6%, #81432028 14%, #81432000 23%,
-      #23150800 33%, #2315081c 43%, #23150800 54%,
-      #fff2cc00 61%, #fff2cc1e 70%, #fff2cc00 79%,
-      #8a4a2300 85%, #8a4a2322 93%, #8a4a2300 100%);
+    linear-gradient(84deg, #81432000 0 6%, #81432026 14%, #81432000 23%,
+      #23150800 33%, #2315081a 43%, #23150800 54%,
+      #fff2cc00 61%, #fff2cc1c 70%, #fff2cc00 79%,
+      #8a4a2300 85%, #8a4a2320 93%, #8a4a2300 100%);
   --band-wear-vertical:
-    linear-gradient(174deg, #81432000 0 6%, #81432028 14%, #81432000 23%,
-      #23150800 33%, #2315081c 43%, #23150800 54%,
-      #fff2cc00 61%, #fff2cc1e 70%, #fff2cc00 79%,
-      #8a4a2300 85%, #8a4a2322 93%, #8a4a2300 100%);
+    linear-gradient(174deg, #81432000 0 6%, #81432026 14%, #81432000 23%,
+      #23150800 33%, #2315081a 43%, #23150800 54%,
+      #fff2cc00 61%, #fff2cc1c 70%, #fff2cc00 79%,
+      #8a4a2300 85%, #8a4a2320 93%, #8a4a2300 100%);
   background: #50391f;
 }
 
 /* A single continuous surface avoids texture discontinuities at rail joins.
-   The mask confines leaf variation to the convex high point; neither artwork
-   nor dark channels receive a gilt overlay. */
+   The mask confines the burnish to the moulding between the outer lip and the
+   channel, so the whole gilded face — ornamented band and the flats either
+   side of it — carries one slow, non-repeating variation in tone rather than a
+   run of even stripes. Neither artwork nor dark channels receive an overlay. */
 .korniza-frame[data-variant='baroque-gold']::before {
   content: '';
   position: absolute;
-  inset: calc(var(--frame-width) * .13);
-  padding: calc(var(--frame-width) * .26);
+  inset: calc(var(--frame-width) * .06);
+  padding: calc(var(--frame-width) * .68);
   z-index: 3;
   pointer-events: none;
   /* Static bole sits on a few points of the 29% crown. Two offset soft marks
@@ -93,9 +82,9 @@
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
-/* The gadroon is seated between two hairline fillets, as a carved band is.
-   They too are relief rather than paint, so the fillets read as an arris turned
-   on the same gilding instead of two ruled lines drawn over it. */
+/* The carved band is seated between two hairline fillets, as an ornamented
+   member is. They too are relief rather than paint, so the fillets read as an
+   arris turned on the same gilding instead of two ruled lines drawn over it. */
 .korniza-frame[data-variant='baroque-gold'] .korniza-bands::before,
 .korniza-frame[data-variant='baroque-gold'] .korniza-bands::after {
   content: ''; position: absolute; pointer-events: none;
@@ -104,11 +93,38 @@
   mask-composite: exclude;
 }
 .korniza-frame[data-variant='baroque-gold'] .korniza-bands::before {
-  inset: calc(var(--frame-width) * .118); padding: calc(var(--frame-width) * .018);
+  inset: calc(var(--frame-width) * .082); padding: calc(var(--frame-width) * .016);
 }
 .korniza-frame[data-variant='baroque-gold'] .korniza-bands::after {
-  inset: calc(var(--frame-width) * .382); padding: calc(var(--frame-width) * .016);
+  inset: calc(var(--frame-width) * .428); padding: calc(var(--frame-width) * .015);
 }
+
+/* Centre cartouche: 46 units across the band, 160 along it, so it grows with
+   --frame-width and keeps its proportion from a 140px frame to a 550px one.
+   It sits above the running tile and below the corners, which overlap it at
+   the mitres exactly as carved ornament laps a joint. */
+.korniza-baroque-rail {
+  position: absolute;
+  z-index: 5;
+  overflow: visible;
+  pointer-events: none;
+}
+.korniza-baroque-rail--top, .korniza-baroque-rail--bottom {
+  left: 50%;
+  width: calc(var(--frame-width) * 1.6);
+  height: calc(var(--frame-width) * .46);
+  margin-left: calc(var(--frame-width) * -.8);
+}
+.korniza-baroque-rail--left, .korniza-baroque-rail--right {
+  top: 50%;
+  height: calc(var(--frame-width) * 1.6);
+  width: calc(var(--frame-width) * .46);
+  margin-top: calc(var(--frame-width) * -.8);
+}
+.korniza-baroque-rail--top { top: calc(var(--frame-width) * .03); }
+.korniza-baroque-rail--bottom { bottom: calc(var(--frame-width) * .03); transform: scaleY(-1); }
+.korniza-baroque-rail--left { left: calc(var(--frame-width) * .03); }
+.korniza-baroque-rail--right { right: calc(var(--frame-width) * .03); transform: scaleX(-1); }
 
 /* 50 SVG units = one frame width. An absolute square prevents ratio distortion.
    Roots end on the 29% crown; only the folded heel crosses the opening edge. */

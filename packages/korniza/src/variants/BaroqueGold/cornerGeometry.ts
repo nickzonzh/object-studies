@@ -2,10 +2,13 @@
  * Unequal rail scrolls cradle a diagonal acanthus. No mirrored corner instances.
  * Closed masses are reused for contact relief, body and gilded edge catches. */
 export const masses = [
-  // Horizontal scroll: a broad rolled shoulder dwindles into a buried rail tongue.
-  'M30 31 C42 8 60 5 73 13 C86 21 82 37 70 39 C59 41 52 32 57 25 C61 20 68 23 67 28 C64 25 61 27 63 30 C67 36 76 30 73 24 C68 14 51 20 45 31 C65 45 82 26 94 22 C104 18 112 22 125 15 C117 29 105 27 97 30 C83 36 65 54 45 42 Z',
-  // Left scroll deliberately has a longer neck and tighter return.
-  'M29 33 C9 43 5 62 13 77 C21 90 35 85 37 75 C39 66 31 60 26 64 C22 68 25 73 29 72 C26 69 29 67 31 70 C35 76 26 81 21 75 C12 64 22 49 32 47 C46 65 30 84 25 99 C22 109 24 120 16 132 C20 117 15 111 17 100 C20 83 37 66 27 53 Z',
+  // Horizontal scroll: a broad rolled shoulder dwindles into a rail tongue
+  // that runs a long way out along the band and tapers to a hair, so the
+  // corner hands off to the rinceau instead of stopping at a cut end.
+  'M30 31 C42 8 60 5 73 13 C86 21 82 37 70 39 C59 41 52 32 57 25 C61 20 68 23 67 28 C64 25 61 27 63 30 C67 36 76 30 73 24 C68 14 51 20 45 31 C65 45 82 26 94 22 C104 18 111 23 118 20 C126 17 133 21 142 18 C134 23 128 25 122 24 C112 27 108 24 101 28 C88 33 66 52 45 42 Z',
+  // Left scroll deliberately has a longer neck and tighter return; its tongue
+  // dies into the vertical run the same way.
+  'M29 33 C9 43 5 62 13 77 C21 90 35 85 37 75 C39 66 31 60 26 64 C22 68 25 73 29 72 C26 69 29 67 31 70 C35 76 26 81 21 75 C12 64 22 49 32 47 C46 65 30 84 25 99 C21 111 25 124 19 138 C24 130 19 124 22 116 C20 108 16 104 18 97 C20 82 37 66 27 53 Z',
   // Tucked root leaves: a compact saddle beneath the main diagonal leaf.
   'M31 41 C36 31 45 31 52 34 C57 37 61 34 64 31 C65 39 59 44 52 44 C56 46 58 49 56 52 C49 49 46 52 43 54 C38 51 33 47 31 41 Z',
   'M27 37 C17 42 18 51 24 57 C28 61 26 65 23 68 C32 67 35 62 34 57 C37 61 42 62 46 59 C40 53 44 48 39 44 C35 40 31 39 27 37 Z',
@@ -25,8 +28,8 @@ export const folds = [
   'M39 43 C49 45 57 52 55 59 C52 51 45 52 39 48 Z',
   'M44 29 C52 15 66 13 73 21 C61 17 53 25 50 32 Z',
   'M19 53 C12 65 17 77 24 79 C17 69 22 61 26 57 Z',
-  'M69 43 C85 37 95 25 111 25 C96 28 90 34 80 40 Z',
-  'M29 84 C24 97 18 106 20 116 C17 100 22 94 29 84 Z',
+  'M69 43 C85 37 95 25 111 25 C122 25 130 21 140 19 C128 24 118 28 108 30 C96 33 90 36 80 40 Z',
+  'M29 84 C24 97 18 108 19 126 C15 107 22 94 29 84 Z',
   'M49 36 C55 40 60 37 63 34 C61 43 55 43 49 41 Z',
   'M23 45 C21 53 31 56 29 62 C34 57 29 51 27 47 Z',
   'M36 53 Q39 57 44 58 Q39 60 35 57 Z',
@@ -59,6 +62,6 @@ export const edges = [
   'M15 8 C25 17 26 34 49 50 M33 42 Q44 40 51 49',
   'M44 20 C54 10 67 10 74 17 M79 28 C78 36 73 40 63 38',
   'M12 54 Q7 66 15 77 M24 84 Q37 84 37 73',
-  'M79 38 Q96 22 108 24 M23 96 Q18 106 20 114',
+  'M79 38 Q96 22 108 24 Q122 26 138 19 M23 96 Q18 108 20 130',
   'M50 36 Q57 40 62 35 M23 46 Q22 51 27 55',
 ] as const

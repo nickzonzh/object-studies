@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="311" height="277" viewBox="0 0 311 277" preserveAspectRatio="none">
-  <!-- One continuous nonrepeating field across the frame. Soft, asymmetric
-       changes in leaf tone only: no grain, hard tile boundaries or filters. -->
+  <!-- One continuous nonrepeating field across the whole gilded face. Soft,
+       asymmetric changes in leaf tone only: no grain, hard tile boundaries or
+       filters. The long low ellipses are burnish and wear running with the
+       rails — where a flat has been rubbed brighter or a hollow has gone warm
+       — which is what keeps the broad planes from reading as even stripes. -->
   <defs>
-    <radialGradient id="warm"><stop stop-color="#78482b" stop-opacity=".23"/><stop offset=".45" stop-color="#78482b" stop-opacity=".11"/><stop offset="1" stop-color="#78482b" stop-opacity="0"/></radialGradient>
+    <radialGradient id="warm"><stop stop-color="#78482b" stop-opacity=".21"/><stop offset=".45" stop-color="#78482b" stop-opacity=".1"/><stop offset="1" stop-color="#78482b" stop-opacity="0"/></radialGradient>
     <radialGradient id="pale"><stop stop-color="#e7dab1" stop-opacity=".16"/><stop offset="1" stop-color="#e7dab1" stop-opacity="0"/></radialGradient>
   </defs>
   <ellipse fill="url(#warm)" cx="62" cy="9" rx="48" ry="36"/>
@@ -14,4 +17,10 @@
   <ellipse fill="url(#pale)" cx="8" cy="90" rx="32" ry="58"/>
   <ellipse fill="url(#pale)" cx="308" cy="56" rx="27" ry="37"/>
   <ellipse fill="url(#pale)" cx="263" cy="271" rx="34" ry="24"/>
+  <ellipse fill="url(#pale)" cx="96" cy="14" rx="74" ry="11"/>
+  <ellipse fill="url(#warm)" cx="248" cy="19" rx="58" ry="9"/>
+  <ellipse fill="url(#pale)" cx="19" cy="176" rx="10" ry="63"/>
+  <ellipse fill="url(#warm)" cx="293" cy="112" rx="9" ry="47"/>
+  <ellipse fill="url(#pale)" cx="212" cy="262" rx="66" ry="10"/>
+  <ellipse fill="url(#warm)" cx="70" cy="258" rx="49" ry="8"/>
 </svg>
