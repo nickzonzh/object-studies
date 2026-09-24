@@ -103,17 +103,15 @@ function strokeBounds(stroke: Stroke): Bounds {
 
 /* ── ink texture ────────────────────────────────────────────────────────── */
 
-type Wash = { density: CanvasGradient; streak: CanvasGradient; reach: number; dirX: number; dirY: number }
+type Wash = { density: CanvasGradient }
 
 // Gradients belong to the context that created them; strokes keep theirs for as
 // long as they are being painted onto the same surface.
 const washes = new WeakMap<CanvasRenderingContext2D, WeakMap<Stroke, Wash>>()
 
-const STREAK_PERIOD = 1.3
-// Travel over which the streak direction settles, and the sample ceiling that
-// stops a scribble-in-place from re-deciding it forever.
-const LEAD_REACH = 40
-const LEAD_SAMPLES = 32
+/** Fibre tracks laid across the nib, as a share of the ink's width. */
+const STREAK_LINES = 5
+const STREAK_SPREAD = 0.78
 
 function hash(seed: number, index: number) {
   let value = Math.imul(seed ^ (index * 0x9e3779b1), 2654435761)
@@ -129,94 +127,85 @@ function seedOf(id: string) {
   return seed
 }
 
-type Axis = {
-  dirX: number; dirY: number; locked: boolean
-  /** Samples consulted for the direction, and for the perpendicular spread. */
-  scanned: number
-  extent: number
-  counted: number
-}
-
-const axes = new WeakMap<Stroke, Axis>()
-
-// Travel direction of the stroke's opening, plus how far its samples spread
-// perpendicular to it. Both are extended as the stroke grows and depend only on
-// the samples seen so far, so a live stroke and its replay agree.
-function strokeAxis(stroke: Stroke): Axis {
-  const { points } = stroke
-  let axis = axes.get(stroke)
-  if (!axis) axes.set(stroke, axis = { dirX: 1, dirY: 0, locked: false, scanned: 1, extent: 0, counted: 0 })
-  const first = points[0]
-  while (!axis.locked && axis.scanned < points.length) {
-    const dx = points[axis.scanned].x - first.x, dy = points[axis.scanned].y - first.y
-    const length = Math.hypot(dx, dy)
-    if (length > 0.001) {
-      axis.dirX = dx / length
-      axis.dirY = dy / length
-      axis.counted = 0
-    }
-    axis.locked = length >= LEAD_REACH || axis.scanned >= LEAD_SAMPLES
-    axis.scanned++
-  }
-  for (; axis.counted < points.length; axis.counted++) {
-    const point = points[axis.counted]
-    axis.extent = Math.max(axis.extent,
-      Math.abs((point.x - first.x) * -axis.dirY + (point.y - first.y) * axis.dirX))
-  }
-  return axis
-}
-
-// The streak gradient has to span the stroke's perpendicular spread. Quantised
-// so extending a stroke rebuilds the same bands over a wider span.
-const streakReach = (stroke: Stroke, extent: number) =>
-  Math.min(1536, 2 ** Math.ceil(Math.log2(Math.max(64, extent + padding(stroke) + 8))))
-
-function buildWash(ctx: CanvasRenderingContext2D, stroke: Stroke): Wash {
-  const seed = seedOf(stroke.id)
-  const eraser = stroke.tool === 'eraser'
-  // Slow, board-anchored density variation: one pass lays ink down unevenly,
-  // a crossing pass builds up on top of it.
-  const density = ctx.createLinearGradient(0, 0, BOARD_WIDTH, BOARD_HEIGHT * 0.42)
-  const random = seededRandom(seed)
-  const depth = eraser ? 0.05 : 0.075
-  for (let i = 0; i <= 80; i++) density.addColorStop(i / 80, `rgba(0,0,0,${random() * depth})`)
-
-  // Fine bands parallel to travel: a felt nib drags its fibres along the line.
-  const axis = strokeAxis(stroke)
-  const normalX = -axis.dirY, normalY = axis.dirX
-  const reach = streakReach(stroke, axis.extent)
-  const first = stroke.points[0]
-  const period = eraser ? STREAK_PERIOD * 2 : STREAK_PERIOD
-  const streak = ctx.createLinearGradient(
-    first.x - normalX * reach, first.y - normalY * reach,
-    first.x + normalX * reach, first.y + normalY * reach,
-  )
-  const bands = Math.round((reach * 2) / period)
-  const strength = eraser ? 0.09 : 0.42
-  for (let i = 0; i <= bands; i++) {
-    const value = hash(seed, i - bands / 2) ** 2 * strength + (eraser ? 0 : 0.03)
-    streak.addColorStop(i / bands, `rgba(0,0,0,${value})`)
-  }
-  return { density, streak, reach, dirX: axis.dirX, dirY: axis.dirY }
-}
-
 function washFor(ctx: CanvasRenderingContext2D, stroke: Stroke): Wash {
   let cache = washes.get(ctx)
   if (!cache) washes.set(ctx, cache = new WeakMap())
   const existing = cache.get(stroke)
-  const axis = strokeAxis(stroke)
-  if (existing && existing.dirX === axis.dirX && existing.dirY === axis.dirY
-    && streakReach(stroke, axis.extent) <= existing.reach) return existing
-  const wash = buildWash(ctx, stroke)
+  if (existing) return existing
+  // Slow, board-anchored density variation: one pass lays ink down unevenly,
+  // a crossing pass builds up on top of it.
+  const density = ctx.createLinearGradient(0, 0, BOARD_WIDTH, BOARD_HEIGHT * 0.42)
+  const random = seededRandom(seedOf(stroke.id))
+  const depth = stroke.tool === 'eraser' ? 0.05 : 0.075
+  for (let i = 0; i <= 80; i++) density.addColorStop(i / 80, `rgba(0,0,0,${random() * depth})`)
+  const wash = { density }
   cache.set(stroke, wash)
   return wash
+}
+
+/**
+ * A felt nib drags its fibres along the line it is drawing, so the tracks they
+ * leave run with the stroke, not across it. Each track is a thin line held at a
+ * fixed distance from the centre, lifted out of the coverage it sits on — which
+ * also keeps it inside the ink without any clipping.
+ */
+function paintStreaks(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds) {
+  const { points } = stroke
+  if (points.length < 2) return
+  const seed = seedOf(stroke.id)
+  const eraser = stroke.tool === 'eraser'
+  const across = eraser ? stroke.height ?? stroke.width : stroke.width
+  ctx.save()
+  // One stroked path per track, clipped to the region being repainted: a track
+  // is composited exactly once, so its density cannot depend on how many
+  // samples the pointer happened to deliver.
+  ctx.beginPath()
+  ctx.rect(region.left, region.top, region.right - region.left, region.bottom - region.top)
+  ctx.clip()
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.lineCap = 'butt'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = across * (eraser ? 0.09 : 0.13)
+  // Segments well outside the region are dropped; the break that leaves is
+  // further out than the line is wide, so nothing inside the clip can see it.
+  const margin = across * 1.2
+  for (let track = 0; track < STREAK_LINES; track++) {
+    const offset = ((track + 0.5) / STREAK_LINES - 0.5) * STREAK_SPREAD
+    ctx.strokeStyle = `rgba(0,0,0,${hash(seed, track) ** 1.6 * (eraser ? 0.12 : 0.26) + 0.02})`
+    ctx.beginPath()
+    let drawn = false
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i]
+      const dx = b.x - a.x, dy = b.y - a.y
+      const length = Math.hypot(dx, dy)
+      if (length < 0.01) continue
+      const near = Math.min(a.x, b.x) - margin <= region.right
+        && Math.max(a.x, b.x) + margin >= region.left
+        && Math.min(a.y, b.y) - margin <= region.bottom
+        && Math.max(a.y, b.y) + margin >= region.top
+      if (!near) {
+        drawn = false
+        continue
+      }
+      // Pressure, not the position jitter: where a track sits must not depend
+      // on how finely the path was sampled.
+      const width = eraser ? across : effectiveWidth(stroke, (a.pressure + b.pressure) / 2)
+      const shift = offset * width
+      const nx = (-dy / length) * shift, ny = (dx / length) * shift
+      if (!drawn) ctx.moveTo(a.x + nx, a.y + ny)
+      ctx.lineTo(b.x + nx, b.y + ny)
+      drawn = true
+    }
+    ctx.stroke()
+  }
+  ctx.restore()
 }
 
 // Lift coverage away again. Marker ink keeps a little of the board showing
 // through; the eraser leaves a faint ghost of whatever it passed over, so a
 // second pass over the same place lifts what the first one left behind.
 function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds) {
-  const { density, streak } = washFor(ctx, stroke)
+  const { density } = washFor(ctx, stroke)
   const x = region.left, y = region.top, width = region.right - x, height = region.bottom - y
   ctx.save()
   ctx.globalCompositeOperation = 'destination-out'
@@ -226,21 +215,21 @@ function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds
   }
   ctx.fillStyle = density
   ctx.fillRect(x, y, width, height)
-  ctx.fillStyle = streak
-  ctx.fillRect(x, y, width, height)
   ctx.restore()
+  paintStreaks(ctx, stroke, region)
 }
 
-// The nib rests at both ends of a stroke, so ink pools there.
+// The nib rests where it lands and again where it leaves, so a little more ink
+// sits at both ends — denser where it started, and never a bead with an edge.
 function paintPools(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (stroke.tool !== 'marker') return
   const { points } = stroke
   ctx.save()
-  ctx.globalAlpha = 0.9
   ctx.fillStyle = stroke.color
-  for (const point of [points[0], points[points.length - 1]]) {
+  for (const [index, point] of [points[0], points[points.length - 1]].entries()) {
+    ctx.globalAlpha = index === 0 ? 0.5 : 0.3
     ctx.beginPath()
-    ctx.arc(point.x, point.y, inkWidth(stroke, point) * 0.68, 0, Math.PI * 2)
+    ctx.arc(point.x, point.y, inkWidth(stroke, point) * 0.53, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.restore()
