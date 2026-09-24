@@ -38,7 +38,8 @@ pointer light all carry through the carving.
 
 Band median tracked the moulding it was cut into (Baroque 164 against 169; Oak
 130 against 127), which is the relationship measured in every reference above.
-The Baroque half of this pass is superseded below; the Carved Oak rope stands.
+The Baroque half of this pass is superseded below, and so is the Carved Oak
+rope: see "What the Louis XIII oak pass changed" at the end.
 
 ## What the Louis XIV pass changed
 
@@ -192,3 +193,34 @@ variants as `--grain-straight`, so the stylesheet inlines it once for the two
 blackened frames instead of carrying a near-identical copy in each. Together
 with the redrawn oak and walnut textures that removed 24.7 kB from the four
 timber variants' share of `dist/style.css`.
+
+## What the Louis XIII oak pass changed
+
+| Reference | Source | URL | What it informed |
+| --- | --- | --- | --- |
+| Seventeenth-century frame in carved oak with mouldings, full-size photographs | Antikeo | <https://www.antikeo.com/en/catalog/decorative-objects/old-frames/seventeenth-century-frame-in-carved-oak-with-mouldings-118157> | Re-viewed at full size. The carving is not a narrow rope: it runs continuously along the whole outer torus as dense leaf-and-flower, the wax lies darkest in the recesses, the high points are worn paler, and the carving is the same colour as the plain members. |
+| Lot 105, "a 17th century French Louis XIV convex carved oak frame … with acanthus leaf corners, and an acanthus leaf tip sight edge" | The Frame Blog, antique frame auction | <https://theframeblog.com/tag/cherubs/> | The vocabulary this pass adopts: acanthus corners, a leaf-tip sight edge, carving cut in the oak itself. |
+| Lot 17, "a French Louis XIII carved … oak garland frame; a slender torus with bunched roses & rose leaves, bay leaves & berries" | The Frame Blog, Artcurial | <https://theframeblog.com/tag/artcurial/> | A torus carried as the principal carved member, with leaves and flowerheads running along it. |
+| Frame, oak, carved and gilded, late 17th century (O90984); walnut frame carved with flowers, oak leaves and acanthus (O130678) | Victoria and Albert Museum | <https://collections.vam.ac.uk/item/O90984/> · <https://collections.vam.ac.uk/item/O130678/> | How a running foliate band reads down a whole rail at arm's length: a lumpy rhythm of lit lobes and dark recesses, not individually legible leaves. |
+
+The old section (a quirked torus, a broad domed face and a rope at the sight
+cove) read as a machined bronze moulding. There were three reasons: too many
+narrow members, each with a peaked highlight; a ramp that climbed to cream;
+and no carving that the name promised. The section is now a Louis XIII torus
+frame:
+
+- a torus over 3–42% of the width, carved with a running leaf-and-flower
+  tile (`torus.svg`)
+- a quirk and a plain frieze
+- a leaf-tip ogee at 67.5–85.5% (`leaf-tip.svg`, a second `FrameBands`)
+- a sight bead and the rabbet
+
+Acanthus clasps sit at the corners and the centre of every rail
+(`OakCarving.tsx`). All of the carving comes from one acanthus generator in
+`scripts/generate-carving.mjs`, so the corners, centres and running torus share
+a single hand.
+
+The oak ramp was warmed and its crest held to a pale straw (`#d0b188`), and the
+tone curve was softened (gamma 1.45 against 1.75): waxed timber has a wide
+response, not a narrow peaked one. The pore streaks and ray fleck were made
+heavier, so the plain frieze reads as fibre, not as a smooth graded band.
