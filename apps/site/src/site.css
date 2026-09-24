@@ -127,43 +127,61 @@ a:focus-visible {
   min-width: 0;
 }
 
+.site-toggles {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 28px;
+  font-size: 14px;
+}
+
+.site-toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.site-toggles input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #3f5a46;
+}
+
+/* Each figure spans two rows of a shared subgrid, so captions line up across
+   a row even though ornamented frames stand a little taller. */
 .site-gallery {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(20px, 3vw, 40px);
-  align-items: end;
+  column-gap: clamp(20px, 3vw, 40px);
+  row-gap: clamp(32px, 4vw, 52px);
 }
 
 .site-gallery figure {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  row-gap: 14px;
+  align-items: end;
   margin: 0;
 }
 
 .site-gallery figcaption {
-  margin-top: 14px;
-  font: 12px/1.4 ui-monospace, 'SFMono-Regular', Consolas, monospace;
-  color: #6d6a61;
-}
-
-.site-card {
   display: grid;
-  place-content: center;
-  height: 100%;
-  padding: 12%;
-  background: #f2eee6;
-  text-align: center;
-}
-
-.site-card p {
-  margin: 0;
-  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  font-size: clamp(20px, 2.2vw, 28px);
-}
-
-.site-card .site-card-note {
-  margin-top: 10px;
-  font-family: inherit;
-  font-size: 13px;
+  gap: 2px;
+  align-self: start;
+  font-size: 12px;
   color: #6d6a61;
+}
+
+.site-frame-name {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 18px;
+  color: #2c2b27;
+}
+
+.site-gallery code {
+  font: 11px/1.6 ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
 
 .site-credit {
@@ -191,7 +209,12 @@ a:focus-visible {
   }
 
   .site-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .site-gallery {
     grid-template-columns: 1fr;
-    max-width: 440px;
   }
 }

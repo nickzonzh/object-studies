@@ -1,7 +1,7 @@
 import { Whiteboard } from 'aspro'
 import { Chalkboard } from 'kimolia'
-import { Frame, FrameImage } from 'korniza'
-import type { ReactNode } from 'react'
+import { Frame, FrameImage, frameVariants } from 'korniza'
+import { type ReactNode, useState } from 'react'
 
 const repo = 'https://github.com/nickzonzh/object-studies'
 const asset = (name: string) => `${import.meta.env.BASE_URL}${name}`
@@ -56,31 +56,7 @@ export function App() {
         greek="κορνίζα — frame"
         summary="Six dimensional frames for images or any React content, with an optional bevelled mat and glazing, lit by your pointer."
       >
-        <div className="site-gallery">
-          <figure>
-            <Frame variant="baroque-gold" aspectRatio="3824 / 2999">
-              <FrameImage {...painting} />
-            </Frame>
-            <figcaption>baroque-gold</figcaption>
-          </figure>
-          <figure>
-            <Frame variant="dark-walnut" aspectRatio="3824 / 2999" mat glazing>
-              <FrameImage {...painting} />
-            </Frame>
-            <figcaption>dark-walnut · mat · glazing</figcaption>
-          </figure>
-          <figure>
-            <Frame variant="modern-black" aspectRatio="4 / 5">
-              <div className="site-card">
-                <p>Any content.</p>
-                <p className="site-card-note">
-                  The opening owns the ratio; your content owns everything else.
-                </p>
-              </div>
-            </Frame>
-            <figcaption>modern-black · React children</figcaption>
-          </figure>
-        </div>
+        <KornizaGallery />
         <p className="site-credit">
           <i>Wheat Field with Cypresses</i>, 1889, Vincent van Gogh. The Metropolitan Museum of
           Art, Open Access (CC0).
@@ -123,5 +99,42 @@ function Study({ id, number, name, greek, summary, children }: StudyProps) {
       </div>
       <div className="site-study-stage">{children}</div>
     </section>
+  )
+}
+
+function KornizaGallery() {
+  const [mat, setMat] = useState(false)
+  const [glazing, setGlazing] = useState(false)
+  return (
+    <>
+      <div className="site-toggles">
+        <label>
+          <input type="checkbox" checked={mat} onChange={(event) => setMat(event.target.checked)} />
+          Mat
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={glazing}
+            onChange={(event) => setGlazing(event.target.checked)}
+          />
+          Glazing
+        </label>
+      </div>
+      <div className="site-gallery">
+        {frameVariants.map(({ variant, name, description }) => (
+          <figure key={variant}>
+            <Frame variant={variant} aspectRatio="3824 / 2999" mat={mat} glazing={glazing}>
+              <FrameImage {...painting} />
+            </Frame>
+            <figcaption>
+              <span className="site-frame-name">{name}</span>
+              <span>{description}</span>
+              <code>{variant}</code>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </>
   )
 }
