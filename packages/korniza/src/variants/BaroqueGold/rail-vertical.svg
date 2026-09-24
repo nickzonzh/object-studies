@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="360" viewBox="0 0 60 360" preserveAspectRatio="none">
+  <!-- Generated from rail.svg by scripts/generate-rail.mjs; edit that file. -->
+  <defs>
+    <linearGradient id="gilt" x1="0" y1="0" x2=".3" y2="1">
+      <stop stop-color="#ffe9a2" stop-opacity=".5"/>
+      <stop offset=".28" stop-color="#e2bb66" stop-opacity=".3"/>
+      <stop offset=".58" stop-color="#a8813c" stop-opacity=".28"/>
+      <stop offset=".82" stop-color="#5d3c17" stop-opacity=".48"/>
+      <stop offset="1" stop-color="#2e1c0a" stop-opacity=".6"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fff3cc" stop-opacity=".12"/>
+      <stop offset=".34" stop-color="#3a2410" stop-opacity="0"/>
+      <stop offset="1" stop-color="#26170a" stop-opacity=".32"/>
+    </linearGradient>
+    <pattern id="ground" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M1.6 1.6 4 4M7.6 7.6 10 10M8.8 1.8 10.8 3.8M1.8 8.8 3.8 10.8" fill="none" stroke="#2c1c0a" stroke-opacity=".28" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M.2.2 1.4 1.4M6.2 6.2 7.4 7.4M7.2.4 8.4 1.6M.4 7.2 1.6 8.4" fill="none" stroke="#ffeec4" stroke-opacity=".18" stroke-width="2" stroke-linecap="round"/>
+    </pattern>
+    <g id="mass">
+      <path d="M0 37C18 37 30 20 56 16C84 12 102 28 124 33C146 38 164 30 180 20C198 9 218 4 242 8C266 12 282 26 304 32C324 37 344 37 360 37L360 45C344 45 324 45 304 40C282 34 266 20 242 16C218 12 198 17 180 28C164 38 146 46 124 41C102 36 84 20 56 24C30 28 18 45 0 45Z"/>
+      <path d="M18 50C10 34 22 12 48 6C76 0 100 16 96 36C93 52 72 60 58 51C46 43 48 26 62 22C52 27 51 40 61 44C73 49 86 39 84 27C81 10 56 4 38 16C26 24 20 36 22 50Z"/>
+      <path d="M94 42C96 30 106 18 124 12C136 8 146 12 150 5C151 16 143 21 134 23C146 21 157 15 165 6C165 19 152 29 139 32C150 33 161 30 169 24C165 37 148 43 134 43C124 43 108 47 100 51C94 51 92 46 94 42Z"/>
+      <path d="M98 44C108 32 122 22 138 14C126 30 114 38 104 46Z"/>
+      <path d="M118 36C130 26 144 18 158 10C146 26 132 34 122 40Z"/>
+      <path d="M104 48C116 44 132 46 142 53C148 58 142 60 134 57C124 53 112 51 104 50Z"/>
+      <path d="M186 24C190 34 200 46 216 52C228 57 238 52 244 59C244 48 236 42 226 40C238 42 249 48 257 57C257 44 245 34 232 31C243 30 254 33 262 40C258 27 241 21 227 21C216 21 202 17 196 13C190 13 184 18 186 24Z"/>
+      <path d="M190 22C200 34 214 44 232 52C218 36 206 28 196 20Z"/>
+      <path d="M212 32C224 40 238 48 252 54C240 40 226 33 216 26Z"/>
+      <path d="M288 30C284 18 292 8 304 8C316 8 322 18 318 30C315 40 306 46 300 44C294 42 290 38 288 30Z"/>
+      <path d="M286 32C278 28 272 18 272 8C280 13 286 22 288 28Z"/>
+      <path d="M320 30C328 26 334 17 334 8C326 13 320 21 318 27Z"/>
+      <path d="M330 40C342 34 358 36 368 44C374 49 370 54 362 51C350 47 338 44 330 43Z"/>
+      <path d="M-30 40C-18 34-2 36 8 44C14 49 10 54 2 51C-10 47-22 44-30 43Z"/>
+    </g>
+    <g id="vein">
+      <path d="M22 50C18 32 32 12 56 8M94 44C110 28 132 14 158 6M104 48C118 44 132 47 142 54"/>
+      <path d="M186 22C202 38 226 52 250 58M300 44C300 32 302 20 303 10"/>
+      <path d="M330 42C342 38 354 40 364 46M-30 42C-18 38-6 40 4 46"/>
+    </g>
+  </defs>
+  <g transform="matrix(0 1 1 0 0 0)">
+  <rect width="360" height="60" fill="url(#ground)"/>
+  <use href="#mass" transform="translate(9 11)" fill="#261304" opacity=".3"/>
+  <use href="#mass" transform="translate(4.4 5.6)" fill="#261304" opacity=".56"/>
+  <use href="#mass" transform="translate(-4 -5)" fill="#ffe6a4" opacity=".52"/>
+  <use href="#mass" fill="url(#gilt)" stroke="#2e1b07" stroke-opacity=".4" stroke-width="4" opacity=".97"/>
+  <use href="#vein" transform="translate(2.6 3.4)" fill="none" stroke="#4a2d10" stroke-opacity=".36" stroke-width="5.5" stroke-linecap="round"/>
+  <use href="#vein" transform="translate(-2.2 -2.8)" fill="none" stroke="#ffecb0" stroke-opacity=".5" stroke-width="4" stroke-linecap="round"/>
+  <rect width="360" height="60" fill="url(#shade)"/>
+  </g>
+</svg>
