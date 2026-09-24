@@ -140,16 +140,30 @@
 .korniza-board--right::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
 
 /* --- carved bands ------------------------------------------------------- */
-/* A repeating relief tile inset into the moulding. The tile is sized from the
-   frame width, so the carving grows with the container while the number of
+/* A repeating relief tile inset into the moulding. The tile carries light and
+   shade only, never colour of its own: the moulding shows through it, so the
+   carving is lit by the same cross-section gradient as the profile it is cut
+   into and cannot drift into a stripe of its own value. The tile is sized from
+   the frame width, so the carving grows with the container while the number of
    repeats grows with the rail; each strip is mitred where it meets its
    neighbour, exactly like the boards above it. */
 .korniza-bands { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
 .korniza-band { position: absolute; background-image: var(--band); }
+/* Wear, dust and lost gilding run on a far longer period than the tile; that
+   mismatch is what keeps a machined repeat from becoming legible along a rail. */
+.korniza-band::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: var(--band-wear);
+  background-repeat: repeat-x;
+  background-size: var(--band-wear-step) 100%;
+}
 .korniza-band--top, .korniza-band--bottom {
   left: 0; right: 0; height: var(--band-height);
   background-repeat: repeat-x;
   background-size: var(--band-step) 100%;
+  /* Carving runs out where the band meets its fillets, as a gouge does. */
+  mask-image: linear-gradient(to bottom, #0000, #000 var(--band-fade, 14%),
+    #000 calc(100% - var(--band-fade, 14%)), #0000);
   clip-path: polygon(var(--band-offset) 0, calc(100% - var(--band-offset)) 0,
     calc(100% - var(--band-offset) - var(--band-height)) 100%, calc(var(--band-offset) + var(--band-height)) 100%);
 }
@@ -160,11 +174,18 @@
   background-image: var(--band-vertical);
   background-repeat: repeat-y;
   background-size: 100% var(--band-step);
+  mask-image: linear-gradient(to right, #0000, #000 var(--band-fade, 14%),
+    #000 calc(100% - var(--band-fade, 14%)), #0000);
   clip-path: polygon(0 var(--band-offset), 100% calc(var(--band-offset) + var(--band-height)),
     100% calc(100% - var(--band-offset) - var(--band-height)), 0 calc(100% - var(--band-offset)));
 }
 .korniza-band--left { left: var(--band-offset); }
 .korniza-band--right { right: var(--band-offset); transform: scaleX(-1); }
+.korniza-band--left::before, .korniza-band--right::before {
+  background-image: var(--band-wear-vertical);
+  background-repeat: repeat-y;
+  background-size: 100% var(--band-wear-step);
+}
 
 /* --- travelling light --------------------------------------------------- */
 /* One masked ring over the mouldings carries the whole lighting response: a
