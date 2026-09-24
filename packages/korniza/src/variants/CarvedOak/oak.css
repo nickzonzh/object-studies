@@ -26,23 +26,52 @@
   --sheen-warm: #f0cfa022;
   --sheen-key: #ffeecb12;
   --sheen-shade: #23150a34;
-  /* Carved rope worked into the double reed: slanted lobes, a dark groove
-     between each, and the whole band lit from the upper left. */
+  /* Rope worked into the double reed. Three unequal lobes to a tile, cut as
+     light and shade alone: the reed's own gradient and the oak fibre running
+     under it both carry through, which is how a shallow gouge in oiled timber
+     reads — softened by the finish, never a cut-out band of its own colour. */
   --band-offset: calc(var(--frame-width) * .695);
-  --band-height: calc(var(--frame-width) * .105);
-  --band-step: calc(var(--frame-width) * .135);
-  --band: linear-gradient(74deg, #2b1d11 0 5%, #603f26 17%, #9a7245 34%,
-    #cfa972 50%, #ad8452 64%, #6d4a2c 80%, #33230f 95%, #241708 100%);
-  --band-vertical: linear-gradient(164deg, #2b1d11 0 5%, #603f26 17%, #9a7245 34%,
-    #cfa972 50%, #ad8452 64%, #6d4a2c 80%, #33230f 95%, #241708 100%);
+  --band-height: calc(var(--frame-width) * .11);
+  --band-step: calc(var(--frame-width) * .42);
+  --band-fade: 19%;
+  --band-wear-step: calc(var(--frame-width) * 1.9);
+  --band:
+    linear-gradient(72deg, #ffe8bd00 0 8%, #ffe8bd30 16%, #ffe8bd16 24%, #ffe8bd00 31%,
+      #ffe8bd00 40%, #ffe8bd29 49%, #ffe8bd12 58%, #ffe8bd00 66%,
+      #ffe8bd00 75%, #ffe8bd2c 83%, #ffe8bd14 91%, #ffe8bd00 98%),
+    linear-gradient(72deg, #1d110552 0%, #1d110518 7%, #1d110500 17%,
+      #1d110500 25%, #1d11052a 30%, #1d110556 33%, #1d110516 39%, #1d110500 49%,
+      #1d110500 58%, #1d110528 64%, #1d110550 68%, #1d110518 74%, #1d110500 84%,
+      #1d110500 91%, #1d11052c 96%, #1d110552 100%);
+  --band-vertical:
+    linear-gradient(162deg, #ffe8bd00 0 8%, #ffe8bd30 16%, #ffe8bd16 24%, #ffe8bd00 31%,
+      #ffe8bd00 40%, #ffe8bd29 49%, #ffe8bd12 58%, #ffe8bd00 66%,
+      #ffe8bd00 75%, #ffe8bd2c 83%, #ffe8bd14 91%, #ffe8bd00 98%),
+    linear-gradient(162deg, #1d110552 0%, #1d110518 7%, #1d110500 17%,
+      #1d110500 25%, #1d11052a 30%, #1d110556 33%, #1d110516 39%, #1d110500 49%,
+      #1d110500 58%, #1d110528 64%, #1d110550 68%, #1d110518 74%, #1d110500 84%,
+      #1d110500 91%, #1d11052c 96%, #1d110552 100%);
+  /* Handling polishes some lengths of the rope flat and leaves grime in the
+     rest; on a period unrelated to the tile, so no two feet of it match. */
+  --band-wear:
+    linear-gradient(86deg, #e8cda000 0 8%, #e8cda020 17%, #e8cda000 27%,
+      #24170b00 37%, #24170b1e 47%, #24170b00 58%,
+      #e8cda000 67%, #e8cda018 76%, #e8cda000 85%,
+      #24170b00 90%, #24170b14 96%, #24170b00 100%);
+  --band-wear-vertical:
+    linear-gradient(176deg, #e8cda000 0 8%, #e8cda020 17%, #e8cda000 27%,
+      #24170b00 37%, #24170b1e 47%, #24170b00 58%,
+      #e8cda000 67%, #e8cda018 76%, #e8cda000 85%,
+      #24170b00 90%, #24170b14 96%, #24170b00 100%);
   background: #473020;
 }
-/* A shallow carved bead seats the rope against the recessed liner. */
+/* A shallow carved bead seats the rope against the recessed liner; relief on
+   the timber, like the rope, rather than a drawn line. */
 .korniza-frame[data-variant='carved-oak'] .korniza-bands::after {
   content: ''; position: absolute; pointer-events: none;
   inset: calc(var(--frame-width) * .805);
   padding: calc(var(--frame-width) * .035);
-  background: linear-gradient(to bottom, #d6b081, #8d6841 46%, #533a24);
+  background: linear-gradient(to bottom, #ffdfad5e, #8d684100 46%, #2c1b0d66);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
