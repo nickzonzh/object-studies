@@ -1,7 +1,6 @@
 import {
   useCallback, useEffect, useImperativeHandle, useRef, useState,
-  type MouseEvent as ReactMouseEvent, type MutableRefObject,
-  type PointerEvent as ReactPointerEvent,
+  type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent,
 } from 'react'
 import {
   backingScale, createGestureHistory, createTapActivation, createToolMotion,
@@ -77,8 +76,9 @@ export function useBoard({
   const activeStrokeRef = useRef<Stroke | null>(null)
   const pointerIdRef = useRef<number | null>(null)
   const frameRef = useRef<number | null>(null)
-  const poseRef = useRef<Pose>({ x: 0, y: 0, angle: MARKER_REST_ANGLE })
-  const pendingMoveRef = useRef({ id: ERASER_ID, pose: poseRef.current, contact: false })
+  const pendingMoveRef = useRef<{ id: ToolId; pose: Pose; contact: boolean }>({
+    id: ERASER_ID, pose: { x: 0, y: 0, angle: MARKER_REST_ANGLE }, contact: false,
+  })
   const pendingMoveActiveRef = useRef(false)
   const previousPointerRef = useRef<{ x: number; y: number } | null>(null)
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
@@ -95,7 +95,7 @@ export function useBoard({
     // Commit nib position and fresh ink in the same frame, including coalesced input.
     if (!pendingMoveActiveRef.current) return
     const pending = pendingMoveRef.current
-    motionRef.current?.move(pending.id, { ...pending.pose }, pending.contact)
+    motionRef.current?.move(pending.id, pending.pose, pending.contact)
     pendingMoveActiveRef.current = false
   }, [])
 
@@ -319,9 +319,7 @@ export function useBoard({
     clientX: number, clientY: number, held = false, contact = held,
   ) => {
     const id = activeToolRef.current
-    const last = lastPointerRef.current ?? (lastPointerRef.current = { x: clientX, y: clientY })
-    last.x = clientX
-    last.y = clientY
+    lastPointerRef.current = { x: clientX, y: clientY }
     if (!id) return
     const previous = previousPointerRef.current
     const dx = previous ? clientX - previous.x : 0, dy = previous ? clientY - previous.y : 0
@@ -334,20 +332,19 @@ export function useBoard({
       angleRef.current += (target - angleRef.current)
         * (id === ERASER_ID ? 1 - Math.exp(-distance / 22) : 0.18)
     }
-    const previousPoint = previous ?? (previousPointerRef.current = { x: clientX, y: clientY })
-    previousPoint.x = clientX
-    previousPoint.y = clientY
-    const pose = poseRef.current
-    pose.x = clientX
-    pose.y = clientY
-    pose.angle = angleRef.current
-    pose.scale = (id === ERASER_ID || held ? HELD_SCALE : 0.88) * toolScale()
-    const pending = pendingMoveRef.current
-    pending.id = id
-    pending.pose = pose
-    pending.contact = contact
-    pendingMoveActiveRef.current = true
-    if (!held) scheduleRender()
+    previousPointerRef.current = { x: clientX, y: clientY }
+    const pose: Pose = {
+      x: clientX, y: clientY, angle: angleRef.current,
+      scale: (id === ERASER_ID || held ? HELD_SCALE : 0.88) * toolScale(),
+    }
+    if (held) {
+      // Committed with the ink in the next frame, however many events arrive first.
+      pendingMoveRef.current = { id, pose, contact }
+      pendingMoveActiveRef.current = true
+      return
+    }
+    pendingMoveActiveRef.current = false
+    motionRef.current?.move(id, pose, false)
   }
 
   const select = useCallback((id: ToolId, source: ActivationSource) => {
@@ -384,22 +381,14 @@ export function useBoard({
   const activate = (hit: TapResult | null) => {
     if (hit) select(hit.target.dataset.melaniSlot!, hit.source)
   }
-  const rememberPointer = (
-    target: MutableRefObject<{ x: number; y: number } | null>,
-    x: number, y: number,
-  ) => {
-    const pointer = target.current ?? (target.current = { x, y })
-    pointer.x = x
-    pointer.y = y
-  }
 
   const slotProps = {
     onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
-      rememberPointer(lastPointerRef, event.clientX, event.clientY)
+      lastPointerRef.current = { x: event.clientX, y: event.clientY }
       tap.pointerDown(event)
     },
     onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
-      rememberPointer(lastPointerRef, event.clientX, event.clientY)
+      lastPointerRef.current = { x: event.clientX, y: event.clientY }
       activate(tap.pointerUp(event))
     },
     onPointerCancel: (event: ReactPointerEvent<HTMLButtonElement>) => tap.pointerCancel(event),
