@@ -101,19 +101,19 @@ export function useBoard({
   useEffect(() => { render() }, [strokes, render])
 
   // A stable dependency for the motion layer: it binds to one set of tools.
-  const toolKey = [...markers.map((marker) => marker.id), ERASER_ID].join(' ')
+  const toolKey = JSON.stringify(markers.map((marker) => marker.id))
 
   useEffect(() => {
     const canvas = canvasRef.current!, surface = surfaceRef.current!, root = rootRef.current!
     const renderer = createBoardRenderer(canvas)
     const motion = createToolMotion<ToolId>({
-      tools: toolKey.split(' '),
+      tools: [...latestRef.current.markers.map((marker) => marker.id), ERASER_ID],
       elements: (id) => {
-        const flight = root.querySelector<HTMLElement>(`[data-aspro-flight="${id}"]`)!
+        const flight = root.querySelector<HTMLElement>(`[data-aspro-flight=${CSS.escape(id)}]`)!
         return {
           root: flight,
           rotation: flight.firstElementChild as HTMLElement,
-          parked: root.querySelector<HTMLElement>(`[data-aspro-slot="${id}"] > *`) ?? undefined,
+          parked: root.querySelector<HTMLElement>(`[data-aspro-slot=${CSS.escape(id)}] > *`) ?? undefined,
         }
       },
       restPose: (id, elements) => trayPose(id, elements.parked!),
@@ -389,7 +389,8 @@ export function useBoard({
 
   const onObjectPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!event.isPrimary) return
-    measure()
+    // The drawing handler has already measured this event.
+    if (!activeStrokeRef.current) measure()
     const object = objectRectRef.current!
     const light = objectRef.current!.style
     light.setProperty('--aspro-light-x', `${((event.clientX - object.left) / object.width) * 100}%`)
