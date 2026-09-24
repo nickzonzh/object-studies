@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "paths": {} },
+  "include": ["src", "vite.config.ts"]
+}
