@@ -1,15 +1,73 @@
+import {
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useState,
+  type CSSProperties,
+  type Ref,
+} from 'react'
+import { createPortal } from 'react-dom'
 import { ChalkRail } from './ChalkRail.js'
 import { ActiveTools } from './ActiveTools.js'
 import { UtilityButton } from './UtilityButton.js'
-import { useToolInteraction } from '../../hooks/useToolInteraction.js'
-import { toolLabels } from '../../tools/types.js'
+import { useChalkboard } from '../../hooks/useChalkboard.js'
+import { applyMaterials } from '../../materials.js'
+import { copyTheme } from '../../theme.js'
+import { mergeLabels, type ChalkboardLabels } from '../../labels.js'
+import type { DrawingStroke } from '../../drawing/types.js'
 import '../../styles/chalkboard.css'
 import '../../styles/timber.css'
 import '../../styles/chalk.css'
 import '../../styles/duster.css'
 import '../../styles/interaction.css'
 
-export function Chalkboard() {
+export type ChalkboardHandle = {
+  undo: () => void
+  redo: () => void
+  clear: () => void
+  /** The slate and its marks as an image; the frame is not included. */
+  toBlob: (type?: string) => Promise<Blob>
+  getStrokes: () => readonly DrawingStroke[]
+}
+
+export type ChalkboardProps = {
+  /** Controlled drawing. Pair with `onStrokesChange`. */
+  strokes?: readonly DrawingStroke[]
+  /** Starting drawing for an uncontrolled board. */
+  defaultStrokes?: readonly DrawingStroke[]
+  onStrokesChange?: (strokes: readonly DrawingStroke[]) => void
+  /** Off by default: opt in with a key to keep the drawing on the device. */
+  persistence?: false | { key: string }
+  exportFileName?: string
+  /** The built-in undo / redo / clear / save bar. */
+  showControls?: boolean
+  labels?: Partial<ChalkboardLabels>
+  /** 0–1. How much old chalk haze the slate has kept. */
+  wear?: number
+  /** Where the flying tools are portalled; a body-level element by default. */
+  portalContainer?: HTMLElement | null
+  className?: string
+  style?: CSSProperties
+  ref?: Ref<ChalkboardHandle>
+}
+
+export function Chalkboard({
+  strokes,
+  defaultStrokes,
+  onStrokesChange,
+  persistence = false,
+  exportFileName = 'kimolia-board.png',
+  showControls = true,
+  labels: labelOverrides,
+  wear = 0.35,
+  portalContainer,
+  className,
+  style,
+  ref,
+}: ChalkboardProps) {
+  const labels = mergeLabels(labelOverrides)
+  const instructionsId = useId()
+  const [portal, setPortal] = useState<HTMLElement | null>(null)
   const {
     boardRef,
     surfaceRef,
@@ -28,132 +86,193 @@ export function Chalkboard() {
     undo,
     redo,
     savePng,
-  } = useToolInteraction()
-  const saveMessages = {
-    idle: 'Saved on this device as you draw.',
-    saving: 'Saving…',
-    saved: 'Saved on this device.',
-    unavailable: 'Device saving is unavailable. Use Save PNG to keep a copy.',
-    invalid:
-      'The saved drawing could not be opened. New marks will replace it.',
-    full: 'This drawing is too large to autosave. Use Save PNG to keep a copy.',
-  }
+    toBlob,
+    getStrokes,
+  } = useChalkboard({
+    overlay: portal,
+    strokes,
+    defaultStrokes,
+    onStrokesChange,
+    persistence,
+    exportFileName,
+    wear,
+  })
+
+  // The tool layer and its textures belong to the document, not to the render:
+  // both are created here so the component renders identically on a server.
+  useEffect(() => {
+    const root = boardRef.current!
+    applyMaterials(root)
+    const mount = (node: HTMLElement) => {
+      applyMaterials(node)
+      copyTheme(root, node)
+      setPortal(node)
+    }
+    if (portalContainer) {
+      mount(portalContainer)
+      return
+    }
+    const node = document.createElement('div')
+    node.className = 'kimolia-tool-portal'
+    document.body.append(node)
+    mount(node)
+    return () => {
+      node.remove()
+      setPortal(null)
+    }
+  }, [portalContainer, boardRef])
+
+  useImperativeHandle(ref, () => ({
+    undo,
+    redo,
+    clear,
+    toBlob,
+    getStrokes,
+  }))
+
+  const failure =
+    exportStatus === 'error'
+      ? labels.exportFailed
+      : saveStatus === 'unavailable'
+        ? labels.storageUnavailable
+        : saveStatus === 'invalid'
+          ? labels.storageInvalid
+          : saveStatus === 'full'
+            ? labels.storageFull
+            : ''
+  const note = rendering
+    ? labels.updating
+    : failure ||
+      (saveStatus === 'saved' || saveStatus === 'saving'
+        ? labels.savedOnDevice
+        : '')
+
   return (
-    <figure className="object-study">
+    <div
+      className={className ? `kimolia ${className}` : 'kimolia'}
+      style={{ ...style, '--kimolia-wear': wear } as CSSProperties}
+    >
       <div
-        className="chalkboard"
+        className="kimolia-board"
         ref={boardRef}
         role="group"
-        aria-label="Kimolia chalkboard"
+        aria-label={labels.board}
       >
-        <div className="board-construction">
-          <div className="frame-plank frame-plank--top" aria-hidden="true" />
-          <div className="frame-plank frame-plank--right" aria-hidden="true" />
-          <div className="frame-plank frame-plank--bottom" aria-hidden="true" />
-          <div className="frame-plank frame-plank--left" aria-hidden="true" />
-          <div className="slate-recess">
+        <div className="kimolia-construction">
+          <div className="kimolia-plank kimolia-plank--top" aria-hidden="true" />
+          <div
+            className="kimolia-plank kimolia-plank--right"
+            aria-hidden="true"
+          />
+          <div
+            className="kimolia-plank kimolia-plank--bottom"
+            aria-hidden="true"
+          />
+          <div
+            className="kimolia-plank kimolia-plank--left"
+            aria-hidden="true"
+          />
+          <div className="kimolia-recess">
             <div
-              className="slate-surface"
+              className="kimolia-slate"
               ref={surfaceRef}
               tabIndex={0}
               role="group"
-              aria-label="Chalkboard drawing surface"
+              aria-label={labels.surface}
               aria-busy={rendering}
-              aria-describedby="tool-instructions tool-study-note"
+              aria-describedby={instructionsId}
             >
-              <div className="slate-residue" aria-hidden="true" />
+              <div className="kimolia-residue" aria-hidden="true" />
               <canvas
-                className="chalk-canvas"
+                className="kimolia-canvas"
                 ref={canvasRef}
                 aria-hidden="true"
               />
             </div>
           </div>
-          <ChalkRail selected={selected} onSelect={select} />
+          <ChalkRail
+            selected={selected}
+            labels={labels}
+            instructionsId={instructionsId}
+            onSelect={select}
+          />
         </div>
       </div>
-      <ActiveTools ref={overlayRef} />
-      <figcaption>
-        <span className="material-note" role="status">
-          <span className="material-swatch" aria-hidden="true" />
+      {portal && createPortal(<ActiveTools ref={overlayRef} />, portal)}
+      <div className="kimolia-caption">
+        <span className="kimolia-held">
+          <span className="kimolia-held-dot" aria-hidden="true" />
           {selected
-            ? `${toolLabels[selected]} in hand.`
-            : 'Pick up chalk. Make your mark.'}
+            ? labels.inHand.replace(
+                '{tool}',
+                selected === 'duster'
+                  ? labels.duster
+                  : labels.chalk[selected],
+              )
+            : labels.empty}
         </span>
         <UtilityButton
-          className="put-back"
-          type="button"
+          className="kimolia-action kimolia-action--put-back"
           disabled={!selected}
           onActivate={putBack}
         >
-          Put back<span aria-hidden="true"> ↙</span>
+          {labels.putBack}
+          <span aria-hidden="true"> ↙</span>
         </UtilityButton>
-        <div className="utility-row">
+      </div>
+      {showControls && (
+        <div className="kimolia-controls">
           <div
-            className="board-utilities"
+            className="kimolia-control-group"
             role="group"
-            aria-label="Drawing controls"
+            aria-label={labels.controlGroup}
           >
             <UtilityButton
-              className="put-back"
-              type="button"
+              className="kimolia-action"
               disabled={!canUndo}
               onActivate={undo}
               aria-keyshortcuts="Control+Z Meta+Z"
             >
-              Undo
+              {labels.undo}
             </UtilityButton>
             <UtilityButton
-              className="put-back"
-              type="button"
+              className="kimolia-action"
               disabled={!canRedo}
               onActivate={redo}
               aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
             >
-              Redo
+              {labels.redo}
             </UtilityButton>
             <UtilityButton
-              className="put-back"
-              type="button"
+              className="kimolia-action"
               disabled={!hasMarks}
               onActivate={clear}
             >
-              Clear
+              {labels.clear}
             </UtilityButton>
             <UtilityButton
-              className="put-back"
-              type="button"
+              className="kimolia-action"
               disabled={exportStatus === 'exporting' || rendering}
               onActivate={savePng}
             >
-              {exportStatus === 'exporting' ? 'Preparing…' : 'Save PNG'}
+              {exportStatus === 'exporting' ? labels.saving : labels.save}
             </UtilityButton>
           </div>
-          <span className="save-note" role="status">
-            {rendering
-              ? 'Updating drawing…'
-              : exportStatus === 'error'
-                ? 'The PNG could not be created. Please try again.'
-                : saveMessages[saveStatus]}
+          <span className="kimolia-note" aria-hidden="true">
+            {note}
           </span>
         </div>
-      </figcaption>
-      <p className="tool-study-note" id="tool-study-note">
-        {selected === 'duster'
-          ? 'Sweep to lift the chalk. Wipe again for a cleaner slate.'
-          : 'A little pressure, a little dust. Something worth keeping.'}
+      )}
+      <p className="kimolia-hint">
+        {selected === 'duster' ? labels.dusterHint : labels.chalkHint}
       </p>
-      <p className="sr-only" id="tool-instructions">
-        Choose chalk, then drag on the slate to draw. Choose it again, use Put
-        back, or press Escape to return it. Keyboard selection moves focus to
-        the slate: use arrow keys to move, Shift for larger steps, and hold
-        Space or Enter while moving to draw or erase. The duster leaves faint
-        residue; repeated passes remove more. Undo and Redo also work with
-        Control or Command Z, and Shift Z to redo, while the board or its
-        controls have focus. Clear can be undone. The drawing saves on this
-        device; undo history lasts until you refresh. Save PNG downloads the
-        slate only.
+      <p className="kimolia-sr-only" id={instructionsId}>
+        {labels.instructions}
       </p>
-    </figure>
+      {/* Only failures are announced: an autosave that worked is not news. */}
+      <span className="kimolia-sr-only" role="status">
+        {failure}
+      </span>
+    </div>
   )
 }

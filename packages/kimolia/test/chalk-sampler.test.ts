@@ -20,18 +20,24 @@ test('live sampling and replay are deterministic, while stroke seeds vary the gr
   assert.notDeepEqual(sample(points), sample(points, 43))
 })
 
-test('sparse and dense input packets have equivalent coverage with no fast-stroke gaps', () => {
+test('sparse and dense input packets leave identical marks, gaps included', () => {
   const fast = sample([point(0), point(420)])
   const slow = sample(Array.from({ length: 421 }, (_, x) => point(x)))
   assert.equal(fast.length, slow.length)
+  let longest = 0
   for (let i = 0; i < fast.length; i++) {
     assert.ok(Math.abs(fast[i].x - slow[i].x) < 1e-8)
     assert.equal(fast[i].opacity, slow[i].opacity)
     if (i)
-      assert.ok(
-        Math.hypot(fast[i].x - fast[i - 1].x, fast[i].y - fast[i - 1].y) < 2,
+      longest = Math.max(
+        longest,
+        Math.hypot(fast[i].x - fast[i - 1].x, fast[i].y - fast[i - 1].y),
       )
   }
+  // Chalk misses the grain here and there; a sampling gap would be a bug.
+  const spacing = 7 * 0.18
+  assert.ok(longest > spacing * 1.5, 'expected some skipped stamps')
+  assert.ok(longest < spacing * 3.5, `a skipped run left a ${longest}px gap`)
 })
 
 test('a tap leaves one stamp; repeated stationary events and repeated end do not overpaint it', () => {

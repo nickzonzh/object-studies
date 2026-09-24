@@ -1,38 +1,66 @@
-.chalkboard {
-  --frame-width: clamp(20px, 2.85vw, 30px);
-  --light-x: 24%;
-  --light-y: 0%;
-  --light-shift-x: 0px;
-  --light-shift-y: 0px;
+.kimolia {
+  /* Theming surface. Override any of these from a wrapper or `style`. */
+  --kimolia-frame-width: clamp(19px, 2.9cqi, 30px);
+  --kimolia-radius: 2px;
+  --kimolia-timber: #7c5a3b;
+  --kimolia-timber-light: #a7875c;
+  --kimolia-timber-dark: #33251b;
+  --kimolia-slate: #26302b;
+  --kimolia-slate-light: #28312d;
+  --kimolia-slate-dark: #222b27;
+  --kimolia-chalk-white: #f0ead8;
+  --kimolia-chalk-yellow: #e2d288;
+  --kimolia-chalk-blue: #9cbfcd;
+  --kimolia-chalk-pink: #dfabaf;
+  --kimolia-wear: 0.35;
+  --kimolia-text: #515a4a;
+  --kimolia-muted: #727469;
+  --kimolia-focus: #65725b;
+  --kimolia-light-x: 24%;
+  --kimolia-light-y: 0%;
+
+  container-type: inline-size;
+  position: relative;
+  color: var(--kimolia-text);
+  -webkit-tap-highlight-color: transparent;
+}
+.kimolia *,
+.kimolia-tool-portal * {
+  box-sizing: border-box;
+}
+.kimolia-board {
   position: relative;
   aspect-ratio: 1.6;
   isolation: isolate;
-  border-radius: 9px;
-  background: #443222;
+  border-radius: var(--kimolia-radius);
+  background: var(--kimolia-timber-dark);
+  user-select: none;
+  -webkit-user-select: none;
+  /* One key light, upper left: every cast shadow falls down and slightly right. */
   box-shadow:
     1px 2px 2px #3b2e2659,
     4px 8px 9px -3px #33281f40,
     14px 29px 33px -16px #3e34244d,
     26px 47px 60px -26px #453a302e;
 }
-.board-construction {
+.kimolia-construction {
   position: absolute;
   inset: 0;
   border-radius: inherit;
 }
-.slate-recess {
+.kimolia-recess {
   position: absolute;
-  inset: var(--frame-width);
+  inset: var(--kimolia-frame-width);
   border-radius: 3px;
   padding: 6px;
-  background: #30271e;
+  background: color-mix(in srgb, var(--kimolia-timber-dark) 88%, #120c07);
   box-shadow:
     -1px -1px 1px #281c17,
     1px 1px 1px #b18b5966,
     inset 3px 4px 5px #130f0ba6,
     inset -1px -1px 1px #b18a504d;
 }
-.slate-surface {
+.kimolia-slate {
   position: relative;
   width: 100%;
   height: 100%;
@@ -42,56 +70,139 @@
     radial-gradient(ellipse at 43% 42%, #8b93880a, transparent 65%),
     radial-gradient(ellipse at 72% 73%, #aab4a105, transparent 45%),
     radial-gradient(
-      ellipse at var(--light-x) var(--light-y),
+      ellipse at var(--kimolia-light-x) var(--kimolia-light-y),
       #3d494005,
       transparent 70%
     ),
-    linear-gradient(118deg, #28312d, #26302b 47%, #222b27);
+    linear-gradient(
+      118deg,
+      var(--kimolia-slate-light),
+      var(--kimolia-slate) 47%,
+      var(--kimolia-slate-dark)
+    );
   box-shadow:
     inset 4px 6px 9px -3px #0b100fd9,
     inset -2px -1px 4px #111a1799;
 }
-.slate-surface::before,
-.slate-surface::after {
+.kimolia-slate::before,
+.kimolia-slate::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
-.slate-surface::before {
-  background: url('../assets/mineral.svg') center / 100% 100%;
+.kimolia-slate::before {
+  background-image: var(--kimolia-clouds-image);
+  background-size: 100% 100%;
   opacity: 0.075;
   mix-blend-mode: soft-light;
 }
-.slate-surface::after {
-  background: url('../assets/noise.svg');
+.kimolia-slate::after {
+  background-image: var(--kimolia-grain-image);
   opacity: 0.035;
 }
-.slate-residue {
+/* Chalk that never quite came off. Years of it, never fully cleaned. */
+.kimolia-residue {
   position: absolute;
-  inset: 10% 3% 0;
-  opacity: 0.3;
-  background:
-    radial-gradient(ellipse 42% 1% at 46% 49%, #bdc1ad07, transparent),
-    radial-gradient(ellipse 46% 1.2% at 58% 75%, #bdc1ad08, transparent),
-    radial-gradient(ellipse 32% 1.7% at 26% 37%, #bdc1ad08, transparent),
-    radial-gradient(ellipse 40% 1.6% at 48% 100%, #d8d5b522, transparent),
-    linear-gradient(0deg, #d8d5b506, transparent 6%);
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--kimolia-residue-image);
+  background-size: 100% 100%;
+  opacity: var(--kimolia-wear);
 }
-.chalk-canvas {
+.kimolia-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
-@media (max-width: 520px) {
-  .chalkboard {
-    --frame-width: 17px;
+
+.kimolia-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 46px;
+  font-size: 11px;
+  letter-spacing: 0.025em;
+  line-height: 1.5;
+}
+.kimolia-held {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.kimolia-held-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--kimolia-slate);
+}
+.kimolia-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin-top: 8px;
+  font-size: 11px;
+}
+.kimolia-control-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  margin-left: -8px;
+}
+.kimolia-note {
+  color: var(--kimolia-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.kimolia-hint {
+  margin: 8px 0 0;
+  color: var(--kimolia-muted);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+.kimolia-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  margin: -1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A board in a narrow column becomes taller rather than shrinking to a strip.
+   Stroke coordinates live in the slate's own CSS pixel space, so a different
+   ratio simply changes the space; saved drawings rescale into it. */
+@container (max-width: 560px) {
+  .kimolia-board {
     aspect-ratio: 4 / 3;
-    border-radius: 7px;
   }
-  .slate-recess {
+  .kimolia-recess {
     padding: 4px;
+  }
+  .kimolia-caption {
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+}
+@container (max-width: 380px) {
+  .kimolia-board {
+    aspect-ratio: 1;
+  }
+  .kimolia-controls {
+    gap: 4px 12px;
+  }
+  .kimolia-note {
+    flex-basis: 100%;
+    min-height: 15px;
   }
 }

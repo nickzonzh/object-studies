@@ -1,82 +1,63 @@
+import { useState, type MouseEvent, type PointerEvent } from 'react'
+import {
+  createTapActivation,
+  type ActivationSource,
+  type TapResult,
+} from 'object-studies-core'
+import type { ChalkboardLabels } from '../../labels.js'
+import type { ToolId } from '../../tools/types.js'
 import { ChalkPiece } from './ChalkPiece.js'
 import { Duster } from './Duster.js'
-import { useRef, type HTMLAttributes } from 'react'
-import { toolLabels, type Activation, type ToolId } from '../../tools/types.js'
 
 const chalkColors = ['white', 'yellow', 'blue', 'pink'] as const
 
 type ChalkRailProps = {
   selected: ToolId | null
-  onSelect: (id: ToolId, activation: Activation) => void
+  labels: ChalkboardLabels
+  instructionsId: string
+  onSelect: (id: ToolId, activation: ActivationSource) => void
 }
 
-export function ChalkRail({ selected, onSelect }: ChalkRailProps) {
-  const input = useRef<Activation>('pointer')
-  const touchStart = useRef<{
-    pointer: number
-    x: number
-    y: number
-    tool: ToolId
-  } | null>(null)
-  const toolEvents: HTMLAttributes<HTMLButtonElement> = {
-    onPointerDown(event) {
-      if (!event.isPrimary) return
-      input.current = event.pointerType === 'touch' ? 'touch' : 'pointer'
-      touchStart.current =
-        event.pointerType === 'touch'
-          ? {
-              pointer: event.pointerId,
-              x: event.clientX,
-              y: event.clientY,
-              tool: event.currentTarget.dataset.slot as ToolId,
-            }
-          : null
-    },
-    onPointerUp(event) {
-      const start = touchStart.current
-      if (!start || event.pointerId !== start.pointer) return
-      touchStart.current = null
-      const rect = event.currentTarget.getBoundingClientRect()
-      if (
-        Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 12 &&
-        event.clientX >= rect.left &&
-        event.clientX <= rect.right &&
-        event.clientY >= rect.top &&
-        event.clientY <= rect.bottom
-      ) {
-        // Touch selection must not depend on a later compatibility click,
-        // which browsers can suppress immediately after a captured drawing drag.
-        onSelect(start.tool, 'touch')
-      }
-    },
-    onPointerCancel(event) {
-      if (event.pointerId === touchStart.current?.pointer)
-        touchStart.current = null
-    },
-    onClick(event) {
-      if (input.current === 'touch' && event.detail > 0) return
-      onSelect(
-        event.currentTarget.dataset.slot as ToolId,
-        event.detail === 0 ? 'keyboard' : 'pointer',
-      )
-    },
+export function ChalkRail({
+  selected,
+  labels,
+  instructionsId,
+  onSelect,
+}: ChalkRailProps) {
+  // One tracker for the whole rail: the pressed slot is read from the element
+  // the gesture started on, not from the element it ended over.
+  const [tap] = useState(createTapActivation)
+  const select = (hit: TapResult | null) => {
+    if (hit) onSelect(hit.target.dataset.slot as ToolId, hit.source)
+  }
+  const handlers = {
+    onPointerDown: tap.pointerDown,
+    onPointerUp: (event: PointerEvent<HTMLButtonElement>) =>
+      select(tap.pointerUp(event)),
+    onPointerCancel: tap.pointerCancel,
+    onClick: (event: MouseEvent<HTMLButtonElement>) =>
+      select(tap.click(event)),
   }
   return (
-    <div className="chalk-rail" role="group" aria-label="Chalk and duster">
-      <div className="rail-bed" aria-hidden="true" />
-      <div className="rail-groove" aria-hidden="true" />
-      <div className="rail-dust" aria-hidden="true" />
-      <div className="chalk-set">
+    <div
+      className="kimolia-rail"
+      role="group"
+      aria-label={labels.toolGroup}
+    >
+      <div className="kimolia-rail-bed" aria-hidden="true" />
+      <div className="kimolia-rail-groove" aria-hidden="true" />
+      <div className="kimolia-rail-dust" aria-hidden="true" />
+      <div className="kimolia-chalk-set">
         {chalkColors.map((color) => (
           <button
-            className="tool-slot chalk-slot"
+            className="kimolia-slot kimolia-slot--chalk"
             data-slot={color}
             type="button"
             key={color}
-            aria-label={toolLabels[color]}
+            aria-label={labels.chalk[color]}
             aria-pressed={selected === color}
-            aria-describedby="tool-instructions"
-            {...toolEvents}
+            aria-describedby={instructionsId}
+            {...handlers}
           >
             <span aria-hidden="true">
               <ChalkPiece color={color} />
@@ -85,20 +66,20 @@ export function ChalkRail({ selected, onSelect }: ChalkRailProps) {
         ))}
       </div>
       <button
-        className="tool-slot duster-slot"
+        className="kimolia-slot kimolia-slot--duster"
         data-slot="duster"
         type="button"
-        aria-label={toolLabels.duster}
+        aria-label={labels.duster}
         aria-pressed={selected === 'duster'}
-        aria-describedby="tool-instructions"
-        {...toolEvents}
+        aria-describedby={instructionsId}
+        {...handlers}
       >
         <span aria-hidden="true">
           <Duster />
         </span>
       </button>
-      <div className="rail-lip" aria-hidden="true">
-        <span className="rail-brand">KIMOLIA</span>
+      <div className="kimolia-rail-lip" aria-hidden="true">
+        <span className="kimolia-rail-brand">KIMOLIA</span>
       </div>
     </div>
   )

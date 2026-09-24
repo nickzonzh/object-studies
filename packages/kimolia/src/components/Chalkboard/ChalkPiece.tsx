@@ -1,10 +1,10 @@
-type ChalkPieceProps = { color: 'white' | 'yellow' | 'blue' | 'pink' }
+import type { ChalkColor } from '../../drawing/types.js'
 
-// Shared material geometry for the parked tool and its moving counterpart.
-export function ChalkPiece({ color }: ChalkPieceProps) {
+/** Shared material geometry for the parked stick and its moving counterpart. */
+export function ChalkPiece({ color }: { color: ChalkColor }) {
   return (
-    <div className={`tool-art chalk-piece chalk-piece--${color}`}>
-      <div className="chalk-body" />
+    <div className={`kimolia-tool-art kimolia-chalk kimolia-chalk--${color}`}>
+      <div className="kimolia-chalk-body" />
     </div>
   )
 }

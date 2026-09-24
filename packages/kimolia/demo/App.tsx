@@ -9,13 +9,14 @@ export default function App() {
           <h1>
             KIMOLIA<span className="wordmark-dot">.</span>
           </h1>
-          <p>Chalk, dust & a little bit of quiet.</p>
+          <p>Chalk, dust &amp; a little bit of quiet.</p>
         </div>
         <p className="edition">
-          THE OBJECT STUDIES<span>No. 01 — Slate & oak</span>
+          THE OBJECT STUDIES<span>No. 01 — Slate &amp; oak</span>
         </p>
       </header>
-      <Chalkboard />
+      {/* The demo opts into on-device saving; the component never does. */}
+      <Chalkboard persistence={{ key: 'kimolia:board:v1' }} />
       <footer className="showcase-footer">
         <span>κιμωλία</span> Greek for chalk.
       </footer>
