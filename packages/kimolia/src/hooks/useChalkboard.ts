@@ -145,6 +145,7 @@ export function useChalkboard(options: ChalkboardOptions) {
     const parkedDuster = board.querySelector<HTMLElement>(
       '[data-slot="duster"] .kimolia-duster',
     )!
+    const component = board.parentElement!
     let active: ToolId | null = null
     let pointer: number | null = null
     let pointerType = ''
@@ -152,10 +153,34 @@ export function useChalkboard(options: ChalkboardOptions) {
     let over = false
     let touching = false
     let last: Point | null = null
+    let returnTimer = 0
     let rect = surface.getBoundingClientRect()
     drawing.resize(rect.width, rect.height)
     const events = new AbortController()
     const listen = { signal: events.signal }
+    const cancelReturn = () => {
+      if (returnTimer) {
+        window.clearTimeout(returnTimer)
+        returnTimer = 0
+      }
+    }
+    const componentContains = (point: Point) => {
+      const bounds = component.getBoundingClientRect()
+      return (
+        point.x >= bounds.left &&
+        point.x <= bounds.right &&
+        point.y >= bounds.top &&
+        point.y <= bounds.bottom
+      )
+    }
+    const scheduleReturn = () => {
+      cancelReturn()
+      if (!active) return
+      returnTimer = window.setTimeout(() => {
+        returnTimer = 0
+        if (active && pointer === null) putBack()
+      }, 600)
+    }
 
     const phase = (value: 'idle' | 'ready' | 'hover' | 'contact') => {
       board.dataset.phase = value
@@ -184,6 +209,7 @@ export function useChalkboard(options: ChalkboardOptions) {
       }
     }
     const putBack = (keyboard = false, immediate = false) => {
+      cancelReturn()
       const previous = active
       releaseCapture()
       active = null
@@ -204,7 +230,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         ? Math.max(-maxTilt, Math.min(maxTilt, (point.x - last.x) * 0.35))
         : 0
       return {
-        ...clampPoint(point, rect),
+        ...point,
         // The writing end stays anchored; the grip extends towards 4–5 o'clock.
         angle: (active === 'duster' ? 0 : 45) + tilt,
       }
@@ -311,16 +337,51 @@ export function useChalkboard(options: ChalkboardOptions) {
       },
     }
 
-    surface.addEventListener(
+    component.addEventListener(
       'pointerenter',
       (event) => {
-        if (!active || event.pointerType === 'touch' || pointer !== null) return
+        cancelReturn()
+        if (
+          !active ||
+          event.pointerType === 'touch' ||
+          pointer !== null
+        )
+          return
         rect = surface.getBoundingClientRect()
-        over = true
         const point = pointFrom(event)
+        over = inside(point)
         motion.arrive(active, pose(point))
         last = point
         phase('hover')
+      },
+      listen,
+    )
+    component.addEventListener(
+      'pointermove',
+      (event) => {
+        if (
+          !active ||
+          pointer !== null ||
+          event.pointerType === 'touch'
+        )
+          return
+        const point = pointFrom(event)
+        over = inside(point)
+        motion.move(active, pose(point))
+        last = point
+        phase('hover')
+      },
+      listen,
+    )
+    component.addEventListener(
+      'pointerleave',
+      (event) => {
+        if (
+          active &&
+          pointer === null &&
+          event.pointerType !== 'touch'
+        )
+          scheduleReturn()
       },
       listen,
     )
@@ -357,13 +418,13 @@ export function useChalkboard(options: ChalkboardOptions) {
       (event) => {
         if (
           !active ||
-          (pointer !== null && pointer !== event.pointerId) ||
-          (event.pointerType === 'touch' && pointer === null)
+          pointer === null ||
+          pointer !== event.pointerId
         )
           return
         const point = pointFrom(event)
         over = inside(point)
-        if (touching && pointer === event.pointerId) addSamples(event)
+        if (touching) addSamples(event)
         motion.move(active, pose(point), touching && over)
         last = point
         phase(touching && over ? 'contact' : 'hover')
@@ -378,29 +439,37 @@ export function useChalkboard(options: ChalkboardOptions) {
         // Pointer-up pressure is zero; keep the last contact pressure at release.
         drawing.add(inkPoint(point, contactPressure))
         releaseCapture()
-        if (pointerType === 'touch' || !inside(point))
-          ready(pointerType === 'touch')
-        else {
-          motion.move(active, pose(point))
-          phase('hover')
+        if (pointerType === 'touch') {
+          ready(true)
+          return
         }
+        cancelReturn()
+        over = inside(point)
+        motion.move(active, pose(point))
+        last = point
+        phase('hover')
+        if (!componentContains(point)) scheduleReturn()
       },
       listen,
     )
     const cancel = (event: PointerEvent) => {
-      if (pointer !== event.pointerId) return
+      if (pointer !== event.pointerId || !active) return
+      const point = pointFrom(event)
+      const touch = pointerType === 'touch'
       releaseCapture()
-      ready(true)
+      if (touch) {
+        ready(true)
+        return
+      }
+      cancelReturn()
+      over = inside(point)
+      motion.move(active, pose(point))
+      last = point
+      phase('hover')
+      if (!componentContains(point)) scheduleReturn()
     }
     surface.addEventListener('pointercancel', cancel, listen)
     surface.addEventListener('lostpointercapture', cancel, listen)
-    surface.addEventListener(
-      'pointerleave',
-      () => {
-        if (pointer === null) ready()
-      },
-      listen,
-    )
     surface.addEventListener(
       'keydown',
       (event) => {
@@ -537,23 +606,25 @@ export function useChalkboard(options: ChalkboardOptions) {
       listen,
     )
     // Any ancestor can scroll the slate out from under a held tool, so the
-    // cached rect has to be refreshed, not just the tool put down.
+    // cached rect has to be refreshed without returning the tool.
     document.addEventListener(
       'scroll',
       () => {
         rect = surface.getBoundingClientRect()
-        if (active) {
-          releaseCapture()
-          ready(true)
+        if (active && last) {
+          over = inside(last)
+          motion.move(active, pose(last), touching && pointer !== null && over, true)
+          phase(touching && over ? 'contact' : 'hover')
         }
       },
       { ...listen, capture: true, passive: true },
     )
     const resizeSurface = () => {
       rect = surface.getBoundingClientRect()
-      if (active) {
-        releaseCapture()
-        ready(true)
+      if (active && last) {
+        over = inside(last)
+        motion.move(active, pose(last), touching && pointer !== null && over, true)
+        phase(touching && over ? 'contact' : 'hover')
       }
       drawing.resize(rect.width, rect.height)
     }
@@ -562,6 +633,7 @@ export function useChalkboard(options: ChalkboardOptions) {
     window.addEventListener('resize', resizeSurface, listen)
     phase('idle')
     return () => {
+      cancelReturn()
       releaseCapture()
       flushSave()
       disposed = true
