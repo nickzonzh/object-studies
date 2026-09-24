@@ -218,3 +218,291 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Gallery wall -------------------------------------------------------
+   A full-bleed band behind a salon hang. The composition is pure placement:
+   every work names its columns and rows, so the wall re-hangs itself at each
+   breakpoint and nothing is positioned absolutely except the hover labels. */
+
+.site-wall {
+  padding: clamp(48px, 8vw, 104px) 0 clamp(44px, 6vw, 84px);
+  border-bottom: 1px solid rgb(44 43 39 / 0.14);
+  background:
+    radial-gradient(112% 78% at 50% 0%, rgb(255 253 246 / 0.9), rgb(255 253 246 / 0) 58%),
+    radial-gradient(150% 108% at 50% 100%, rgb(58 50 36 / 0.12), rgb(58 50 36 / 0) 60%),
+    linear-gradient(#e6e0d2, #d8d1c0);
+}
+
+.site-wall-inner {
+  width: min(1240px, 100% - 40px);
+  margin: 0 auto;
+}
+
+.site-wall-head {
+  max-width: 56ch;
+  margin-bottom: clamp(34px, 4.5vw, 64px);
+}
+
+.site-wall-head h2 {
+  margin: 10px 0 14px;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(32px, 3.4vw, 44px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.site-wall-head .site-summary {
+  margin: 0;
+}
+
+.site-wall-hang {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 20px;
+  align-items: end;
+}
+
+/* Row one hangs from a shared bottom rail; row two from a shared top rail. */
+.wall-hiroshige {
+  grid-area: 1 / 1 / 2 / 3;
+}
+
+.wall-vigee {
+  grid-area: 1 / 3 / 2 / 6;
+}
+
+.wall-church {
+  grid-area: 1 / 6 / 2 / 13;
+}
+
+.wall-vermeer {
+  grid-area: 1 / 13 / 2 / 17;
+}
+
+.wall-card {
+  grid-area: 2 / 1 / 3 / 4;
+}
+
+.wall-vollon {
+  grid-area: 2 / 4 / 3 / 9;
+}
+
+.wall-legray {
+  grid-area: 2 / 9 / 3 / 14;
+}
+
+.wall-sargent {
+  grid-area: 2 / 14 / 3 / 17;
+}
+
+.site-wall-hang > .wall-card,
+.site-wall-hang > .wall-vollon,
+.site-wall-hang > .wall-legray,
+.site-wall-hang > .wall-sargent {
+  align-self: start;
+}
+
+.wall-piece {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+}
+
+.wall-piece:hover,
+.wall-piece:focus-within {
+  z-index: 3;
+}
+
+.wall-label {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 9px);
+  display: grid;
+  gap: 1px;
+  padding: 7px 9px 8px;
+  border-radius: 3px;
+  background: rgb(248 245 238 / 0.97);
+  box-shadow: 0 2px 10px rgb(44 43 39 / 0.16);
+  font-size: 11px;
+  line-height: 1.45;
+  color: #56534b;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  pointer-events: none;
+}
+
+.wall-piece:hover .wall-label,
+.wall-piece:focus-within .wall-label {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.wall-label i {
+  font-size: 12.5px;
+  color: #2c2b27;
+}
+
+.wall-label code {
+  font: 10px/1.7 ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  color: #7d7869;
+}
+
+/* The card is plain React content: it scales on the frame's own container
+   units, exactly as the mouldings do. */
+.wall-card-panel {
+  display: grid;
+  align-content: center;
+  gap: 4.5cqi;
+  height: 100%;
+  padding: 8cqi;
+  background: linear-gradient(#f7f2e6, #ece5d5);
+  color: #4a473f;
+  text-align: center;
+}
+
+.wall-card-panel p {
+  margin: 0;
+}
+
+.wall-card-mark {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 13cqi;
+  line-height: 1;
+  color: #2c2b27;
+}
+
+.wall-card-note {
+  font-size: 6.2cqi;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.wall-card-note code {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.wall-card-foot {
+  font-size: 4.4cqi;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8b8574;
+}
+
+.site-wall .site-credit {
+  max-width: 96ch;
+  margin-top: clamp(30px, 4vw, 48px);
+}
+
+.site-wall .site-credit a {
+  text-decoration-color: rgb(44 43 39 / 0.3);
+}
+
+/* Mid widths: twelve columns, three rails, the print anchoring the right. */
+@media (max-width: 1199px) {
+  .site-wall-hang {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .wall-vigee {
+    grid-area: 1 / 1 / 2 / 4;
+  }
+
+  .wall-church {
+    grid-area: 1 / 4 / 2 / 11;
+  }
+
+  .wall-hiroshige {
+    grid-area: 1 / 11 / 2 / 13;
+  }
+
+  .wall-card {
+    grid-area: 2 / 1 / 3 / 4;
+  }
+
+  .wall-legray {
+    grid-area: 2 / 4 / 3 / 10;
+  }
+
+  .wall-sargent {
+    grid-area: 2 / 10 / 3 / 13;
+  }
+
+  .wall-vermeer {
+    grid-area: 3 / 1 / 4 / 5;
+    align-self: start;
+  }
+
+  .wall-vollon {
+    grid-area: 3 / 5 / 4 / 11;
+    align-self: start;
+  }
+}
+
+/* Narrow: one column with a staggered edge, the two tall works paired, and
+   the labels back in normal flow where there is no pointer to hover with. */
+@media (max-width: 860px) {
+  .site-wall-hang {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(10px, 3vw, 18px);
+    align-items: start;
+  }
+
+  .wall-church {
+    grid-area: 1 / 1 / 2 / 13;
+  }
+
+  .wall-sargent {
+    grid-area: 2 / 1 / 3 / 7;
+  }
+
+  .wall-hiroshige {
+    grid-area: 2 / 8 / 3 / 13;
+    align-self: start;
+  }
+
+  .wall-legray {
+    grid-area: 3 / 1 / 4 / 12;
+  }
+
+  .wall-vermeer {
+    grid-area: 4 / 3 / 5 / 13;
+  }
+
+  .wall-vollon {
+    grid-area: 5 / 1 / 6 / 10;
+  }
+
+  .wall-vigee {
+    grid-area: 6 / 4 / 7 / 12;
+  }
+
+  .wall-card {
+    grid-area: 7 / 1 / 8 / 10;
+  }
+}
+
+@media (max-width: 860px), (hover: none) {
+  .wall-label {
+    position: static;
+    padding: 9px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-label {
+    transition: none;
+  }
+}
