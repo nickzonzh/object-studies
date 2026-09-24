@@ -77,6 +77,7 @@ export function useChalkboard(options: ChalkboardOptions) {
   const surfaceRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const curtainRef = useRef<HTMLCanvasElement>(null)
   const controller = useRef<Controller | null>(null)
   const latest = useRef(options)
   const synced = useRef<readonly DrawingStroke[] | null>(null)
@@ -138,6 +139,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         restored?.value ??
         [],
       onBusy: setRendering,
+      curtain: curtainRef.current,
       colors: themeColors(board),
     })
     setHistory(drawing.state())
@@ -660,6 +662,7 @@ export function useChalkboard(options: ChalkboardOptions) {
     surfaceRef,
     overlayRef,
     canvasRef,
+    curtainRef,
     selected,
     ...history,
     saveStatus,
