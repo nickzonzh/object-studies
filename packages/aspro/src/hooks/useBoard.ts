@@ -99,10 +99,29 @@ export function useBoard({
       render()
     })
   }, [render])
+  const dockAfterGrace = () => {
+    returnTimerRef.current = null
+    if (!activeToolRef.current || activeStrokeRef.current) return
+    motionRef.current?.dockAll()
+    activeToolRef.current = null
+    setActiveTool(null)
+    previousPointerRef.current = null
+  }
+
   useEffect(() => {
     const clearReturn = (event: PointerEvent) => {
       const root = rootRef.current
-      if (!root?.contains(event.target as Node)) return
+      if (!root) return
+      const rect = root.getBoundingClientRect()
+      const outside = event.clientX < rect.left || event.clientX > rect.right
+        || event.clientY < rect.top || event.clientY > rect.bottom
+      if (outside) {
+        if (activeToolRef.current && !activeStrokeRef.current && returnTimerRef.current === null) {
+          returnTimerRef.current = window.setTimeout(dockAfterGrace, 600)
+        }
+        return
+      }
+      if (!root.contains(event.target as Node)) return
       if (returnTimerRef.current !== null) {
         window.clearTimeout(returnTimerRef.current)
         returnTimerRef.current = null
@@ -276,14 +295,7 @@ export function useBoard({
   const scheduleReturn = () => {
     clearReturn()
     if (!activeToolRef.current || activeStrokeRef.current) return
-    returnTimerRef.current = window.setTimeout(() => {
-      returnTimerRef.current = null
-      if (!activeToolRef.current || activeStrokeRef.current) return
-      motionRef.current?.dockAll()
-      activeToolRef.current = null
-      setActiveTool(null)
-      previousPointerRef.current = null
-    }, 600)
+    returnTimerRef.current = window.setTimeout(dockAfterGrace, 600)
   }
 
   const moveTool = (
