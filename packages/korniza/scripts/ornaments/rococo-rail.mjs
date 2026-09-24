@@ -1,5 +1,3 @@
-import { useId } from 'react'
-
 /* A centre cartouche breaks the running band at the middle of every rail, the
  * way a Louis XV rail carries a rocaille between its corners. Authored across
  * the band: 80 units is 80% of the section and 208 units 2.08 frame widths
@@ -7,7 +5,7 @@ import { useId } from 'react'
  * is deliberately lopsided — the left sweep runs half again as far as the
  * right and sits lower — because a Rococo centre is never a mirrored pair, and
  * both sweeps run out to hairs that die into the rail tile underneath. */
-const masses = [
+export const masses = [
   // Two unequal sweeps, each ending in a rolled eye.
   'M80 24L75 28L68 33L62 37L56 39L50 41L44 42L38 41L32 39L27 37L23 37L19 38L17 41L15 44L15 47L17 50L19 52L21 53L23 53L25 52L27 50L27 48L27 47L26 45L25 45L24 45L24 46L25 46L25 47L25 48L25 49L24 49L23 50L22 49L21 49L20 48L20 46L20 45L21 44L22 43L23 43L25 43L29 45L36 48L44 50L51 50L59 49L66 47L75 44L82 39L88 36Z',
   'M101 32L107 35L115 39L123 41L131 41L138 38L142 37L144 37L145 37L146 38L147 39L147 40L146 42L145 43L144 43L143 42L142 42L142 41L142 40L143 39L143 38L142 38L141 39L141 40L140 41L140 43L141 44L143 45L145 46L147 45L149 44L151 42L151 39L150 36L148 33L145 32L142 31L137 32L130 33L125 33L119 30L112 25L107 22Z',
@@ -24,75 +22,21 @@ const masses = [
 ]
 /* Turned surfaces inside the masses: the rolled crest of each sweep, and the
  * dome of the cabochon, which takes its own run of the fold ramp. */
-const folds = [
+export const folds = [
   'M84 29L79 33L71 38L64 42L57 44L51 46L44 46L37 45L30 43L26 41L23 41L21 42L20 43L19 45L19 47L19 48L20 49L22 50L23 49L24 49L24 48L24 47L23 47L24 48L23 48L22 48L21 48L21 47L21 46L21 45L21 44L22 43L24 43L25 43L29 45L36 48L44 50L51 50L58 48L66 46L74 42L81 37L87 34Z',
   'M104 27L109 30L117 34L124 37L131 36L137 35L142 33L145 33L147 34L149 36L150 39L150 41L149 44L147 45L145 46L143 46L141 45L140 43L139 41L140 39L141 38L142 37L143 37L142 37L140 38L139 39L139 41L139 43L140 45L142 47L145 47L148 46L150 44L151 42L152 39L151 35L148 33L145 31L142 31L137 32L130 33L125 33L118 31L111 26L106 23Z',
   'M100 26L90 33L86 21L98 21Z',
 ]
 /* The scroll eyes are sockets: dark under every light direction. */
-const undercuts = [
+export const undercuts = [
   'M26 45L23 48L22 44L26 44Z',
   'M146 39L143 41L141 37L145 37Z',
 ]
 /* Crest lines, caught pale on the lit side and shadowed by an offset copy. */
-const crests = [
+export const crests = [
   'M84 30L71 38L57 44L44 46L31 42L23 40L19 42L17 47L20 50L23 51L26 49L26 47L25 45',
   'M104 27L117 34L131 37L142 34L147 35L149 39L148 43L145 44L142 43L141 41L142 39L143 39',
   'M76 29L72 25L65 21L58 17L50 16L41 17L35 17',
   'M112 27L116 23L123 18L130 15L138 15L147 17L153 19',
   'M89 8L91 14L93 23L94 32L93 41L92 50L91 56',
 ]
-
-const rails = [
-  { side: 'top', sy: 1 },
-  { side: 'bottom', sy: -1 },
-  { side: 'left', sy: 1 },
-  { side: 'right', sy: -1 },
-] as const
-
-/** One cartouche per rail; the vertical pair is transposed, as a mitre turns it. */
-export function RococoRail() {
-  const id = `rocaille-centre-${useId()}`
-  return <>
-    <svg className="korniza-rococo-defs" aria-hidden="true" focusable="false"><defs>
-      <g id={`${id}-mass`}>{masses.map((d, i) => <path key={i} d={d} />)}</g>
-      <g id={`${id}-folds`}>{folds.map((d, i) => <path key={i} d={d} />)}</g>
-      <g id={`${id}-undercuts`}>{undercuts.map((d, i) => <path key={i} d={d} />)}</g>
-      <g id={`${id}-crests`}>{crests.map((d, i) => <path key={i} d={d} />)}</g>
-    </defs></svg>
-    {rails.map(({ side, sy }) => {
-      const across = side === 'left' || side === 'right'
-      return <svg key={side} className={`korniza-rococo-rail korniza-rococo-rail--${side}`}
-        viewBox={across ? '0 0 80 208' : '0 0 208 80'} preserveAspectRatio="none" aria-hidden="true" focusable="false">
-        <defs>
-          {/* Outer edge of the band bright, sight edge in shade: the same
-              cross-section the moulding underneath is painted with. */}
-          <linearGradient id={`${id}-${side}`} x1="0" y1={sy < 0 ? 1 : 0} x2=".7" y2={sy < 0 ? 0 : 1}>
-            <stop stopColor="#f7efd9" /><stop offset=".12" stopColor="#e6d5ad" />
-            <stop offset=".26" stopColor="#cbb083" /><stop offset=".4" stopColor="#a78a5f" />
-            <stop offset=".52" stopColor="#dfcb9f" /><stop offset=".66" stopColor="#977a52" />
-            <stop offset=".82" stopColor="#6b5238" /><stop offset="1" stopColor="#3d2e1e" />
-          </linearGradient>
-          <linearGradient id={`${id}-${side}-fold`} x1="0" y1={sy < 0 ? 1 : 0} x2="1" y2={sy < 0 ? .6 : .4}>
-            <stop stopColor="#5b4229" /><stop offset=".24" stopColor="#a98e66" />
-            <stop offset=".46" stopColor="#f4e8c6" /><stop offset=".66" stopColor="#bda278" /><stop offset="1" stopColor="#675034" />
-          </linearGradient>
-        </defs>
-        <g transform={across ? 'matrix(0 1 1 0 0 0)' : undefined}>
-          <use href={`#${id}-mass`} transform={`translate(3 ${sy * 4.2})`} fill="#33240f" opacity=".3" />
-          <use href={`#${id}-mass`} transform={`translate(1.4 ${sy * 2})`} fill="#3a2b17" opacity=".58" />
-          <use href={`#${id}-mass`} transform={`translate(-1 ${sy * -1.3})`} fill="#f8eed2" opacity=".48" />
-          <use href={`#${id}-mass`} fill={`url(#${id}-${side})`} />
-          <use href={`#${id}-undercuts`} fill="#3c2a14" opacity=".7" />
-          <use href={`#${id}-folds`} fill={`url(#${id}-${side}-fold)`} opacity=".85" />
-          <use href={`#${id}-crests`} transform={`translate(1.1 ${sy * 1.5})`} fill="none"
-            stroke="#5c4327" strokeOpacity=".34" strokeWidth="2" strokeLinecap="round" />
-          <use className="korniza-rococo__light" href={`#${id}-crests`} fill="none"
-            stroke={sy < 0 ? '#eaddc0' : '#fff8e6'} strokeWidth="1.6" strokeLinecap="round" />
-          <use className="korniza-rococo__return" href={`#${id}-crests`} transform={`translate(1.8 ${sy * 2.4})`}
-            fill="none" stroke="#ecd8b0" strokeWidth="1.1" strokeLinecap="round" />
-        </g>
-      </svg>
-    })}
-  </>
-}

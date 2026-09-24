@@ -1,9 +1,8 @@
 import { GalleryFrame, type VariantFrameProps } from '../../components/GalleryFrame.js'
-import { FrameBands } from '../../components/layers.js'
+import { FrameBands, FrameOrnament } from '../../components/layers.js'
 import './baroque.css'
-import { BaroqueCorner } from './BaroqueCorner.js'
-import { BaroqueRail } from './BaroqueRail.js'
+import { ornament } from './ornament.js'
 
 export function BaroqueGold(props: VariantFrameProps) {
-  return <GalleryFrame {...props} variant="baroque-gold" decoration={<><FrameBands /><BaroqueRail /><BaroqueCorner /></>} />
+  return <GalleryFrame {...props} variant="baroque-gold" decoration={<><FrameBands /><FrameOrnament layout={ornament} /></>} />
 }

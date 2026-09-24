@@ -2,6 +2,7 @@ import { packageConfig } from '../../vite.shared.ts'
 
 /** One entry per material, so a single-variant consumer bundles only that one. */
 export default packageConfig({
+  splitCss: true,
   entry: {
     index: 'src/index.ts',
     'baroque-gold': 'src/baroque-gold.ts',

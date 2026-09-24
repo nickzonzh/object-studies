@@ -215,12 +215,41 @@ frame:
 - a leaf-tip ogee at 67.5–85.5% (`leaf-tip.svg`, a second `FrameBands`)
 - a sight bead and the rabbet
 
-Acanthus clasps sit at the corners and the centre of every rail
-(`OakCarving.tsx`). All of the carving comes from one acanthus generator in
-`scripts/generate-carving.mjs`, so the corners, centres and running torus share
-a single hand.
+Acanthus clasps sit at the corners and the centre of every rail. All of the
+carving comes from one acanthus generator (`scripts/ornaments/acanthus.mjs`):
+`scripts/generate-carving.mjs` draws the running tiles with it and
+`scripts/ornaments/oak.mjs` the clasps, so the corners, centres and running
+torus share a single hand.
 
 The oak ramp was warmed and its crest held to a pale straw (`#d0b188`), and the
 tone curve was softened (gamma 1.45 against 1.75): waxed timber has a wide
 response, not a narrow peaked one. The pore streaks and ray fleck were made
 heavier, so the plain frieze reads as fibre, not as a smooth graded band.
+
+## Baked ornament
+
+The corner and centre carving of Baroque Gold, Champagne Rococo and Carved Oak
+used to be live SVG. Every `<use>` layer cloned its geometry into a shadow
+tree: 528, 720 and 1,248 shadow nodes respectively. The travelling light
+restyled and re-rastered all of that on every pointer move.
+`scripts/generate-ornaments.mjs` now bakes the same layer stacks, placement by
+placement and with each reflection applied, into one sprite sheet per variant
+(`ornament.svg`). Each placement is an empty span painting one cell of the
+sheet. The pointer-lit catch and return are cells of their own, so they still
+follow the light through opacity alone. A pixel diff against the live SVG
+shows only antialiasing differences at a device pixel ratio of 2.
+
+Measured hovering a 281px frame in headless Chrome, 81 pointer moves:
+
+| | task before | task after | style recalc before | style recalc after |
+| --- | --- | --- | --- | --- |
+| Baroque Gold | 457 ms | 177 ms | 216 ms | 38 ms |
+| Champagne Rococo | 498 ms | 180 ms | 242 ms | 46 ms |
+| Carved Oak | 844 ms | 178 ms | 437 ms | 37 ms |
+| Dark Walnut | 288 ms | 115 ms | 133 ms | 19 ms |
+
+The timber variants gained as well, because the light values are now written
+only to the elements that paint with them (`korniza-lit`, and `korniza-relief`
+for the carving catches). Written on the frame, they restyled every board,
+slice and band, and each of those re-resolves kilobytes of `var()` texture and
+gradient when it is restyled.

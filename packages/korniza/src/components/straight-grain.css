@@ -1,0 +1,8 @@
+/* Straight-grained ash, painted by both blackened variants through
+   --grain-straight. It is its own module so a stylesheet composed for one
+   variant carries it only when that variant paints with it, while the full
+   stylesheet still inlines it exactly once. */
+.korniza-frame {
+  --grain-straight: url('./straight-grain.svg');
+  --grain-straight-vertical: url('./straight-grain-vertical.svg');
+}

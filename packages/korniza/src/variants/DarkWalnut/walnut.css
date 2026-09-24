@@ -46,8 +46,8 @@
 }
 /* The water-gilt slip is cut into the section itself; this is only the leaf's
    own catch, which is brighter and narrower than anything the timber does. */
-.korniza-frame[data-variant='dark-walnut']::before {
-  content: ''; position: absolute; z-index: 5; pointer-events: none;
+.korniza-frame[data-variant='dark-walnut'] .korniza-glint {
+  position: absolute; z-index: 5; pointer-events: none;
   inset: calc(var(--frame-width) * .838); padding: calc(var(--frame-width) * .042);
   background: radial-gradient(ellipse at var(--light-x) var(--light-y), #ffeaba72, #e9cf9620 46%, transparent 70%);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);

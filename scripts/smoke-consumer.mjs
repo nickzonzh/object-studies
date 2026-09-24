@@ -80,6 +80,7 @@ import { Frame as WalnutFrame } from 'korniza/dark-walnut'
 import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
+import 'korniza/dark-walnut.css'
 
 export function Consumer({ variant }: { variant: FrameVariant }) {
   const whiteboard = useRef<WhiteboardHandle>(null)
@@ -121,11 +122,13 @@ import { createRoot } from 'react-dom/client'
 import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame } from 'korniza'
+import { Frame as OakFrame } from 'korniza/carved-oak'
 import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
+import 'korniza/carved-oak.css'
 createRoot(document.getElementById('root')).render([
-  h(Whiteboard, { key: 'a' }), h(Chalkboard, { key: 'k' }), h(Frame, { key: 'f', variant: 'carved-oak' }),
+  h(Whiteboard, { key: 'a' }), h(Chalkboard, { key: 'k' }), h(Frame, { key: 'f', variant: 'carved-oak' }), h(OakFrame, { key: 'o' }),
 ])
 `,
   )

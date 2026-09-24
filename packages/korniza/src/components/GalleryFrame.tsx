@@ -41,8 +41,8 @@ export function GalleryFrame({ variant, aspectRatio = '4 / 5', interactiveLight 
         {mat === false ? children : <div className="korniza-frame__window">{children}</div>}
       </div>
       {decoration}
-      {glazing && <span aria-hidden="true" className="korniza-glazing" />}
-      <span aria-hidden="true" className="korniza-sheen" />
+      {glazing && <span aria-hidden="true" className="korniza-glazing korniza-lit" />}
+      <span aria-hidden="true" className="korniza-sheen korniza-lit" />
     </div>
     </div>
   )

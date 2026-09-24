@@ -56,6 +56,30 @@
       "types": "./dist/style.css.d.ts",
       "default": "./dist/style.css"
     },
+    "./baroque-gold.css": {
+      "types": "./dist/baroque-gold.css.d.ts",
+      "default": "./dist/baroque-gold.css"
+    },
+    "./champagne-rococo.css": {
+      "types": "./dist/champagne-rococo.css.d.ts",
+      "default": "./dist/champagne-rococo.css"
+    },
+    "./carved-oak.css": {
+      "types": "./dist/carved-oak.css.d.ts",
+      "default": "./dist/carved-oak.css"
+    },
+    "./dark-walnut.css": {
+      "types": "./dist/dark-walnut.css.d.ts",
+      "default": "./dist/dark-walnut.css"
+    },
+    "./ebonised-black.css": {
+      "types": "./dist/ebonised-black.css.d.ts",
+      "default": "./dist/ebonised-black.css"
+    },
+    "./modern-black.css": {
+      "types": "./dist/modern-black.css.d.ts",
+      "default": "./dist/modern-black.css"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -63,7 +87,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "build": "vite build && node scripts/finalize-css.mjs && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "check:package": "publint --strict && attw --pack --profile esm-only"
   },
