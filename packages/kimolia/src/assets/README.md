@@ -1,9 +1,26 @@
-# Material assets
+# Materials
 
-The five SVG materials are deterministic output from `npm run materials`.
+There are no bitmap or SVG assets. Slate mottling, fine grain, chalk residue,
+oak grain and rail dust are drawn once at runtime by `src/materials.ts` — a
+seeded value-noise field and a few hundred canvas strokes — and handed to CSS as
+`url(data:image/png…)` custom properties on the board and on the tool layer.
+The same canvases back the PNG export.
 
-`mineral.png` (1000 × 620) and `noise.png` (160 × 160) are raster companions of the corresponding SVGs, rendered at their native dimensions using Chromium Canvas 2D and `toBlob('image/png')`. They are used only by PNG export. Regenerate these companions if the source SVGs change: load each SVG into an Image in a same-origin Chromium page, draw it to a canvas at its native dimensions, and save the canvas as PNG. Do not flatten the alpha channel or add a background.
+Why it is done this way, and what must not regress:
 
-Mobile WebKit verification caught a `SecurityError` when serialising a canvas containing these filtered SVGs, both as data URLs and as same-origin files. The baked PNGs preserve the existing grain while keeping the export canvas readable. No remote image source or runtime rendering library is used.
-
-K6 losslessly stores these grayscale assets with luminance and alpha channels instead of duplicated RGB channels. Decoding back to RGBA was byte-for-byte identical before and after compression. The pair fell from 736,330 to 394,181 bytes (46% smaller). When regenerating, convert to grayscale-plus-alpha only after verifying the reconstructed RGBA bytes match the original, then save with PNG compression level 9. Pillow's `LA` mode was used for this one-time asset encoding; it is not an app dependency.
+- **Canvas taint.** Mobile WebKit verification caught a `SecurityError` when
+  serialising a canvas that had drawn a filtered SVG, both as a data URL and as
+  a same-origin file. Earlier versions shipped baked PNG companions of the SVG
+  materials so the export stayed readable. Generated canvases are same-origin
+  pixel data with no image source at all, so the export canvas can never be
+  tainted — the workaround is now structural rather than a pair of extra files.
+  Do not reintroduce an SVG (or any remote image) into the export path.
+- **Determinism.** Every texture comes from `seededRandom` with a fixed seed, so
+  two machines render the same board and a regenerated texture is byte-stable.
+  Keep the seeds if you change the drawing code, or accept that the object's
+  surface changes.
+- **Weight.** The published package was 564 KB of inlined PNG and SVG. Drawing
+  the materials instead costs about 40 KB of JavaScript and roughly 20 ms once
+  per document, and the textures are cached for the lifetime of the page.
+- **No network, no dependency.** Nothing here fetches or depends on an image
+  service or a runtime rendering library.

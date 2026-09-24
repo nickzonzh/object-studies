@@ -1,85 +1,149 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   clampPoint,
+  type ActivationSource,
   type HistoryState,
   type PersistenceStatus,
+  type Point,
+  type Pose,
 } from 'object-studies-core'
 import { createToolMotion } from '../tools/toolMotion.js'
 import { createDrawingSurface } from '../drawing/drawingSurface.js'
 import { pressureFor } from '../drawing/chalkSampler.js'
 import { createBoardStorage } from '../drawing/boardStorage.js'
-import { type DrawingStroke } from '../drawing/types.js'
-import { createBoardPng, downloadBoardPng } from '../drawing/exportPng.js'
+import { defaultChalkColors } from '../drawing/chalkBrush.js'
+import type { ChalkColor, DrawingStroke } from '../drawing/types.js'
 import {
-  type Activation,
-  type Point,
-  type Pose,
-  type ToolId,
-} from '../tools/types.js'
+  createBoardPng,
+  downloadBoard,
+  defaultTone,
+  type BoardTone,
+} from '../drawing/exportPng.js'
+import { toolIds, type ToolId } from '../tools/types.js'
+
+export type ChalkboardOptions = {
+  /** The portal node holding the flying tools; null until it is mounted. */
+  overlay: HTMLElement | null
+  strokes?: readonly DrawingStroke[]
+  defaultStrokes?: readonly DrawingStroke[]
+  onStrokesChange?: (strokes: readonly DrawingStroke[]) => void
+  persistence: false | { key: string }
+  exportFileName: string
+  wear: number
+}
 
 type Controller = {
-  select: (id: ToolId, activation: Activation) => void
+  select: (id: ToolId, activation: ActivationSource) => void
   putBack: (keyboard?: boolean) => void
   clear: () => void
   undo: () => void
   redo: () => void
   savePng: () => void
+  toBlob: (type?: string) => Promise<Blob>
+  getStrokes: () => readonly DrawingStroke[]
+  setStrokes: (strokes: readonly DrawingStroke[]) => void
 }
 
-export function useToolInteraction() {
+/** Reads the four chalk colours the theme exposes on the board element. */
+function themeColors(root: HTMLElement): Record<ChalkColor, string> {
+  const styles = getComputedStyle(root)
+  const colors = { ...defaultChalkColors }
+  for (const color of Object.keys(colors) as ChalkColor[]) {
+    const value = styles.getPropertyValue(`--kimolia-chalk-${color}`).trim()
+    if (value) colors[color] = value
+  }
+  return colors
+}
+
+function boardTone(root: HTMLElement, wear: number): BoardTone {
+  const styles = getComputedStyle(root)
+  const read = (name: string, fallback: string) =>
+    styles.getPropertyValue(name).trim() || fallback
+  return {
+    slate: read('--kimolia-slate', defaultTone.slate),
+    slateLight: read('--kimolia-slate-light', defaultTone.slateLight),
+    slateDark: read('--kimolia-slate-dark', defaultTone.slateDark),
+    wear,
+  }
+}
+
+/**
+ * Owns the board's imperative lifecycle: one effect, one AbortController, no
+ * React state per pointer event. Props are read through a ref so changing a
+ * label or a callback never tears down the drawing.
+ */
+export function useChalkboard(options: ChalkboardOptions) {
   const boardRef = useRef<HTMLDivElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const controller = useRef<Controller | null>(null)
+  const latest = useRef(options)
+  const synced = useRef<readonly DrawingStroke[] | null>(null)
   const [selected, setSelected] = useState<ToolId | null>(null)
   const [history, setHistory] = useState<HistoryState>({
     hasMarks: false,
     canUndo: false,
     canRedo: false,
   })
-  const [saveStatus, setPersistenceStatus] = useState<PersistenceStatus>('idle')
+  const [saveStatus, setSaveStatus] = useState<PersistenceStatus>('idle')
   const [rendering, setRendering] = useState(false)
   const [exportStatus, setExportStatus] = useState<
     'idle' | 'exporting' | 'error'
   >('idle')
+  const { overlay, strokes } = options
+  const storageKey = options.persistence === false ? null : options.persistence.key
+
+  // The long-lived effect below reads props through this ref, so a new label or
+  // callback never tears the drawing down.
+  useEffect(() => {
+    latest.current = options
+  })
 
   useEffect(() => {
+    if (!overlay) return
     const board = boardRef.current!
     const surface = surfaceRef.current!
     const motion = createToolMotion(board, overlayRef.current!)
-    const storage = createBoardStorage('kimolia:board:v1')
-    const restored = storage.load()
-    let saveTimer: ReturnType<typeof setTimeout> | undefined
-    let pendingSave: DrawingStroke[] | null = null
+    const storage = storageKey === null ? null : createBoardStorage(storageKey)
+    const restored = storage?.load()
+    let saveTimer = 0
+    let pendingSave: readonly DrawingStroke[] | null = null
     let disposed = false
     let exporting = false
     const flushSave = () => {
-      clearTimeout(saveTimer)
-      if (pendingSave === null) return
-      const status = storage.save(pendingSave)
+      window.clearTimeout(saveTimer)
+      if (pendingSave === null || !storage) return
+      const status = storage.save([...pendingSave])
       pendingSave = null
-      if (!disposed) setPersistenceStatus(status)
+      if (!disposed) setSaveStatus(status)
     }
-    const drawing = createDrawingSurface(
-      canvasRef.current!,
-      (state, strokes) => {
+    const drawing = createDrawingSurface(canvasRef.current!, {
+      onChange(state, next) {
         setHistory(state)
-        setPersistenceStatus('saving')
-        pendingSave = strokes
-        clearTimeout(saveTimer)
-        saveTimer = setTimeout(flushSave, 250)
+        // Records are handed out as a snapshot: the history keeps mutating its
+        // own array, and a controlled owner must be able to hold on to this one.
+        const snapshot = [...next]
+        synced.current = snapshot
+        latest.current.onStrokesChange?.(snapshot)
+        if (!storage) return
+        setSaveStatus('saving')
+        pendingSave = snapshot
+        window.clearTimeout(saveTimer)
+        saveTimer = window.setTimeout(flushSave, 250)
       },
-      restored.value ?? [],
-      (busy) => {
-        surface.setAttribute('aria-busy', String(busy))
-        setRendering(busy)
-      },
-    )
+      initial:
+        latest.current.strokes ??
+        latest.current.defaultStrokes ??
+        restored?.value ??
+        [],
+      onBusy: setRendering,
+      colors: themeColors(board),
+    })
     setHistory(drawing.state())
-    setPersistenceStatus(restored.status)
+    if (restored) setSaveStatus(restored.status)
     const parkedDuster = board.querySelector<HTMLElement>(
-      '[data-slot="duster"] .duster',
+      '[data-slot="duster"] .kimolia-duster',
     )!
     let active: ToolId | null = null
     let pointer: number | null = null
@@ -91,7 +155,7 @@ export function useToolInteraction() {
     let rect = surface.getBoundingClientRect()
     drawing.resize(rect.width, rect.height)
     const events = new AbortController()
-    const options = { signal: events.signal }
+    const listen = { signal: events.signal }
 
     const phase = (value: 'idle' | 'ready' | 'hover' | 'contact') => {
       board.dataset.phase = value
@@ -176,7 +240,7 @@ export function useToolInteraction() {
       }
       drawing.flush()
     }
-    const select = (id: ToolId, activation: Activation) => {
+    const select = (id: ToolId, activation: ActivationSource) => {
       if (active === id) {
         putBack(activation === 'keyboard')
         return
@@ -214,6 +278,19 @@ export function useToolInteraction() {
         drawing.redo()
         if (active) ready(true)
       },
+      getStrokes: () => [...drawing.strokes()],
+      setStrokes(next) {
+        releaseCapture()
+        drawing.setStrokes(next)
+        setHistory(drawing.state())
+        if (active) ready(true)
+      },
+      toBlob: (type) =>
+        createBoardPng(
+          canvasRef.current!,
+          boardTone(board, latest.current.wear),
+          type,
+        ),
       async savePng() {
         if (exporting || drawing.isBusy()) return
         releaseCapture()
@@ -221,9 +298,9 @@ export function useToolInteraction() {
         exporting = true
         setExportStatus('exporting')
         try {
-          const blob = await createBoardPng(canvasRef.current!)
+          const blob = await controller.current!.toBlob()
           if (!disposed) {
-            downloadBoardPng(blob)
+            downloadBoard(blob, latest.current.exportFileName)
             setExportStatus('idle')
           }
         } catch {
@@ -245,7 +322,7 @@ export function useToolInteraction() {
         last = point
         phase('hover')
       },
-      options,
+      listen,
     )
     surface.addEventListener(
       'pointerdown',
@@ -273,7 +350,7 @@ export function useToolInteraction() {
         last = point
         phase('contact')
       },
-      options,
+      listen,
     )
     surface.addEventListener(
       'pointermove',
@@ -291,7 +368,7 @@ export function useToolInteraction() {
         last = point
         phase(touching && over ? 'contact' : 'hover')
       },
-      options,
+      listen,
     )
     surface.addEventListener(
       'pointerup',
@@ -308,21 +385,21 @@ export function useToolInteraction() {
           phase('hover')
         }
       },
-      options,
+      listen,
     )
     const cancel = (event: PointerEvent) => {
       if (pointer !== event.pointerId) return
       releaseCapture()
       ready(true)
     }
-    surface.addEventListener('pointercancel', cancel, options)
-    surface.addEventListener('lostpointercapture', cancel, options)
+    surface.addEventListener('pointercancel', cancel, listen)
+    surface.addEventListener('lostpointercapture', cancel, listen)
     surface.addEventListener(
       'pointerleave',
       () => {
         if (pointer === null) ready()
       },
-      options,
+      listen,
     )
     surface.addEventListener(
       'keydown',
@@ -383,7 +460,7 @@ export function useToolInteraction() {
         over = true
         phase(touching ? 'contact' : 'hover')
       },
-      options,
+      listen,
     )
     surface.addEventListener(
       'keyup',
@@ -400,7 +477,7 @@ export function useToolInteraction() {
         if (last) motion.move(active, pose(last), false, true)
         phase('hover')
       },
-      options,
+      listen,
     )
     surface.addEventListener(
       'blur',
@@ -410,7 +487,7 @@ export function useToolInteraction() {
           ready(true)
         }
       },
-      options,
+      listen,
     )
     document.addEventListener(
       'keydown',
@@ -418,10 +495,8 @@ export function useToolInteraction() {
         const target = event.target
         if (
           target instanceof HTMLElement &&
-          target.closest('.object-study') &&
-          !target.closest(
-            'input, textarea, select, [contenteditable="true"]',
-          ) &&
+          board.contains(target) &&
+          !target.closest('input, textarea, select, [contenteditable="true"]') &&
           (event.ctrlKey || event.metaKey) &&
           !event.altKey
         ) {
@@ -440,9 +515,9 @@ export function useToolInteraction() {
           putBack(true)
         }
       },
-      options,
+      listen,
     )
-    window.addEventListener('blur', () => putBack(false, true), options)
+    window.addEventListener('blur', () => putBack(false, true), listen)
     document.addEventListener(
       'visibilitychange',
       () => {
@@ -451,7 +526,7 @@ export function useToolInteraction() {
           flushSave()
         }
       },
-      options,
+      listen,
     )
     window.addEventListener(
       'pagehide',
@@ -459,17 +534,20 @@ export function useToolInteraction() {
         releaseCapture()
         flushSave()
       },
-      options,
+      listen,
     )
-    window.addEventListener(
+    // Any ancestor can scroll the slate out from under a held tool, so the
+    // cached rect has to be refreshed, not just the tool put down.
+    document.addEventListener(
       'scroll',
       () => {
+        rect = surface.getBoundingClientRect()
         if (active) {
           releaseCapture()
           ready(true)
         }
       },
-      { ...options, passive: true },
+      { ...listen, capture: true, passive: true },
     )
     const resizeSurface = () => {
       rect = surface.getBoundingClientRect()
@@ -481,7 +559,7 @@ export function useToolInteraction() {
     }
     const resize = new ResizeObserver(resizeSurface)
     resize.observe(surface)
-    window.addEventListener('resize', resizeSurface, options)
+    window.addEventListener('resize', resizeSurface, listen)
     phase('idle')
     return () => {
       releaseCapture()
@@ -492,8 +570,18 @@ export function useToolInteraction() {
       motion.destroy()
       drawing.destroy()
       controller.current = null
+      synced.current = null
     }
-  }, [])
+  }, [overlay, storageKey])
+
+  // Controlled boards follow their owner, but never replay the array the board
+  // itself last reported or was last given — that is its own drawing coming
+  // back, and replaying it would throw the session's undo history away.
+  useEffect(() => {
+    if (!strokes || strokes === synced.current) return
+    synced.current = strokes
+    controller.current?.setStrokes(strokes)
+  }, [strokes])
 
   return {
     boardRef,
@@ -505,12 +593,19 @@ export function useToolInteraction() {
     saveStatus,
     exportStatus,
     rendering,
-    select: (id: ToolId, activation: Activation) =>
+    tools: toolIds,
+    select: (id: ToolId, activation: ActivationSource) =>
       controller.current?.select(id, activation),
     putBack: (keyboard = false) => controller.current?.putBack(keyboard),
     clear: () => controller.current?.clear(),
     undo: () => controller.current?.undo(),
     redo: () => controller.current?.redo(),
     savePng: () => controller.current?.savePng(),
+    toBlob: (type?: string) =>
+      controller.current
+        ? controller.current.toBlob(type)
+        : Promise.reject(new Error('The chalkboard is not mounted')),
+    getStrokes: (): readonly DrawingStroke[] =>
+      controller.current?.getStrokes() ?? [],
   }
 }

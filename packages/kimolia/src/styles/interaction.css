@@ -1,8 +1,4 @@
-.chalkboard {
-  user-select: none;
-  -webkit-user-select: none;
-}
-.tool-slot {
+.kimolia-slot {
   border: 0;
   padding: 0;
   border-radius: 4px;
@@ -20,87 +16,84 @@
   position: relative;
   z-index: 2;
 }
-.tool-slot:focus-visible {
+.kimolia-slot:focus-visible {
   outline: 2px solid #f3eccf;
   outline-offset: 2px;
 }
-.chalk-set {
+.kimolia-chalk-set {
   top: -3.5px;
 }
-.duster-slot {
+.kimolia-slot--duster {
   position: absolute;
   right: 10%;
   top: -16px;
 }
-.duster-slot .duster {
+.kimolia-slot--duster .kimolia-duster {
   position: relative;
   inset: auto;
 }
-.slate-surface[data-selected] {
+.kimolia-slate[data-selected] {
   touch-action: none;
 }
-.slate-surface[data-cursor='true'] {
+.kimolia-slate[data-cursor='true'] {
   cursor: none;
 }
-.slate-surface:focus-visible {
+.kimolia-slate:focus-visible {
   outline: 2px solid #cecbb2;
   outline-offset: -7px;
 }
-.slate-residue {
-  pointer-events: none;
-}
-.rail-lip {
-  pointer-events: none;
-}
 
-.active-tools {
+/* Tools in the air, in viewport coordinates. The wrapper holds the cast
+   shadow so it stays aligned to the upper-left key light while the tool
+   rotates, and tightens as the tool comes down onto the slate. */
+.kimolia-tool-portal,
+.kimolia-tool-layer {
   pointer-events: none;
 }
-.tool-flight {
+.kimolia-tool-flight {
   position: fixed;
   z-index: 100;
   left: 0;
   top: 0;
   pointer-events: none;
-  filter: drop-shadow(3px 5px 3px #1b211c66);
+  /* Dark enough to read against the slate as well as against the timber. */
+  filter: drop-shadow(5px 10px 6px #04080699) drop-shadow(12px 23px 16px #0408066b);
 }
-.tool-flight[hidden] {
+.kimolia-tool-flight[hidden] {
   display: none;
 }
-.tool-flight--duster {
-  filter: drop-shadow(4px 6px 3px #16221c70);
+.kimolia-tool-flight--duster {
+  filter: drop-shadow(6px 12px 7px #040806a3) drop-shadow(14px 27px 18px #04080673);
 }
-.tool-flight[data-state='contact'] {
-  filter: drop-shadow(1px 1px 0.65px #13201abe);
+.kimolia-tool-flight[data-state='contact'] {
+  filter: drop-shadow(1px 2px 1.5px #050907d6);
 }
-.tool-flight[data-state='ready'] {
-  filter: drop-shadow(1px 3px 1.5px #231b1980);
+.kimolia-tool-flight[data-state='ready'] {
+  filter: drop-shadow(1.5px 3px 2.5px #1c1512b3);
 }
-.tool-lift {
+.kimolia-tool-lift {
   transform: translateY(-3px);
   transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.tool-flight[data-state='ready'] .tool-lift,
-.tool-flight[data-state='contact'] .tool-lift {
+.kimolia-tool-flight[data-state='ready'] .kimolia-tool-lift,
+.kimolia-tool-flight[data-state='contact'] .kimolia-tool-lift {
   transform: translateY(0);
 }
-.tool-flight[data-state='contact'] .tool-lift {
+.kimolia-tool-flight[data-state='contact'] .kimolia-tool-lift,
+.kimolia-tool-flight[data-direct] .kimolia-tool-lift {
   transition: none;
 }
-.tool-flight[data-direct] .tool-lift {
-  transition: none;
-}
-.tool-rotation {
+.kimolia-tool-rotation {
   transform-origin: 0 0;
 }
-.tool-flight .chalk-piece {
+.kimolia-tool-flight .kimolia-chalk {
   position: absolute;
   left: 0;
   top: 0;
   transform: translateY(-50%);
   filter: none;
 }
-.tool-flight .duster {
+.kimolia-tool-flight .kimolia-duster {
   position: absolute;
   inset: auto;
   left: 0;
@@ -108,158 +101,106 @@
   transform: translate(-50%, -50%);
   filter: none;
 }
-.tool-flight--duster {
-  --face-offset: 0px;
-  --face-scale: 1;
-  --stamp-scale: 1;
-  --felt-offset: 0px;
-  --felt-scale: 1;
-  --contact-offset: 0px;
+.kimolia-tool-flight--duster {
+  --kimolia-face-offset: 0px;
+  --kimolia-face-scale: 1;
+  --kimolia-stamp-scale: 1;
+  --kimolia-felt-offset: 0px;
+  --kimolia-felt-scale: 1;
+  --kimolia-contact-offset: 0px;
 }
-.tool-flight--duster:not([data-state='ready']) {
-  --face-offset: 4px;
-  --face-scale: 1.6;
-  --stamp-scale: 0.625;
-  --felt-offset: 5px;
-  --felt-scale: 0.2;
+.kimolia-tool-flight--duster:not([data-state='ready']) {
+  --kimolia-face-offset: 4px;
+  --kimolia-face-scale: 1.6;
+  --kimolia-stamp-scale: 0.625;
+  --kimolia-felt-offset: 5px;
+  --kimolia-felt-scale: 0.2;
 }
-.tool-flight--duster[data-state='contact'] {
-  --contact-offset: 1px;
+.kimolia-tool-flight--duster[data-state='contact'] {
+  --kimolia-contact-offset: 1px;
 }
-.tool-flight .duster-handle {
-  transform: translateY(calc(var(--face-offset) + var(--contact-offset)))
-    scaleY(var(--face-scale));
+.kimolia-tool-flight .kimolia-duster-handle {
+  transform: translateY(
+      calc(var(--kimolia-face-offset) + var(--kimolia-contact-offset))
+    )
+    scaleY(var(--kimolia-face-scale));
 }
-.tool-flight .duster-handle span {
-  transform: scaleY(var(--stamp-scale));
+.kimolia-tool-flight .kimolia-duster-handle span {
+  transform: scaleY(var(--kimolia-stamp-scale));
 }
-.tool-flight .duster-felt {
-  transform: translateY(var(--felt-offset)) scaleY(var(--felt-scale));
+.kimolia-tool-flight .kimolia-duster-felt {
+  transform: translateY(var(--kimolia-felt-offset))
+    scaleY(var(--kimolia-felt-scale));
   transform-origin: bottom;
 }
-.tool-flight .duster-handle,
-.tool-flight .duster-handle span,
-.tool-flight .duster-felt {
+.kimolia-tool-flight .kimolia-duster-handle,
+.kimolia-tool-flight .kimolia-duster-handle span,
+.kimolia-tool-flight .kimolia-duster-felt {
   transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.tool-flight[data-direct] .duster-handle,
-.tool-flight[data-direct] .duster-handle span,
-.tool-flight[data-direct] .duster-felt {
+.kimolia-tool-flight[data-direct] .kimolia-duster-handle,
+.kimolia-tool-flight[data-direct] .kimolia-duster-handle span,
+.kimolia-tool-flight[data-direct] .kimolia-duster-felt {
   transition: none;
 }
-.put-back {
+
+.kimolia-action {
   border: 0;
-  padding: 8px 0 8px 12px;
-  margin: -8px 0;
+  padding: 8px;
   background: transparent;
-  color: #515a4a;
+  color: var(--kimolia-text);
   font: inherit;
   cursor: pointer;
   min-height: 44px;
+  min-width: 44px;
   touch-action: manipulation;
 }
-.board-utilities {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 12px;
+.kimolia-action--put-back {
+  padding: 8px 0 8px 12px;
+  margin: -8px 0;
+  min-width: 0;
 }
-.utility-row {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 4px 24px;
-}
-.board-utilities .put-back {
-  padding: 8px;
-  margin: 0;
-  min-width: 44px;
-}
-.board-utilities {
-  margin-left: -8px;
-}
-.save-note {
-  color: #727469;
-  font-size: 10px;
-  line-height: 1.5;
-}
-.put-back:disabled {
-  color: #797a70;
+.kimolia-action:disabled {
+  color: color-mix(in srgb, var(--kimolia-muted) 82%, #c8c9c0);
   cursor: default;
 }
-.put-back:focus-visible {
-  outline: 2px solid #65725b;
+.kimolia-action:focus-visible {
+  outline: 2px solid var(--kimolia-focus);
   outline-offset: 3px;
   border-radius: 2px;
 }
-.tool-study-note {
-  margin: 8px 0 0;
-  color: #727469;
-  font-size: 10px;
-  letter-spacing: 0.02em;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  padding: 0;
-  margin: -1px;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-@media (max-width: 520px) {
-  .chalk-set {
-    top: -7.5px;
-    gap: 0;
-    left: 4%;
-  }
-  .duster-slot {
-    top: -16px;
-    right: 6%;
-  }
-  .tool-study-note {
-    margin-left: 4px;
-  }
-  .material-note {
-    flex: 1;
-  }
-  .material-swatch {
-    flex: none;
-  }
-  .board-utilities {
+@container (max-width: 380px) {
+  .kimolia-control-group {
     gap: 4px;
-  }
-  .save-note {
-    flex-basis: 100%;
-    min-height: 15px;
-  }
-  .tool-flight--duster:not([data-state='ready']) {
-    --face-offset: 3px;
-    --felt-offset: 4px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tool-lift,
-  .tool-flight .duster-handle,
-  .tool-flight .duster-handle span,
-  .tool-flight .duster-felt {
+  .kimolia .kimolia-tool-lift,
+  .kimolia-tool-portal .kimolia-tool-lift,
+  .kimolia-tool-portal .kimolia-duster-handle,
+  .kimolia-tool-portal .kimolia-duster-handle span,
+  .kimolia-tool-portal .kimolia-duster-felt {
     transition: none;
   }
 }
 @media (forced-colors: active) {
-  .tool-slot {
+  .kimolia-board {
+    outline: 2px solid CanvasText;
+  }
+  .kimolia-recess,
+  .kimolia-chalk,
+  .kimolia-duster {
+    outline: 1px solid CanvasText;
+  }
+  .kimolia-slot {
     border: 1px solid ButtonText;
   }
-  .tool-slot[aria-pressed='true'] {
+  .kimolia-slot[aria-pressed='true'] {
     outline: 2px solid Highlight;
   }
-  .tool-slot:focus-visible,
-  .put-back:focus-visible,
-  .slate-surface:focus-visible {
+  .kimolia-slot:focus-visible,
+  .kimolia-action:focus-visible,
+  .kimolia-slate:focus-visible {
     outline-color: Highlight;
   }
 }

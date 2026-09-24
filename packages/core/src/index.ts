@@ -40,8 +40,8 @@ export {
   createTapActivation,
   type ActivationSource,
   type TapActivation,
-  type TapActivationOptions,
   type TapClickEvent,
   type TapPointerEvent,
+  type TapResult,
 } from './tapActivation.js'
 export { isIntegerWithin, isNumberWithin, isRecord } from './validate.js'

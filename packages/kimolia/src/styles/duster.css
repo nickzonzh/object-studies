@@ -1,13 +1,13 @@
-.duster {
+.kimolia-duster {
   position: absolute;
   right: 10%;
   top: -14px;
-  width: clamp(84px, 11.6vw, 126px);
+  width: clamp(84px, 11.6cqi, 126px);
   height: 40px;
   transform: rotate(-3deg);
   filter: drop-shadow(2px 3px 1px #251d19b3) drop-shadow(3px 5px 3px #30261c4d);
 }
-.duster-felt {
+.kimolia-duster-felt {
   position: absolute;
   inset: 14px 1px 0;
   border-radius: 2px 3px 4px 4px;
@@ -29,17 +29,17 @@
     inset 0 -2px 2px #141c18,
     inset -1px 0 #0e110f;
 }
-.duster-felt::after {
+.kimolia-duster-felt::after {
   content: '';
   position: absolute;
   inset: 0;
   background:
     radial-gradient(ellipse at 27% 90%, #ded8b92e, transparent 49%),
     radial-gradient(ellipse at 67% 76%, #b3c3bf1f, transparent 38%),
-    url('../assets/noise.svg');
+    var(--kimolia-grain-image);
   opacity: 0.33;
 }
-.duster-handle {
+.kimolia-duster-handle {
   position: absolute;
   inset: 0 0 10px;
   display: grid;
@@ -47,49 +47,63 @@
   border-radius: 5px 5px 4px 4px;
   background: linear-gradient(
     170deg,
-    #b28e5f,
-    #9a764e 25%,
-    #88633f 61%,
-    #6f4c2e
+    color-mix(in srgb, var(--kimolia-timber-light) 90%, #e8cda3),
+    color-mix(in srgb, var(--kimolia-timber-light) 86%, #3f2a17) 25%,
+    color-mix(in srgb, var(--kimolia-timber) 92%, #d0aa7c) 61%,
+    color-mix(in srgb, var(--kimolia-timber) 84%, #2a1b0f)
   );
   box-shadow:
     inset 1px 2px 1px #dac08b66,
     inset -1px -4px 2px #4c352563,
     inset 0 -1px #38291d;
 }
-.duster-handle::before {
+.kimolia-duster-handle::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: url('../assets/oak-grain.svg') center / 100% 100%;
+  background: var(--kimolia-oak-image) center / 100% 100%;
   mix-blend-mode: multiply;
   opacity: 0.5;
 }
-.duster-handle span {
+.kimolia-duster-handle span {
   position: relative;
   top: -1px;
   font-size: 7px;
   letter-spacing: 0.19em;
   font-weight: 700;
-  color: #513c2a;
+  color: color-mix(in srgb, var(--kimolia-timber-dark) 82%, #6d543d);
   text-shadow: 0 1px #e2c08366;
 }
-@media (max-width: 520px) {
-  .duster {
-    width: clamp(57px, 17.5vw, 78px);
+@container (max-width: 560px) {
+  .kimolia-duster {
+    width: clamp(57px, 17.5cqi, 78px);
     height: 30px;
     top: -9px;
     right: 6%;
   }
-  .duster-handle {
+  .kimolia-duster-handle {
     bottom: 8px;
     border-radius: 4px;
   }
-  .duster-handle span {
+  .kimolia-duster-handle span {
     font-size: 5px;
   }
-  .duster-felt {
+  .kimolia-duster-felt {
+    top: 11px;
+  }
+}
+/* The flying copy is sized by script and lives outside the board's container,
+   so its proportions follow the viewport instead. */
+@media (max-width: 560px) {
+  .kimolia-tool-portal .kimolia-duster-handle {
+    bottom: 8px;
+    border-radius: 4px;
+  }
+  .kimolia-tool-portal .kimolia-duster-handle span {
+    font-size: 5px;
+  }
+  .kimolia-tool-portal .kimolia-duster-felt {
     top: 11px;
   }
 }

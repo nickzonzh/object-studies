@@ -23,6 +23,8 @@ export type DrawingStroke = ChalkStroke | DusterStroke
 export type DrawingTool = ChalkColor | 'duster'
 export type ChalkStamp = ChalkPoint & {
   size: number
+  /** Height of the tip's flat facet, as a fraction of `size`. */
+  squash: number
   angle: number
   opacity: number
   dust: { x: number; y: number; radius: number; opacity: number } | null

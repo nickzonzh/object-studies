@@ -11,31 +11,31 @@ export type TapPointerEvent = {
 }
 export type TapClickEvent = { detail: number; currentTarget: HTMLElement }
 
-export type TapActivation = {
-  pointerDown: (event: TapPointerEvent) => void
-  pointerUp: (event: TapPointerEvent) => void
-  pointerCancel: (event: TapPointerEvent) => void
-  click: (event: TapClickEvent) => void
+export type TapResult = {
+  source: ActivationSource
+  /** The control the gesture started on, which is the one that was activated. */
+  target: HTMLElement
 }
 
-export type TapActivationOptions = {
-  /** Movement allowed between press and release, in CSS pixels. */
-  slop?: number
-  /** Returning false ignores the gesture, for a disabled control. */
-  enabled?: (target: HTMLElement) => boolean
+export type TapActivation = {
+  pointerDown: (event: TapPointerEvent) => void
+  /** Returns the activation when a touch completed on the control. */
+  pointerUp: (event: TapPointerEvent) => TapResult | null
+  pointerCancel: (event: TapPointerEvent) => void
+  /** Returns the activation for mouse, pen and keyboard. */
+  click: (event: TapClickEvent) => TapResult | null
 }
 
 /**
- * Activates a control on a completed touch rather than on the compatibility
- * click that follows it: browsers suppress that click after a captured drawing
- * gesture, which would otherwise swallow the very next tap on a tool.
+ * Decides when a control has been activated, without owning what that means.
+ * A touch activates on the completed press rather than on the compatibility
+ * click that follows it: browsers suppress that click right after a captured
+ * drawing gesture, which would otherwise swallow the next tap on a tool.
  *
- * Wire all four handlers to one element (or to a delegating group of them).
+ * Wire all four handlers to the control (or to one delegating group of them)
+ * and act on the returned result; a null result is not an activation.
  */
-export function createTapActivation(
-  onActivate: (source: ActivationSource, target: HTMLElement) => void,
-  { slop = 12, enabled }: TapActivationOptions = {},
-): TapActivation {
+export function createTapActivation(slop = 12): TapActivation {
   let touch: { id: number; x: number; y: number; target: HTMLElement } | null =
     null
   let modality = ''
@@ -55,29 +55,27 @@ export function createTapActivation(
     },
     pointerUp(event) {
       const start = touch
-      if (!start || start.id !== event.pointerId) return
+      if (!start || start.id !== event.pointerId) return null
       touch = null
       const rect = event.currentTarget.getBoundingClientRect()
-      if (
-        (!enabled || enabled(start.target)) &&
+      const completed =
         Math.hypot(event.clientX - start.x, event.clientY - start.y) <= slop &&
         event.clientX >= rect.left &&
         event.clientX <= rect.right &&
         event.clientY >= rect.top &&
         event.clientY <= rect.bottom
-      )
-        onActivate('touch', start.target)
+      return completed ? { source: 'touch', target: start.target } : null
     },
     pointerCancel(event) {
       if (touch?.id === event.pointerId) touch = null
     },
     click(event) {
       // A real touch has already activated on pointerup; detail 0 is keyboard.
-      if (modality === 'touch' && event.detail > 0) return
-      onActivate(
-        event.detail === 0 ? 'keyboard' : 'pointer',
-        event.currentTarget,
-      )
+      if (modality === 'touch' && event.detail > 0) return null
+      return {
+        source: event.detail === 0 ? 'keyboard' : 'pointer',
+        target: event.currentTarget,
+      }
     },
   }
 }

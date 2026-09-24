@@ -1,9 +1,14 @@
-import { createChalkBrushes, paintStamp } from './chalkBrush.js'
+import { createChalkBrushes } from './chalkBrush.js'
 import { createChalkSampler } from './chalkSampler.js'
 import { clipSegment } from './clip.js'
 import { createDusterSampler } from './dusterSampler.js'
 import { createDusterRenderer } from './dusterRenderer.js'
-import type { ChalkPoint, DrawingStroke, DrawingTool } from './types.js'
+import type {
+  ChalkColor,
+  ChalkPoint,
+  DrawingStroke,
+  DrawingTool,
+} from './types.js'
 import {
   createCooperativeTask,
   createGestureHistory,
@@ -12,17 +17,23 @@ import {
   type HistoryState,
 } from 'object-studies-core'
 
+export type DrawingSurfaceOptions = {
+  onChange: (state: HistoryState, strokes: DrawingStroke[]) => void
+  initial?: readonly DrawingStroke[]
+  onBusy?: (busy: boolean) => void
+  /** Chalk colours resolved from the theme, so marks match the sticks. */
+  colors?: Record<ChalkColor, string>
+}
+
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,
-  onChange: (state: HistoryState, strokes: DrawingStroke[]) => void,
-  initial: DrawingStroke[] = [],
-  onBusy: (busy: boolean) => void = () => {},
+  { onChange, initial = [], onBusy = () => {}, colors }: DrawingSurfaceOptions,
 ) {
   const ctx = canvas.getContext('2d')!
-  const brushes = createChalkBrushes()
+  const brushes = createChalkBrushes(colors)
   const duster = createDusterRenderer(canvas)
-  const history = createGestureHistory(initial)
-  const cache = createReplayCache(canvas)
+  let history = createGestureHistory(initial)
+  const cache = createReplayCache<DrawingStroke>(canvas)
   const replayTask = createCooperativeTask(onBusy)
   let gesture: DrawingStroke[] = []
   let active: DrawingStroke | null = null
@@ -66,7 +77,7 @@ export function createDrawingSurface(
       0,
     )
     const chalk = createChalkSampler(stroke.width, stroke.seed, (stamp) => {
-      paintStamp(ctx, brushes.get(stroke.color)!, stroke.color, stamp)
+      brushes.stamp(ctx, stroke.color, stamp)
     })
     return { ...chalk, flush() {} }
   }
@@ -144,7 +155,8 @@ export function createDrawingSurface(
   }
   const replay = () => replayTask.run(replaySteps())
   return {
-    state: history.state,
+    state: () => history.state(),
+    strokes: () => history.strokes(),
     isBusy: replayTask.isBusy,
     begin(
       chosen: DrawingTool,
@@ -173,6 +185,18 @@ export function createDrawingSurface(
       sampler?.flush()
     },
     end,
+    /**
+     * Replaces the drawing without reporting a change: a controlled owner is
+     * pushing its own state in. Session undo history starts again from here.
+     */
+    setStrokes(next: readonly DrawingStroke[]) {
+      end()
+      replayTask.cancel()
+      cache.clear()
+      history = createGestureHistory(next)
+      id = next.reduce((max, stroke) => Math.max(max, stroke.id), id)
+      replay()
+    },
     resize(nextWidth: number, nextHeight: number) {
       const nextDpr = Math.min(window.devicePixelRatio || 1, 3)
       if (width === nextWidth && height === nextHeight && dpr === nextDpr)

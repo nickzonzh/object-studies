@@ -1,49 +1,26 @@
-import { useRef, type ButtonHTMLAttributes } from 'react'
+import { useState, type ButtonHTMLAttributes } from 'react'
+import { createTapActivation, type TapResult } from 'object-studies-core'
 
-type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> & {
+type UtilityButtonProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'onClick'
+> & {
   onActivate: (keyboard: boolean) => void
 }
 
-export function UtilityButton({ onActivate, ...props }: Props) {
-  const touch = useRef<{ id: number; x: number; y: number } | null>(null)
-  const modality = useRef('')
+export function UtilityButton({ onActivate, ...props }: UtilityButtonProps) {
+  const [tap] = useState(createTapActivation)
+  const activate = (hit: TapResult | null) => {
+    if (hit && !props.disabled) onActivate(hit.source === 'keyboard')
+  }
   return (
     <button
       {...props}
       type="button"
-      onPointerDown={(event) => {
-        if (!event.isPrimary) return
-        modality.current = event.pointerType
-        touch.current =
-          event.pointerType === 'touch'
-            ? { id: event.pointerId, x: event.clientX, y: event.clientY }
-            : null
-      }}
-      onPointerUp={(event) => {
-        const start = touch.current
-        if (!start || start.id !== event.pointerId) return
-        touch.current = null
-        const rect = event.currentTarget.getBoundingClientRect()
-        if (
-          !props.disabled &&
-          Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 12 &&
-          event.clientX >= rect.left &&
-          event.clientX <= rect.right &&
-          event.clientY >= rect.top &&
-          event.clientY <= rect.bottom
-        ) {
-          // Like tool pickup, a completed touch must not rely on compatibility clicks
-          // immediately after the slate's captured drawing gesture.
-          onActivate(false)
-        }
-      }}
-      onPointerCancel={() => {
-        touch.current = null
-      }}
-      onClick={(event) => {
-        if (modality.current === 'touch' && event.detail > 0) return
-        onActivate(event.detail === 0)
-      }}
+      onPointerDown={tap.pointerDown}
+      onPointerUp={(event) => activate(tap.pointerUp(event))}
+      onPointerCancel={tap.pointerCancel}
+      onClick={(event) => activate(tap.click(event))}
     />
   )
 }

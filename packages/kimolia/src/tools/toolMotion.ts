@@ -33,8 +33,8 @@ export function createToolMotion(
       const root = overlay.querySelector<HTMLElement>(`[data-flight="${id}"]`)!
       return {
         root,
-        rotation: root.querySelector<HTMLElement>('.tool-rotation')!,
-        parked: slots[id].querySelector<HTMLElement>('.tool-art')!,
+        rotation: root.querySelector<HTMLElement>('.kimolia-tool-rotation')!,
+        parked: slots[id].querySelector<HTMLElement>('.kimolia-tool-art')!,
       }
     },
     restPose: (id, elements): Pose => {
@@ -42,7 +42,7 @@ export function createToolMotion(
       const width = elements.parked!.offsetWidth
       const height = elements.parked!.offsetHeight
       const art = elements.rotation.querySelector<HTMLElement>(
-        '.tool-art',
+        '.kimolia-tool-art',
       )!
       art.style.width = `${width}px`
       art.style.height = `${height}px`

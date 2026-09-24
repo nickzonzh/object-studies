@@ -1,19 +1,19 @@
-.chalk-set {
+.kimolia-chalk-set {
   position: absolute;
   left: 8%;
   top: 12px;
   display: flex;
-  gap: clamp(12px, 2.3vw, 26px);
+  gap: clamp(12px, 2.3cqi, 26px);
   align-items: center;
 }
-.chalk-piece {
+.kimolia-chalk {
   position: relative;
-  width: clamp(48px, 6.9vw, 76px);
+  width: clamp(48px, 6.9cqi, 76px);
   height: 13px;
   filter: drop-shadow(1px 2px 1px #261f19b3);
   transform: rotate(-3deg);
 }
-.chalk-body {
+.kimolia-chalk-body {
   position: absolute;
   inset: 0;
   border-radius: 4px 3px 3px 4px;
@@ -45,38 +45,38 @@
       #342b222b 87%,
       #30251e38
     ),
-    var(--chalk-color);
+    var(--kimolia-chalk-color);
   box-shadow:
     inset 3px 0 2px #fff3,
     inset -3px 0 1px #51453538;
 }
-.chalk-body::after {
+.kimolia-chalk-body::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: url('../assets/noise.svg') center / 130px;
+  background: var(--kimolia-grain-image) center / 130px;
   opacity: 0.24;
   mix-blend-mode: multiply;
 }
-.chalk-piece--white {
-  --chalk-color: #eee8d5;
+.kimolia-chalk--white {
+  --kimolia-chalk-color: var(--kimolia-chalk-white);
 }
-.chalk-piece--yellow {
-  --chalk-color: #dccd7a;
-  width: clamp(44px, 6.1vw, 68px);
+.kimolia-chalk--yellow {
+  --kimolia-chalk-color: var(--kimolia-chalk-yellow);
+  width: clamp(44px, 6.1cqi, 68px);
   transform: translateY(1px) rotate(2deg);
 }
-.chalk-piece--blue {
-  --chalk-color: #88aec0;
-  width: clamp(45px, 6.4vw, 71px);
+.kimolia-chalk--blue {
+  --kimolia-chalk-color: var(--kimolia-chalk-blue);
+  width: clamp(45px, 6.4cqi, 71px);
   transform: rotate(-1.5deg);
 }
-.chalk-piece--pink {
-  --chalk-color: #d39a9e;
-  width: clamp(42px, 5.9vw, 65px);
+.kimolia-chalk--pink {
+  --kimolia-chalk-color: var(--kimolia-chalk-pink);
+  width: clamp(42px, 5.9cqi, 65px);
   transform: translateY(1px) rotate(4deg);
 }
-.chalk-piece--yellow .chalk-body {
+.kimolia-chalk--yellow .kimolia-chalk-body {
   clip-path: polygon(
     3% 1%,
     38% 5%,
@@ -91,7 +91,7 @@
     0 40%
   );
 }
-.chalk-piece--blue .chalk-body {
+.kimolia-chalk--blue .kimolia-chalk-body {
   clip-path: polygon(
     1% 6%,
     39% 0,
@@ -106,7 +106,7 @@
     0 74%
   );
 }
-.chalk-piece--pink .chalk-body {
+.kimolia-chalk--pink .kimolia-chalk-body {
   clip-path: polygon(
     0 12%,
     4% 0,
@@ -121,29 +121,29 @@
     2% 62%
   );
 }
-@media (max-width: 700px) {
-  .chalk-set {
+@container (max-width: 700px) {
+  .kimolia-chalk-set {
     left: 6%;
     gap: 13px;
   }
 }
-@media (max-width: 520px) {
-  .chalk-set {
+@container (max-width: 560px) {
+  .kimolia-chalk-set {
     top: 10px;
     left: 5%;
-    gap: clamp(8px, 2.5vw, 13px);
+    gap: clamp(8px, 2.5cqi, 13px);
   }
-  .chalk-piece {
-    width: clamp(29px, 8.7vw, 44px);
+  .kimolia-chalk {
+    width: clamp(29px, 8.7cqi, 44px);
     height: 9px;
   }
-  .chalk-piece--yellow {
-    width: clamp(26px, 8vw, 40px);
+  .kimolia-chalk--yellow {
+    width: clamp(26px, 8cqi, 40px);
   }
-  .chalk-piece--blue {
-    width: clamp(28px, 8.3vw, 42px);
+  .kimolia-chalk--blue {
+    width: clamp(28px, 8.3cqi, 42px);
   }
-  .chalk-piece--pink {
-    width: clamp(25px, 7.5vw, 38px);
+  .kimolia-chalk--pink {
+    width: clamp(25px, 7.5cqi, 38px);
   }
 }
