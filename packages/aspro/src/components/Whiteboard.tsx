@@ -9,7 +9,7 @@ const DEFAULT_LABELS: WhiteboardLabels = {
   board: 'Whiteboard',
   surface: 'Drawing surface',
   instructions:
-    'Choose a marker or the eraser from the tray, then draw on the  Drawing needs a mouse, pen or touch.',
+    'Choose a marker or the eraser from the tray, then draw on the board. Drawing needs a mouse, pen or touch.',
   tools: 'Whiteboard tools',
   eraser: 'Eraser',
   actions: 'Board actions',
@@ -53,7 +53,7 @@ export function Whiteboard({
   return (
     <div
       ref={rootRef}
-      className={['aspro', showControls ? '' : 'aspro--bare', className].filter(Boolean).join(' ')}
+      className={['aspro', activeTool ? 'aspro--holding' : '', showControls ? '' : 'aspro--bare', className].filter(Boolean).join(' ')}
       style={{ ...TOOL_VARIABLES, ...style }}
       role="group"
       aria-label={text.board}

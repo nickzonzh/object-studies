@@ -123,15 +123,27 @@ test('fast diagonal erasing leaves no islands between sparse samples', () => {
   assert.equal(alpha(board, 30, 300), 255)
 })
 
-test('a wipe leaves a ghost, and a second pass over it lifts more', () => {
+test('a wipe ghosts once, but scrubbing or three passes make it transparent', () => {
+  const pass = [point(100, 100, 0.5, 0), point(300, 100, 0.5, 0)]
   const board = canvas(400, 200)
   context(board).fillRect(0, 0, 400, 200)
-  paint(board, eraser([point(100, 100, 0.5, 0), point(300, 100, 0.5, 0)]))
+  paint(board, eraser(pass))
   const once = alpha(board, 200, 100)
   assert.ok(once > 3 && once < 45, `A single wipe leaves a faint ghost, got ${once}`)
-  paint(board, { ...eraser([point(100, 100, 0.5, 0), point(300, 100, 0.5, 0)]), id: 'erase-2' })
-  const twice = alpha(board, 200, 100)
-  assert.ok(twice < once / 2, `A second pass lifts more of it, got ${twice} after ${once}`)
+
+  const scrubbed = canvas(400, 200)
+  context(scrubbed).fillRect(0, 0, 400, 200)
+  paint(scrubbed, eraser([
+    point(100, 100, 0.5, 0),
+    point(300, 100, 0.5, 0),
+    point(100, 100, 0.5, 0),
+  ], 84, 34))
+  assert.equal(alpha(scrubbed, 200, 100), 0, 'A back-and-forth scrub clears its path')
+
+  const repeated = canvas(400, 200)
+  context(repeated).fillRect(0, 0, 400, 200)
+  for (let i = 0; i < 3; i++) paint(repeated, { ...eraser(pass), id: `erase-${i}` })
+  assert.equal(alpha(repeated, 200, 100), 0, 'Three separate passes clear their path')
 })
 
 test('an active stroke painted sample by sample matches its committed replay', () => {

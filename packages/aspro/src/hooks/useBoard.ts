@@ -76,6 +76,8 @@ export function useBoard({
   const previousPointerRef = useRef<{ x: number; y: number } | null>(null)
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null)
   const angleRef = useRef(MARKER_REST_ANGLE)
+  const returnTimerRef = useRef<number | null>(null)
+  const surfaceOutsideRef = useRef(false)
   // Layout is read once per pointer event, never once per coalesced sample.
   const surfaceRectRef = useRef<DOMRect | null>(null)
   const objectRectRef = useRef<DOMRect | null>(null)
@@ -97,6 +99,21 @@ export function useBoard({
       render()
     })
   }, [render])
+  useEffect(() => {
+    const clearReturn = (event: PointerEvent) => {
+      const root = rootRef.current
+      if (!root?.contains(event.target as Node)) return
+      if (returnTimerRef.current !== null) {
+        window.clearTimeout(returnTimerRef.current)
+        returnTimerRef.current = null
+      }
+    }
+    document.addEventListener('pointermove', clearReturn)
+    return () => {
+      document.removeEventListener('pointermove', clearReturn)
+      if (returnTimerRef.current !== null) window.clearTimeout(returnTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => { render() }, [strokes, render])
 
@@ -246,7 +263,32 @@ export function useBoard({
   const toolScale = () =>
     Math.max(0.65, Math.min(1, surfaceRectRef.current!.width / BOARD_WIDTH))
 
-  const moveTool = (clientX: number, clientY: number, drawing: boolean) => {
+  const inside = (rect: DOMRect | null, x: number, y: number) =>
+    Boolean(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom)
+
+  const clearReturn = () => {
+    if (returnTimerRef.current !== null) {
+      window.clearTimeout(returnTimerRef.current)
+      returnTimerRef.current = null
+    }
+  }
+
+  const scheduleReturn = () => {
+    clearReturn()
+    if (!activeToolRef.current || activeStrokeRef.current) return
+    returnTimerRef.current = window.setTimeout(() => {
+      returnTimerRef.current = null
+      if (!activeToolRef.current || activeStrokeRef.current) return
+      motionRef.current?.dockAll()
+      activeToolRef.current = null
+      setActiveTool(null)
+      previousPointerRef.current = null
+    }, 600)
+  }
+
+  const moveTool = (
+    clientX: number, clientY: number, held = false, contact = held,
+  ) => {
     const id = activeToolRef.current
     lastPointerRef.current = { x: clientX, y: clientY }
     if (!id) return
@@ -264,10 +306,10 @@ export function useBoard({
     previousPointerRef.current = { x: clientX, y: clientY }
     const pose: Pose = {
       x: clientX, y: clientY, angle: angleRef.current,
-      scale: (id === ERASER_ID || drawing ? HELD_SCALE : 0.88) * toolScale(),
+      scale: (id === ERASER_ID || held ? HELD_SCALE : 0.88) * toolScale(),
     }
-    if (drawing) {
-      pendingMoveRef.current = [id, pose, true]
+    if (held) {
+      pendingMoveRef.current = [id, pose, contact]
       return
     }
     pendingMoveRef.current = null
@@ -275,6 +317,7 @@ export function useBoard({
   }
 
   const select = useCallback((id: ToolId, source: ActivationSource) => {
+    clearReturn()
     const motion = motionRef.current
     const previous = activeToolRef.current
     if (previous) motion?.dock(previous, source === 'keyboard')
@@ -290,6 +333,18 @@ export function useBoard({
     measure()
     moveTool(pointer.x, pointer.y, false)
   }, [])
+
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !activeToolRef.current) return
+      event.preventDefault()
+      select(activeToolRef.current, 'keyboard')
+    }
+    root.addEventListener('keydown', escape)
+    return () => root.removeEventListener('keydown', escape)
+  }, [select])
 
   const [tap] = useState(createTapActivation)
   const activate = (hit: TapResult | null) => {
@@ -311,14 +366,24 @@ export function useBoard({
 
   /* ── drawing ──────────────────────────────────────────────────────────── */
 
-  const sample = (event: { clientX: number; clientY: number; pointerType: string; pressure: number }): Point => {
+  const sample = (
+    event: { clientX: number; clientY: number; pointerType: string; pressure: number },
+  ): Point | null => {
     const rect = surfaceRectRef.current!
-    moveTool(event.clientX, event.clientY, true)
-    return {
+    const within = inside(rect, event.clientX, event.clientY)
+    moveTool(event.clientX, event.clientY, true, within)
+    if (!within) {
+      surfaceOutsideRef.current = true
+      return null
+    }
+    const point = {
       ...boardPoint(event.clientX - rect.left, event.clientY - rect.top, rect.width),
       pressure: event.pointerType === 'mouse' ? 0.5 : event.pressure || 0.5,
       angle: angleRef.current,
+      ...(surfaceOutsideRef.current ? { breakBefore: true } : {}),
     }
+    surfaceOutsideRef.current = false
+    return point
   }
 
   const beginStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -326,7 +391,9 @@ export function useBoard({
     measure()
     event.currentTarget.setPointerCapture(event.pointerId)
     pointerIdRef.current = event.pointerId
+    surfaceOutsideRef.current = false
     const point = sample(event)
+    if (!point) return
     const id = activeToolRef.current
     const eraser = id === ERASER_ID
     const marker = latestRef.current.markers.find((item) => item.id === id) ?? latestRef.current.markers[0]
@@ -344,17 +411,18 @@ export function useBoard({
   }
 
   const extendStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!event.isPrimary && !activeStrokeRef.current) return
+    if (!event.isPrimary) return
     measure()
     if (activeStrokeRef.current && event.pointerId === pointerIdRef.current) {
       const coalesced = event.nativeEvent.getCoalescedEvents?.() ?? []
       for (const input of coalesced.length ? coalesced : [event.nativeEvent]) {
-        activeStrokeRef.current.points.push(sample(input))
+        const point = sample(input)
+        if (point) activeStrokeRef.current.points.push(point)
       }
       scheduleRender()
       return
     }
-    if (!activeStrokeRef.current) moveTool(event.clientX, event.clientY, false)
+    if (!activeStrokeRef.current) moveTool(event.clientX, event.clientY)
   }
 
   const finishStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -365,30 +433,31 @@ export function useBoard({
     if (!cancelled) {
       const point = sample(event)
       const last = stroke.points.at(-1)!
-      if (last.x !== point.x || last.y !== point.y) stroke.points.push(point)
+      if (point && (last.x !== point.x || last.y !== point.y || point.breakBefore)) stroke.points.push(point)
     }
     activeStrokeRef.current = null
     pointerIdRef.current = null
+    surfaceOutsideRef.current = false
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
-    moveTool(event.clientX, event.clientY, false)
-    const object = objectRectRef.current!
-    const outside = event.clientX < object.left || event.clientX > object.right
-      || event.clientY < object.top || event.clientY > object.bottom
-    if (event.pointerType === 'touch' || cancelled || outside) motionRef.current?.dockAll()
+    moveTool(event.clientX, event.clientY)
+    const outsideRoot = !inside(rootRef.current?.getBoundingClientRect() ?? null, event.clientX, event.clientY)
+    if (event.pointerType === 'touch' || cancelled) motionRef.current?.dockAll()
     if (cancelled) {
       render()
       return
     }
     historyRef.current.commit([stroke])
     publish()
+    if (outsideRoot) scheduleReturn()
   }
 
   /* ── surroundings ─────────────────────────────────────────────────────── */
 
   const onObjectPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!event.isPrimary) return
+    clearReturn()
     // The drawing handler has already measured this event.
     if (!activeStrokeRef.current) measure()
     const object = objectRectRef.current!
@@ -396,14 +465,17 @@ export function useBoard({
     light.setProperty('--aspro-light-x', `${((event.clientX - object.left) / object.width) * 100}%`)
     light.setProperty('--aspro-light-y', `${((event.clientY - object.top) / object.height) * 100}%`)
     if (event.target !== canvasRef.current && !activeStrokeRef.current) {
-      moveTool(event.clientX, event.clientY, false)
+      moveTool(event.clientX, event.clientY)
     }
   }
 
-  const onObjectPointerLeave = () => {
-    if (!activeStrokeRef.current) motionRef.current?.dockAll()
-    previousPointerRef.current = null
+  const onObjectPointerLeave = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!activeStrokeRef.current && !objectRef.current?.contains(event.relatedTarget as Node | null)) {
+      scheduleReturn()
+      previousPointerRef.current = null
+    }
   }
+
 
   /* ── export ───────────────────────────────────────────────────────────── */
 

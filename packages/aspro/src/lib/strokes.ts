@@ -1,6 +1,6 @@
 import { seededRandom } from 'object-studies-core'
 
-export type Point = { x: number; y: number; pressure: number; angle?: number }
+export type Point = { x: number; y: number; pressure: number; angle?: number; breakBefore?: boolean }
 export type StrokeTool = 'marker' | 'eraser'
 export type Stroke = {
   id: string
@@ -176,6 +176,10 @@ function paintStreaks(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bou
     let drawn = false
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1], b = points[i]
+      if (b.breakBefore) {
+        drawn = false
+        continue
+      }
       const dx = b.x - a.x, dy = b.y - a.y
       const length = Math.hypot(dx, dy)
       if (length < 0.01) continue
@@ -201,23 +205,52 @@ function paintStreaks(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bou
   ctx.restore()
 }
 
+function hasRepeatedCoverage(stroke: Stroke) {
+  if (stroke.tool !== 'eraser' || stroke.points.length < 3) return false
+  const minimumTravel = stroke.width * 0.8
+  const proximity = stroke.width * 0.5
+  let segmentStart = 0
+  const travelled: number[] = []
+  for (let i = 0; i < stroke.points.length; i++) {
+    const point = stroke.points[i]
+    if (point.breakBefore) {
+      segmentStart = i
+      travelled.length = 0
+    }
+    const previous = stroke.points[i - 1]
+    travelled[i - segmentStart] = i === segmentStart
+      ? 0
+      : travelled[i - segmentStart - 1] + Math.hypot(point.x - previous.x, point.y - previous.y)
+    for (let j = segmentStart; j < i - 1; j++) {
+      if (travelled[i - segmentStart] - travelled[j - segmentStart] < minimumTravel) continue
+      if (Math.hypot(point.x - stroke.points[j].x, point.y - stroke.points[j].y) <= proximity) return true
+    }
+  }
+  return false
+}
+
 // Lift coverage away again. Marker ink keeps a little of the board showing
-// through; the eraser leaves a faint ghost of whatever it passed over, so a
-// second pass over the same place lifts what the first one left behind.
+// through; the eraser leaves a faint ghost of whatever it passed over, while
+// sustained scrubbing gets a second opaque lift over the revisited path.
 function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds) {
   const { density } = washFor(ctx, stroke)
   const x = region.left, y = region.top, width = region.right - x, height = region.bottom - y
   ctx.save()
   ctx.globalCompositeOperation = 'destination-out'
-  if (stroke.tool === 'eraser') {
-    ctx.fillStyle = 'rgba(0,0,0,0.035)'
-    ctx.fillRect(x, y, width, height)
-  }
   ctx.fillStyle = density
   ctx.fillRect(x, y, width, height)
   ctx.restore()
   paintStreaks(ctx, stroke, region)
+  if (hasRepeatedCoverage(stroke)) {
+    ctx.save()
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
+    paintContact(ctx, stroke)
+    paintRange(ctx, stroke, 1, stroke.points.length)
+    ctx.restore()
+  }
 }
+
 
 // The nib rests where it lands and again where it leaves, so a little more ink
 // sits at both ends — denser where it started, and never a bead with an edge.
@@ -287,8 +320,7 @@ function inkStyle(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 }
 
 // Repeated stationary samples still leave the initial contact mark.
-function paintContact(ctx: CanvasRenderingContext2D, stroke: Stroke) {
-  const point = stroke.points[0]
+function paintContactAt(ctx: CanvasRenderingContext2D, stroke: Stroke, point: Point) {
   inkStyle(ctx, stroke)
   if (stroke.tool === 'eraser' && stroke.height) {
     stampEraser(ctx, point, stroke)
@@ -297,6 +329,10 @@ function paintContact(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.beginPath()
   ctx.arc(point.x, point.y, (stroke.tool === 'marker' ? inkWidth(stroke, point) : stroke.width) / 2, 0, Math.PI * 2)
   ctx.fill()
+}
+
+function paintContact(ctx: CanvasRenderingContext2D, stroke: Stroke) {
+  paintContactAt(ctx, stroke, stroke.points[0])
 }
 
 /**
@@ -309,6 +345,10 @@ function paintRange(ctx: CanvasRenderingContext2D, stroke: Stroke, from: number,
   inkStyle(ctx, stroke)
   for (let i = Math.max(1, from); i < to; i++) {
     const previous = points[i - 1], current = points[i]
+    if (current.breakBefore) {
+      paintContactAt(ctx, stroke, current)
+      continue
+    }
     if (stroke.tool === 'eraser' && stroke.height) {
       const rotation = Math.abs((current.angle ?? 0) - (previous.angle ?? 0)) * Math.PI / 180 * stroke.width / 2
       const steps = Math.max(1, Math.ceil(
@@ -324,7 +364,7 @@ function paintRange(ctx: CanvasRenderingContext2D, stroke: Stroke, from: number,
       }
       continue
     }
-    const start = i === 1 ? previous : midpoint(points[i - 2], previous)
+    const start = i === 1 || points[i - 2].breakBefore ? previous : midpoint(points[i - 2], previous)
     const end = midpoint(previous, current)
     if (stroke.tool === 'marker') {
       markerSegment(ctx, stroke, start, previous, end)
@@ -343,7 +383,7 @@ function paintRange(ctx: CanvasRenderingContext2D, stroke: Stroke, from: number,
 function paintTail(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   const { points } = stroke
   const count = points.length
-  if (count < 2 || (stroke.tool === 'eraser' && stroke.height)) return
+  if (count < 2 || points[count - 1].breakBefore || (stroke.tool === 'eraser' && stroke.height)) return
   const previous = points[count - 2], current = points[count - 1]
   const end = midpoint(previous, current)
   inkStyle(ctx, stroke)

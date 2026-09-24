@@ -377,6 +377,15 @@
   }
 }
 
+/* A held tool passing over the tray must not lift a parked tool. */
+.aspro--holding .aspro-slot:hover .aspro-marker {
+  transform: translateY(-0.9cqw);
+}
+
+.aspro--holding .aspro-slot:hover .aspro-eraser {
+  transform: translateY(0.1cqw);
+}
+
 /* ── marker ────────────────────────────────────────────────────────────── */
 
 .aspro-marker {

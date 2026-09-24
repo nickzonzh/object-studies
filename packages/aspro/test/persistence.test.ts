@@ -33,6 +33,20 @@ test('a saved board round-trips through storage', () => {
   assert.deepEqual(loaded.strokes, [stroke()])
 })
 
+test('a clipped stroke keeps its segment break after reload', () => {
+  const storage = store()
+  const split: Stroke = {
+    ...stroke('split'),
+    points: [
+      { x: 10, y: 20, pressure: 0.5 },
+      { x: 30, y: 40, pressure: 0.6, angle: -38, breakBefore: true },
+    ],
+  }
+  const persistence = createBoardPersistence(KEY, () => storage)
+  assert.equal(persistence.save([split]), 'saved')
+  assert.deepEqual(persistence.load().strokes, [split])
+})
+
 test('a corrupted board is reported, not restored and not overwritten', () => {
   for (const raw of [
     '{"version":2}',
