@@ -7,6 +7,8 @@ const properties = ['--light-x', '--light-y', '--relief-light', '--relief-return
 export function usePointerLight(enabled: boolean, variant: string) {
   const ref = useRef<HTMLDivElement>(null)
   const pending = useRef<number | null>(null)
+  /** Held for the component's lifetime so the move handler allocates nothing. */
+  const media = useRef<{ motion: MediaQueryList; pointer: MediaQueryList } | null>(null)
   const reset = () => {
     if (pending.current !== null) cancelAnimationFrame(pending.current)
     pending.current = null
@@ -16,12 +18,14 @@ export function usePointerLight(enabled: boolean, variant: string) {
   useEffect(() => {
     const motion = matchMedia('(prefers-reduced-motion: reduce)')
     const pointer = matchMedia('(any-pointer: fine)')
+    media.current = { motion, pointer }
     reset()
     motion.addEventListener('change', reset)
     pointer.addEventListener('change', reset)
     window.addEventListener('blur', reset)
     return () => {
       reset()
+      media.current = null
       motion.removeEventListener('change', reset)
       pointer.removeEventListener('change', reset)
       window.removeEventListener('blur', reset)
@@ -29,8 +33,9 @@ export function usePointerLight(enabled: boolean, variant: string) {
   }, [enabled, variant])
 
   const move = (event: PointerEvent<HTMLDivElement>) => {
-    if (!enabled || event.defaultPrevented || event.pointerType === 'touch' ||
-      matchMedia('(prefers-reduced-motion: reduce)').matches || !matchMedia('(any-pointer: fine)').matches) return
+    const queries = media.current
+    if (!enabled || !queries || event.defaultPrevented || event.pointerType === 'touch' ||
+      queries.motion.matches || !queries.pointer.matches) return
     const { clientX, clientY } = event
     if (pending.current !== null) cancelAnimationFrame(pending.current)
     pending.current = requestAnimationFrame(() => {
@@ -41,8 +46,10 @@ export function usePointerLight(enabled: boolean, variant: string) {
       if (!width || !height) return
       const x = Math.max(0, Math.min(1, (clientX - left) / width))
       const y = Math.max(0, Math.min(1, (clientY - top) / height))
-      element.style.setProperty('--light-x', `${18 + x * 46}%`)
-      element.style.setProperty('--light-y', `${8 + y * 44}%`)
+      /* The source travels nearly the full face: highlights have to reach the
+         far rails, not hover near the middle. */
+      element.style.setProperty('--light-x', `${4 + x * 92}%`)
+      element.style.setProperty('--light-y', `${4 + y * 92}%`)
       if (variant === 'baroque-gold' || variant === 'champagne-rococo') {
         const gold = variant === 'baroque-gold'
         const distance = (x + y) / 2

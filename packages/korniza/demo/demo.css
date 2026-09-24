@@ -16,9 +16,12 @@ h1 { font-size: clamp(36px, 3.6vw, 54px); letter-spacing: -.04em; line-height: 1
 .controls label { display: flex; align-items: center; gap: 10px; font-size: 12px; }
 select { font: inherit; color: inherit; background: transparent; border: 1px solid #aaa397; border-radius: 3px; min-height: 36px; padding: 6px 26px 6px 9px; }
 input { accent-color: #4e5c4b; width: 16px; height: 16px; }
-.light-toggle { margin-left: auto; min-height: 36px; }
-.sheet-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 46px 52px; align-items: start; }
-figure { min-width: 0; margin: 0; }
+.switches { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-left: auto; min-height: 36px; }
+/* Rail thickness differs per material, so captions only line up when every
+   figure in a row shares a height and pins its caption to the last row. */
+.sheet-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 46px 52px; align-items: stretch; }
+figure { min-width: 0; margin: 0; display: grid; grid-template-rows: 1fr auto; }
+figure > .korniza { align-self: start; }
 figcaption { display: flex; gap: 15px; align-items: baseline; padding: 22px 2px 0; }
 .ordinal { font-size: 11px; color: #6d6558; font-variant-numeric: tabular-nums; }
 figcaption h2 { font-size: 23px; line-height: 1.2; margin: 0 0 7px; }
@@ -45,11 +48,8 @@ article code { font-size: 11px; overflow-wrap: anywhere; }
 .living-study :focus-visible { outline-color: #f1dfaa; }
 footer { display: flex; justify-content: space-between; gap: 20px; padding-block: 26px; border-top: 1px solid #cdc9bd; }
 @media (max-width: 1000px) { .sheet-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 40px; } .examples-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 40px; } }
-@media (max-width: 680px) { .sheet-heading { display: block; padding-top: 20px; } .intro-note { margin-top: 20px; } .sheet-grid, .examples-grid { grid-template-columns: minmax(0,1fr); gap: 38px; } .light-toggle { margin-left: 0; } .controls { gap: 12px 18px; } .controls label { flex-wrap: wrap; } nav { gap: 16px; } .wordmark { font-size: 19px; } h1 { font-size: 36px; } }
+@media (max-width: 680px) { .sheet-heading { display: block; padding-top: 20px; } .intro-note { margin-top: 20px; } .sheet-grid, .examples-grid { grid-template-columns: minmax(0,1fr); gap: 38px; } .switches { margin-left: 0; } .controls { gap: 12px 18px; } .controls label { flex-wrap: wrap; } nav { gap: 16px; } .wordmark { font-size: 19px; } h1 { font-size: 36px; } }
 
-/* Match the original contact sheet crop; only the painting includes a scan border. */
-.painting-crop { position: absolute; inset: 0; overflow: hidden; }
-.painting-crop img { transform: scale(1.065); }
 @container (max-width: 360px) {
   .living-study { padding: 10px; }
   .living-study .eyebrow { font-size: 8px; margin-bottom: 6px; }

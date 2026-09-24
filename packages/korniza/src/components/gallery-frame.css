@@ -1,8 +1,20 @@
+/* Korniza shell. Every class is prefixed `korniza-`; the consumer-facing
+   wrapper keeps the bare `.korniza` class so the documented custom properties
+   can be set through `className` or `style`. */
 .korniza { container-type: inline-size; width: 100%; min-width: 0; }
-.korniza, .gallery-frame, .gallery-frame__opening, .gallery-frame__slice { box-sizing: border-box; }
-.gallery-frame {
-  --light-x: 26%;
-  --light-y: 16%;
+.korniza, .korniza-frame, .korniza-frame__opening, .korniza-frame__window,
+.korniza-frame__slice { box-sizing: border-box; }
+
+.korniza-frame {
+  /* A variant supplies the unrounded rail expression in --frame-width-base.
+     Whole-pixel rounding is applied in the @supports block below: a custom
+     property is never validated at parse time, so a second declaration cannot
+     act as a fallback for browsers without round(). */
+  --frame-width: var(--korniza-frame-width, var(--frame-width-base));
+  --light-x: var(--korniza-light-x, 26%);
+  --light-y: var(--korniza-light-y, 16%);
+  --mat-width: var(--korniza-mat-width, calc(var(--frame-width) * .66));
+  --mat-bevel: var(--korniza-mat-bevel, max(2px, calc(var(--frame-width) * .085)));
   display: grid;
   grid-template-columns: var(--frame-width) minmax(0, 1fr) var(--frame-width);
   grid-template-rows: var(--frame-width) auto var(--frame-width);
@@ -11,42 +23,169 @@
   isolation: isolate;
   width: 100%;
   background: #30312b;
-  box-shadow: 0 1px 2px #24251d60, 1px 5px 7px -4px #24251d60,
-    4px 16px 22px -12px #34332835, 8px 30px 42px -22px #34332820;
+  /* Key light sits upper-left, so the cast shadow falls down and slightly
+     right at roughly x:y = 1:2. */
+  box-shadow: var(--korniza-shadow, 0 1px 2px #24251d60, 2px 4px 7px -4px #24251d60,
+    8px 16px 22px -12px #34332835, 15px 30px 42px -22px #34332820);
 }
-.gallery-frame__slice { pointer-events: none; }
+@supports (width: round(nearest, 1px, 1px)) {
+  .korniza-frame { --frame-width: var(--korniza-frame-width, round(nearest, var(--frame-width-base), 1px)); }
+}
+
+/* --- nine-slice mouldings ------------------------------------------------ */
+.korniza-frame__slice { pointer-events: none; }
 /* Subpixel grid origins can rasterize adjacent edges separately. A one-pixel
    longitudinal bleed closes that boundary without changing the cross-section. */
-.gallery-frame__top, .gallery-frame__bottom { margin-inline: -1px; z-index: 1; }
-.gallery-frame__left, .gallery-frame__right { margin-block: -1px; z-index: 1; }
-.gallery-frame__top { grid-area: 1 / 2; background: linear-gradient(to bottom, var(--profile)); }
-.gallery-frame__bottom { grid-area: 3 / 2; background: linear-gradient(to top, var(--profile-shadow)); }
-.gallery-frame__left { grid-area: 2 / 1; background: linear-gradient(to right, var(--profile)); }
-.gallery-frame__right { grid-area: 2 / 3; background: linear-gradient(to left, var(--profile-shadow)); }
-.gallery-frame__tl { grid-area: 1 / 1; }
-.gallery-frame__tr { grid-area: 1 / 3; transform: scaleX(-1); }
-.gallery-frame__bl { grid-area: 3 / 1; transform: scaleY(-1); }
-.gallery-frame__br { grid-area: 3 / 3; transform: scale(-1); }
-.gallery-frame__tl, .gallery-frame__tr, .gallery-frame__bl, .gallery-frame__br { position: relative; aspect-ratio: 1; }
+.korniza-frame__top, .korniza-frame__bottom { margin-inline: -1px; z-index: 1; }
+.korniza-frame__left, .korniza-frame__right { margin-block: -1px; z-index: 1; }
+.korniza-frame__top { grid-area: 1 / 2; background: linear-gradient(to bottom, var(--profile)); }
+.korniza-frame__bottom { grid-area: 3 / 2; background: linear-gradient(to top, var(--profile-shadow)); }
+.korniza-frame__left { grid-area: 2 / 1; background: linear-gradient(to right, var(--profile)); }
+.korniza-frame__right { grid-area: 2 / 3; background: linear-gradient(to left, var(--profile-shadow)); }
+.korniza-frame__tl { grid-area: 1 / 1; }
+.korniza-frame__tr { grid-area: 1 / 3; transform: scaleX(-1); }
+.korniza-frame__bl { grid-area: 3 / 1; transform: scaleY(-1); }
+.korniza-frame__br { grid-area: 3 / 3; transform: scale(-1); }
+.korniza-frame__tl, .korniza-frame__tr, .korniza-frame__bl, .korniza-frame__br { position: relative; aspect-ratio: 1; }
 /* Two complementary mitres use the very same perpendicular profiles as rails.
    The first fills the square underneath the second, avoiding antialias gaps. */
-.gallery-frame__slice::before, .gallery-frame__slice::after { content: ''; position: absolute; inset: 0; }
-.gallery-frame__slice::before { background: linear-gradient(to bottom, var(--profile)); }
-.gallery-frame__slice::after { background: linear-gradient(to right, var(--profile)); clip-path: polygon(0 0, 100% 100%, 0 100%); }
-.gallery-frame__top::before, .gallery-frame__top::after,
-.gallery-frame__bottom::before, .gallery-frame__bottom::after,
-.gallery-frame__left::before, .gallery-frame__left::after,
-.gallery-frame__right::before, .gallery-frame__right::after { content: none; }
-.gallery-frame__tr::after, .gallery-frame__br::after { background: linear-gradient(to right, var(--profile-shadow)); }
-.gallery-frame__bl::before, .gallery-frame__br::before { background: linear-gradient(to bottom, var(--profile-shadow)); }
-.gallery-frame__opening { grid-area: 2 / 2; min-width: 0; min-height: 0; position: relative; overflow: auto; overscroll-behavior: contain; background: #ddd7c8; isolation: isolate; }
-.gallery-frame::after {
+.korniza-frame__slice::before, .korniza-frame__slice::after { content: ''; position: absolute; inset: 0; }
+.korniza-frame__slice::before { background: linear-gradient(to bottom, var(--profile)); }
+.korniza-frame__slice::after { background: linear-gradient(to right, var(--profile)); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.korniza-frame__top::before, .korniza-frame__top::after,
+.korniza-frame__bottom::before, .korniza-frame__bottom::after,
+.korniza-frame__left::before, .korniza-frame__left::after,
+.korniza-frame__right::before, .korniza-frame__right::after { content: none; }
+.korniza-frame__tr::after, .korniza-frame__br::after { background: linear-gradient(to right, var(--profile-shadow)); }
+.korniza-frame__bl::before, .korniza-frame__br::before { background: linear-gradient(to bottom, var(--profile-shadow)); }
+
+/* --- opening, mat and glazing -------------------------------------------- */
+.korniza-frame__opening {
+  grid-area: 2 / 2; min-width: 0; min-height: 0; position: relative;
+  overflow: auto; overscroll-behavior: contain; isolation: isolate;
+  background: var(--korniza-opening-background, #ddd7c8);
+}
+.korniza-frame::after {
   content: ''; position: absolute; inset: var(--frame-width); z-index: 1; pointer-events: none;
   box-shadow: inset 1px 1px 2px #10140e50, inset -2px -3px 3px #10140e85,
     inset -3px -4px 6px #10140e35;
 }
-.gallery-artwork { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.korniza-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* A mat board fills the opening; the artwork window is cut into it. The lip of
+   the frame casts down and slightly right onto the board, matching the shell. */
+.korniza-mat {
+  padding: var(--mat-width);
+  overflow: hidden;
+  background-color: var(--korniza-mat-color, #ece7db);
+  background-image: url('./mat-texture.svg');
+  background-size: 116px 116px;
+  box-shadow: inset 2px 4px 7px -1px #2b241a4d, inset -1px -2px 6px -2px #2b241a1f;
+}
+.korniza-frame__window {
+  position: relative; height: 100%; min-width: 0;
+  overflow: auto; overscroll-behavior: contain;
+  /* A mitred border is a true 45° bevel: four trapezoids of the board's pale
+     core. The lower and right planes face the key light, the upper and left
+     ones graze it, and the standing lip casts inward onto the artwork. */
+  border: var(--mat-bevel) solid;
+  border-color: #f1ebdd #fbf7ec #fffdf6 #f3eddf;
+  box-shadow: inset 1px 2px 3px -1px #2b241a55;
+}
+/* Faint glass in front of the whole opening, tracking the same light. */
+.korniza-glazing {
+  position: absolute; inset: var(--frame-width); z-index: 2; pointer-events: none;
+  opacity: var(--korniza-glazing-strength, 1);
+  background:
+    linear-gradient(107deg, #ffffff00 26%, #ffffff0a 39%, #ffffff16 44%, #ffffff05 49%, #ffffff00 58%),
+    linear-gradient(107deg, #ffffff00 62%, #ffffff09 68%, #ffffff00 74%),
+    radial-gradient(ellipse 52% 120% at var(--light-x) var(--light-y), #fbf7ef1f, #fbf7ef08 34%, transparent 62%),
+    radial-gradient(ellipse 150% 90% at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #1c1a1614, transparent 58%);
+}
+
+/* --- timber boards ------------------------------------------------------- */
+/* Full-length boards keep a texture continuous across the nine-slice joins.
+   The geometry is shared; a variant only supplies --grain and --grain-vertical
+   so each SVG is inlined exactly once in the stylesheet. */
+.korniza-boards { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.korniza-board { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; }
+.korniza-board--top, .korniza-board--bottom {
+  left: 0; right: 0; height: var(--frame-width);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--frame-width)) 100%, var(--frame-width) 100%);
+}
+.korniza-board--top { top: 0; background-image: var(--grain), linear-gradient(to bottom, var(--profile)); }
+.korniza-board--bottom { bottom: 0; transform: scale(-1); background-image: var(--grain), linear-gradient(to bottom, var(--profile-shadow)); }
+.korniza-board--left, .korniza-board--right {
+  top: 0; bottom: 0; width: var(--frame-width);
+  clip-path: polygon(0 0, 100% var(--frame-width), 100% calc(100% - var(--frame-width)), 0 100%);
+}
+.korniza-board--left { left: 0; background-image: var(--grain-vertical), linear-gradient(to right, var(--profile)); }
+.korniza-board--right { right: 0; transform: scale(-1); background-image: var(--grain-vertical), linear-gradient(to right, var(--profile-shadow)); }
+/* Fine fibres emerge where light grazes the broad face; --graze is 0 unless a
+   variant opts in, and the band is expressed in profile coordinates. */
+.korniza-board::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--grain) 0 0 / 100% 100% no-repeat;
+  opacity: var(--graze, 0);
+  clip-path: polygon(0 var(--graze-from, 0%), 100% var(--graze-from, 0%), 100% var(--graze-to, 100%), 0 var(--graze-to, 100%));
+  mask-image: radial-gradient(ellipse at var(--light-x) var(--light-y), #fff, transparent 68%);
+}
+.korniza-board--bottom::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
+.korniza-board--left::before, .korniza-board--right::before {
+  background-image: var(--grain-vertical);
+  clip-path: polygon(var(--graze-from, 0%) 0, var(--graze-to, 100%) 0, var(--graze-to, 100%) 100%, var(--graze-from, 0%) 100%);
+}
+.korniza-board--right::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
+
+/* --- carved bands ------------------------------------------------------- */
+/* A repeating relief tile inset into the moulding. The tile is sized from the
+   frame width, so the carving grows with the container while the number of
+   repeats grows with the rail; each strip is mitred where it meets its
+   neighbour, exactly like the boards above it. */
+.korniza-bands { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.korniza-band { position: absolute; background-image: var(--band); }
+.korniza-band--top, .korniza-band--bottom {
+  left: 0; right: 0; height: var(--band-height);
+  background-repeat: repeat-x;
+  background-size: var(--band-step) 100%;
+  clip-path: polygon(var(--band-offset) 0, calc(100% - var(--band-offset)) 0,
+    calc(100% - var(--band-offset) - var(--band-height)) 100%, calc(var(--band-offset) + var(--band-height)) 100%);
+}
+.korniza-band--top { top: var(--band-offset); }
+.korniza-band--bottom { bottom: var(--band-offset); transform: scaleY(-1); }
+.korniza-band--left, .korniza-band--right {
+  top: 0; bottom: 0; width: var(--band-height);
+  background-image: var(--band-vertical);
+  background-repeat: repeat-y;
+  background-size: 100% var(--band-step);
+  clip-path: polygon(0 var(--band-offset), 100% calc(var(--band-offset) + var(--band-height)),
+    100% calc(100% - var(--band-offset) - var(--band-height)), 0 calc(100% - var(--band-offset)));
+}
+.korniza-band--left { left: var(--band-offset); }
+.korniza-band--right { right: var(--band-offset); transform: scaleX(-1); }
+
+/* --- travelling light --------------------------------------------------- */
+/* One masked ring over the mouldings carries the whole lighting response: a
+   specular band that slides along each rail, a broad key wash and a counter
+   shade opposite it. Variants only tune the four colours. */
+.korniza-sheen {
+  position: absolute; inset: 0; z-index: 5; pointer-events: none;
+  padding: var(--frame-width);
+  opacity: var(--korniza-sheen-strength, 1);
+  background:
+    radial-gradient(ellipse calc(var(--frame-width) * 6) calc(var(--frame-width) * 1.15) at var(--light-x) 0%, var(--sheen-hot), transparent 72%),
+    radial-gradient(ellipse calc(var(--frame-width) * 1.15) calc(var(--frame-width) * 6) at 0% var(--light-y), var(--sheen-hot), transparent 72%),
+    radial-gradient(ellipse calc(var(--frame-width) * 5) calc(var(--frame-width) * 1.05) at var(--light-x) 100%, var(--sheen-warm), transparent 74%),
+    radial-gradient(ellipse calc(var(--frame-width) * 1.05) calc(var(--frame-width) * 5) at 100% var(--light-y), var(--sheen-warm), transparent 74%),
+    radial-gradient(ellipse 46% 42% at var(--light-x) var(--light-y), var(--sheen-key), transparent 70%),
+    radial-gradient(ellipse 86% 74% at calc(100% - var(--light-x)) calc(100% - var(--light-y)), var(--sheen-shade), transparent 64%);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .gallery-frame { --light-x: 26% !important; --light-y: 16% !important; }
+  .korniza-frame {
+    --light-x: var(--korniza-light-x, 26%) !important;
+    --light-y: var(--korniza-light-y, 16%) !important;
+  }
 }

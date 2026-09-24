@@ -1,7 +1,7 @@
-import { GalleryFrame, type GalleryFrameProps } from '../../components/GalleryFrame.js'
+import { GalleryFrame, type VariantFrameProps } from '../../components/GalleryFrame.js'
 import './rococo.css'
 import { RococoOrnament } from './RococoOrnament.js'
 
-export function ChampagneRococo(props: Omit<GalleryFrameProps, 'variant' | 'decoration'>) {
+export function ChampagneRococo(props: VariantFrameProps) {
   return <GalleryFrame {...props} variant="champagne-rococo" decoration={<RococoOrnament />} />
 }
