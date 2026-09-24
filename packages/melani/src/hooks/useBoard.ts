@@ -145,11 +145,11 @@ export function useBoard({
     const motion = createToolMotion<ToolId>({
       tools: [...latestRef.current.markers.map((marker) => marker.id), ERASER_ID],
       elements: (id) => {
-        const flight = root.querySelector<HTMLElement>(`[data-aspro-flight=${CSS.escape(id)}]`)!
+        const flight = root.querySelector<HTMLElement>(`[data-melani-flight=${CSS.escape(id)}]`)!
         return {
           root: flight,
           rotation: flight.firstElementChild as HTMLElement,
-          parked: root.querySelector<HTMLElement>(`[data-aspro-slot=${CSS.escape(id)}] > *`) ?? undefined,
+          parked: root.querySelector<HTMLElement>(`[data-melani-slot=${CSS.escape(id)}] > *`) ?? undefined,
         }
       },
       restPose: (id, elements) => trayPose(id, elements.parked!),
@@ -360,7 +360,7 @@ export function useBoard({
 
   const [tap] = useState(createTapActivation)
   const activate = (hit: TapResult | null) => {
-    if (hit) select(hit.target.dataset.asproSlot!, hit.source)
+    if (hit) select(hit.target.dataset.melaniSlot!, hit.source)
   }
 
   const slotProps = {
@@ -474,8 +474,8 @@ export function useBoard({
     if (!activeStrokeRef.current) measure()
     const object = objectRectRef.current!
     const light = objectRef.current!.style
-    light.setProperty('--aspro-light-x', `${((event.clientX - object.left) / object.width) * 100}%`)
-    light.setProperty('--aspro-light-y', `${((event.clientY - object.top) / object.height) * 100}%`)
+    light.setProperty('--melani-light-x', `${((event.clientX - object.left) / object.width) * 100}%`)
+    light.setProperty('--melani-light-y', `${((event.clientY - object.top) / object.height) * 100}%`)
     if (event.target !== canvasRef.current && !activeStrokeRef.current) {
       moveTool(event.clientX, event.clientY)
     }
@@ -498,7 +498,7 @@ export function useBoard({
     exported.width = source.width
     exported.height = source.height
     const ctx = exported.getContext('2d')!
-    ctx.fillStyle = getComputedStyle(source).getPropertyValue('--aspro-board-paper').trim() || '#f7f8f6'
+    ctx.fillStyle = getComputedStyle(source).getPropertyValue('--melani-board-paper').trim() || '#f7f8f6'
     ctx.fillRect(0, 0, exported.width, exported.height)
     ctx.drawImage(source, 0, 0)
     return await new Promise<Blob>((resolve, reject) => {

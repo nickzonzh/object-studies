@@ -1,78 +1,78 @@
 /*
- * Aspro — a tactile whiteboard.
+ * Melani — a tactile whiteboard.
  *
- * Every rule is scoped to `.aspro`; nothing here styles the page. The object is
+ * Every rule is scoped to `.melani`; nothing here styles the page. The object is
  * lit from the upper left, so every cast shadow falls down and slightly right
  * at roughly x:y = 1:2, and tightens where a tool touches the board.
  *
- * Sizes inside the object are container units of `.aspro-object`, so the board,
+ * Sizes inside the object are container units of `.melani-object`, so the board,
  * its tray and the tools scale together at any width. Consumers constrain the
- * height with `--aspro-height`.
+ * height with `--melani-height`.
  */
 
-.aspro {
+.melani {
   /* ── theming surface ─────────────────────────────────────────────────── */
-  --aspro-frame-metal: #b2b8bb;
-  --aspro-frame-highlight: #f3f6f7;
-  --aspro-frame-shadow: #767d81;
-  --aspro-frame-edge: #545b5f;
-  --aspro-cap-colour: #565c60;
-  --aspro-board-paper: #f7f8f6;
-  --aspro-board-tint: #e9ece8;
-  --aspro-control-ink: #4e504e;
-  --aspro-control-surface: rgba(246, 245, 242, 0.62);
+  --melani-frame-metal: #b2b8bb;
+  --melani-frame-highlight: #f3f6f7;
+  --melani-frame-shadow: #767d81;
+  --melani-frame-edge: #545b5f;
+  --melani-cap-colour: #565c60;
+  --melani-board-paper: #f7f8f6;
+  --melani-board-tint: #e9ece8;
+  --melani-control-ink: #4e504e;
+  --melani-control-surface: rgba(246, 245, 242, 0.62);
   /* Maximum height for the whole component, controls included. */
-  --aspro-height: 100000px;
-  --aspro-max-width: 100%;
+  --melani-height: 100000px;
+  --melani-max-width: 100%;
 
   /* ── internal geometry ───────────────────────────────────────────────── */
-  --aspro-frame-pad: 1.5cqw;
-  --aspro-radius: max(5px, 0.62cqw);
-  --aspro-cap-size: 2.1cqw;
-  --aspro-tray-inset: 6.5%;
-  --aspro-tray-height: 4.1cqw;
-  --aspro-tray-overlap: 1.1cqw;
-  --aspro-tray-lip: 1.35cqw;
-  --aspro-controls-space: 58px;
+  --melani-frame-pad: 1.5cqw;
+  --melani-radius: max(5px, 0.62cqw);
+  --melani-cap-size: 2.1cqw;
+  --melani-tray-inset: 6.5%;
+  --melani-tray-height: 4.1cqw;
+  --melani-tray-overlap: 1.1cqw;
+  --melani-tray-lip: 1.35cqw;
+  --melani-controls-space: 58px;
   /* Width ÷ height of the board object with its tray; keep in step with the
      padding, tray height and overlap above. */
-  --aspro-object-aspect: 1.512;
-  --aspro-light-x: 34%;
-  --aspro-light-y: 14%;
+  --melani-object-aspect: 1.512;
+  --melani-light-x: 34%;
+  --melani-light-y: 14%;
 
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  color: var(--aspro-control-ink);
+  color: var(--melani-control-ink);
   font-family: inherit;
 }
 
-.aspro--bare {
-  --aspro-controls-space: 0px;
+.melani--bare {
+  --melani-controls-space: 0px;
 }
 
 /* Board, tray and tools scale from one width, so constraining the height is
    simply a width cap: the object never grows past the space it was given. */
-.aspro-object {
+.melani-object {
   container-type: inline-size;
   position: relative;
   display: flex;
   flex-direction: column;
   width: min(
     100%,
-    var(--aspro-max-width),
-    calc((var(--aspro-height) - var(--aspro-controls-space)) * var(--aspro-object-aspect))
+    var(--melani-max-width),
+    calc((var(--melani-height) - var(--melani-controls-space)) * var(--melani-object-aspect))
   );
 }
 
 /* ── frame: anodised aluminium extrusion ───────────────────────────────── */
 
-.aspro-frame {
+.melani-frame {
   position: relative;
   z-index: 1;
-  padding: var(--aspro-frame-pad);
-  border-radius: var(--aspro-radius);
+  padding: var(--melani-frame-pad);
+  border-radius: var(--melani-radius);
   background:
     repeating-linear-gradient(
       180deg,
@@ -88,12 +88,12 @@
     ),
     linear-gradient(
       180deg,
-      var(--aspro-frame-highlight) 0%,
-      color-mix(in srgb, var(--aspro-frame-metal) 64%, white) 4%,
-      var(--aspro-frame-metal) 22%,
-      color-mix(in srgb, var(--aspro-frame-metal) 82%, black) 56%,
-      color-mix(in srgb, var(--aspro-frame-metal) 94%, white) 78%,
-      var(--aspro-frame-shadow) 100%
+      var(--melani-frame-highlight) 0%,
+      color-mix(in srgb, var(--melani-frame-metal) 64%, white) 4%,
+      var(--melani-frame-metal) 22%,
+      color-mix(in srgb, var(--melani-frame-metal) 82%, black) 56%,
+      color-mix(in srgb, var(--melani-frame-metal) 94%, white) 78%,
+      var(--melani-frame-shadow) 100%
     );
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.75),
@@ -105,12 +105,12 @@
 }
 
 /* The sharp specular line an extruded, brushed edge throws back. */
-.aspro-frame-sheen {
+.melani-frame-sheen {
   position: absolute;
   z-index: 4;
   left: 3%;
   right: 3%;
-  top: calc(var(--aspro-frame-pad) * 0.2);
+  top: calc(var(--melani-frame-pad) * 0.2);
   height: 0.16cqw;
   pointer-events: none;
   border-radius: 999px;
@@ -118,7 +118,7 @@
     90deg,
     transparent,
     rgba(255, 255, 255, 0.25) 10%,
-    rgba(255, 255, 255, 0.96) calc(var(--aspro-light-x) * 0.75 + 12%),
+    rgba(255, 255, 255, 0.96) calc(var(--melani-light-x) * 0.75 + 12%),
     rgba(255, 255, 255, 0.3) 78%,
     transparent
   );
@@ -126,67 +126,67 @@
 }
 
 /* Moulded corner caps: matte plastic over the mitre. */
-.aspro-cap {
+.melani-cap {
   position: absolute;
   z-index: 3;
-  width: var(--aspro-cap-size);
-  height: var(--aspro-cap-size);
+  width: var(--melani-cap-size);
+  height: var(--melani-cap-size);
   pointer-events: none;
   background:
     linear-gradient(
       145deg,
-      color-mix(in srgb, var(--aspro-cap-colour) 62%, white),
-      var(--aspro-cap-colour) 42%,
-      color-mix(in srgb, var(--aspro-cap-colour) 74%, black)
+      color-mix(in srgb, var(--melani-cap-colour) 62%, white),
+      var(--melani-cap-colour) 42%,
+      color-mix(in srgb, var(--melani-cap-colour) 74%, black)
     );
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.22),
     0 0.08cqw 0.16cqw rgba(20, 24, 27, 0.3);
 }
 
-.aspro-cap--nw {
+.melani-cap--nw {
   left: 0;
   top: 0;
-  border-radius: var(--aspro-radius) 0 65% 0;
+  border-radius: var(--melani-radius) 0 65% 0;
 }
 
-.aspro-cap--ne {
+.melani-cap--ne {
   right: 0;
   top: 0;
-  border-radius: 0 var(--aspro-radius) 0 65%;
+  border-radius: 0 var(--melani-radius) 0 65%;
 }
 
-.aspro-cap--se {
+.melani-cap--se {
   right: 0;
   bottom: 0;
-  border-radius: 65% 0 var(--aspro-radius) 0;
+  border-radius: 65% 0 var(--melani-radius) 0;
 }
 
-.aspro-cap--sw {
+.melani-cap--sw {
   left: 0;
   bottom: 0;
-  border-radius: 0 65% 0 var(--aspro-radius);
+  border-radius: 0 65% 0 var(--melani-radius);
 }
 
 /* ── board surface ─────────────────────────────────────────────────────── */
 
-.aspro-surface {
+.melani-surface {
   position: relative;
   width: 100%;
   aspect-ratio: 1140 / 707;
   overflow: hidden;
-  border-radius: calc(var(--aspro-radius) * 0.5);
+  border-radius: calc(var(--melani-radius) * 0.5);
   cursor: default;
   background:
     radial-gradient(ellipse at 32% 12%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 64%),
-    linear-gradient(160deg, var(--aspro-board-paper) 0%, var(--aspro-board-paper) 46%, var(--aspro-board-tint) 100%);
+    linear-gradient(160deg, var(--melani-board-paper) 0%, var(--melani-board-paper) 46%, var(--melani-board-tint) 100%);
   box-shadow:
     inset 0 0.22cqw 0.5cqw rgba(25, 28, 26, 0.24),
     inset 0 0 0 1px rgba(45, 48, 45, 0.22),
     inset 0 0 3cqw rgba(86, 92, 86, 0.07);
 }
 
-.aspro-surface::after {
+.melani-surface::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -197,18 +197,18 @@
   mix-blend-mode: multiply;
 }
 
-.aspro-gloss {
+.melani-gloss {
   position: absolute;
   z-index: 5;
   inset: 0;
   pointer-events: none;
   opacity: 0.7;
   background:
-    radial-gradient(ellipse 56% 34% at var(--aspro-light-x) var(--aspro-light-y), rgba(255, 255, 255, 0.07), transparent 74%),
+    radial-gradient(ellipse 56% 34% at var(--melani-light-x) var(--melani-light-y), rgba(255, 255, 255, 0.07), transparent 74%),
     linear-gradient(118deg, transparent 0 31%, rgba(255, 255, 255, 0.085) 40%, rgba(255, 255, 255, 0.025) 48%, transparent 57% 100%);
 }
 
-.aspro-canvas {
+.melani-canvas {
   position: absolute;
   z-index: 4;
   inset: 0;
@@ -219,12 +219,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.aspro-surface--armed,
-.aspro-surface--armed .aspro-canvas {
+.melani-surface--armed,
+.melani-surface--armed .melani-canvas {
   cursor: none;
 }
 
-.aspro-watermark {
+.melani-watermark {
   position: absolute;
   z-index: 5;
   right: 1.6cqw;
@@ -239,12 +239,12 @@
 
 /* ── tray: a trough with a front lip the tools sit behind ──────────────── */
 
-.aspro-tray {
+.melani-tray {
   position: relative;
   z-index: 2;
-  height: var(--aspro-tray-height);
-  margin: calc(var(--aspro-tray-overlap) * -1) var(--aspro-tray-inset) 0;
-  border-radius: 0 0 calc(var(--aspro-radius) * 1.3) calc(var(--aspro-radius) * 1.3);
+  height: var(--melani-tray-height);
+  margin: calc(var(--melani-tray-overlap) * -1) var(--melani-tray-inset) 0;
+  border-radius: 0 0 calc(var(--melani-radius) * 1.3) calc(var(--melani-radius) * 1.3);
   background:
     linear-gradient(
       90deg,
@@ -255,10 +255,10 @@
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--aspro-frame-metal) 86%, black) 0%,
-      color-mix(in srgb, var(--aspro-frame-metal) 92%, black) 34%,
-      var(--aspro-frame-metal) 74%,
-      var(--aspro-frame-shadow) 100%
+      color-mix(in srgb, var(--melani-frame-metal) 86%, black) 0%,
+      color-mix(in srgb, var(--melani-frame-metal) 92%, black) 34%,
+      var(--melani-frame-metal) 74%,
+      var(--melani-frame-shadow) 100%
     );
   box-shadow:
     inset 0 -0.5px 0 rgba(255, 255, 255, 0.45),
@@ -267,20 +267,20 @@
 }
 
 /* The channel itself: dark at the back wall, lighter towards the lip. */
-.aspro-tray-well {
+.melani-tray-well {
   position: absolute;
   z-index: 1;
-  inset: calc(var(--aspro-tray-overlap) * 0.4) 1.3cqw 0.25cqw;
+  inset: calc(var(--melani-tray-overlap) * 0.4) 1.3cqw 0.25cqw;
   display: flex;
   align-items: flex-end;
   gap: 0.6cqw;
   border-radius: 0.3cqw 0.3cqw 0 0;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--aspro-frame-edge) 82%, black) 0%,
-    color-mix(in srgb, var(--aspro-frame-shadow) 88%, black) 34%,
-    color-mix(in srgb, var(--aspro-frame-metal) 74%, black) 76%,
-    color-mix(in srgb, var(--aspro-frame-metal) 96%, black) 100%
+    color-mix(in srgb, var(--melani-frame-edge) 82%, black) 0%,
+    color-mix(in srgb, var(--melani-frame-shadow) 88%, black) 34%,
+    color-mix(in srgb, var(--melani-frame-metal) 74%, black) 76%,
+    color-mix(in srgb, var(--melani-frame-metal) 96%, black) 100%
   );
   box-shadow:
     inset 0 0.3cqw 0.4cqw rgba(14, 18, 21, 0.6),
@@ -288,15 +288,15 @@
 }
 
 /* Front wall of the trough, drawn over the tools lying in it. */
-.aspro-tray-lip {
+.melani-tray-lip {
   position: absolute;
   z-index: 3;
   left: 0;
   right: 0;
   bottom: 0;
-  height: var(--aspro-tray-lip);
+  height: var(--melani-tray-lip);
   pointer-events: none;
-  border-radius: 0 0 calc(var(--aspro-radius) * 1.3) calc(var(--aspro-radius) * 1.3);
+  border-radius: 0 0 calc(var(--melani-radius) * 1.3) calc(var(--melani-radius) * 1.3);
   background:
     linear-gradient(
       90deg,
@@ -307,11 +307,11 @@
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--aspro-frame-metal) 30%, white) 0%,
-      color-mix(in srgb, var(--aspro-frame-metal) 92%, white) 8%,
-      var(--aspro-frame-metal) 38%,
-      color-mix(in srgb, var(--aspro-frame-metal) 70%, black) 84%,
-      color-mix(in srgb, var(--aspro-frame-shadow) 74%, black) 100%
+      color-mix(in srgb, var(--melani-frame-metal) 30%, white) 0%,
+      color-mix(in srgb, var(--melani-frame-metal) 92%, white) 8%,
+      var(--melani-frame-metal) 38%,
+      color-mix(in srgb, var(--melani-frame-metal) 70%, black) 84%,
+      color-mix(in srgb, var(--melani-frame-shadow) 74%, black) 100%
     );
   box-shadow:
     inset 0 0.5px 0 rgba(255, 255, 255, 0.95),
@@ -320,7 +320,7 @@
     0 -0.3cqw 0.45cqw rgba(14, 18, 21, 0.3);
 }
 
-.aspro-slot {
+.melani-slot {
   position: relative;
   flex: 1 1 0;
   min-width: 0;
@@ -334,20 +334,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.aspro-slot--eraser {
+.melani-slot--eraser {
   flex: 0 1 12%;
 }
 
-.aspro-slot:focus-visible {
-  outline: 2px solid var(--aspro-frame-highlight);
+.melani-slot:focus-visible {
+  outline: 2px solid var(--melani-frame-highlight);
   outline-offset: -2px;
   border-radius: 0.3cqw;
   /* Legible against both the dark channel and a light tray. */
   box-shadow: 0 0 0 1px rgba(16, 20, 23, 0.7) inset;
 }
 
-.aspro-slot .aspro-marker,
-.aspro-slot .aspro-eraser {
+.melani-slot .melani-marker,
+.melani-slot .melani-eraser {
   position: absolute;
   bottom: 0;
   transition: transform 150ms ease;
@@ -355,51 +355,51 @@
   filter: drop-shadow(0 0.9cqw 0.7cqw rgba(10, 13, 15, 0.5));
 }
 
-.aspro-slot .aspro-marker {
+.melani-slot .melani-marker {
   left: 0;
-  width: min(100%, calc(var(--aspro-marker-width) * 0.8));
+  width: min(100%, calc(var(--melani-marker-width) * 0.8));
   transform: translateY(-0.9cqw);
 }
 
-.aspro-slot .aspro-eraser {
+.melani-slot .melani-eraser {
   right: 0;
-  width: min(100%, calc(var(--aspro-eraser-width) * 0.78));
+  width: min(100%, calc(var(--melani-eraser-width) * 0.78));
   transform: translateY(0.1cqw);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .aspro-slot:hover .aspro-marker {
+  .melani-slot:hover .melani-marker {
     transform: translateY(-1.3cqw);
   }
 
-  .aspro-slot:hover .aspro-eraser {
+  .melani-slot:hover .melani-eraser {
     transform: translateY(-0.7cqw);
   }
 }
 
 /* A held tool passing over the tray must not lift a parked tool. */
-.aspro--holding .aspro-slot:hover .aspro-marker {
+.melani--holding .melani-slot:hover .melani-marker {
   transform: translateY(-0.9cqw);
 }
 
-.aspro--holding .aspro-slot:hover .aspro-eraser {
+.melani--holding .melani-slot:hover .melani-eraser {
   transform: translateY(0.1cqw);
 }
 
 /* ── marker ────────────────────────────────────────────────────────────── */
 
-.aspro-marker {
+.melani-marker {
   container-type: inline-size;
   display: block;
   position: relative;
-  width: var(--aspro-marker-width);
-  aspect-ratio: var(--aspro-marker-ratio);
+  width: var(--melani-marker-width);
+  aspect-ratio: var(--melani-marker-ratio);
   filter:
     drop-shadow(0 0.7cqw 0.45cqw rgba(14, 18, 20, 0.42))
     drop-shadow(0.7cqw 1.4cqw 1cqw rgba(14, 18, 20, 0.22));
 }
 
-.aspro-marker-nib {
+.melani-marker-nib {
   position: absolute;
   left: -2.113cqw;
   top: 5.634cqw;
@@ -409,13 +409,13 @@
   clip-path: polygon(0 34%, 76% 0, 100% 18%, 100% 82%, 76% 100%, 0 66%);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--aspro-tool-colour) 78%, white),
-    var(--aspro-tool-colour) 55%,
-    color-mix(in srgb, var(--aspro-tool-colour) 80%, black)
+    color-mix(in srgb, var(--melani-tool-colour) 78%, white),
+    var(--melani-tool-colour) 55%,
+    color-mix(in srgb, var(--melani-tool-colour) 80%, black)
   );
 }
 
-.aspro-marker-neck {
+.melani-marker-neck {
   position: absolute;
   left: 5.634cqw;
   top: 3.521cqw;
@@ -428,7 +428,7 @@
     inset 0 -0.5px 0 rgba(28, 29, 28, 0.22);
 }
 
-.aspro-marker-barrel {
+.melani-marker-barrel {
   position: absolute;
   left: 12.676cqw;
   top: 1.408cqw;
@@ -445,7 +445,7 @@
     inset 0 -1.4cqw 1.4cqw rgba(46, 48, 46, 0.12);
 }
 
-.aspro-marker-brand {
+.melani-marker-brand {
   position: absolute;
   left: 19.718cqw;
   top: 3.521cqw;
@@ -456,7 +456,7 @@
   white-space: nowrap;
 }
 
-.aspro-marker-band {
+.melani-marker-band {
   position: absolute;
   right: 5.634cqw;
   top: 0;
@@ -464,13 +464,13 @@
   height: 100%;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--aspro-tool-colour) 84%, white),
-    var(--aspro-tool-colour) 56%,
-    color-mix(in srgb, var(--aspro-tool-colour) 80%, black)
+    color-mix(in srgb, var(--melani-tool-colour) 84%, white),
+    var(--melani-tool-colour) 56%,
+    color-mix(in srgb, var(--melani-tool-colour) 80%, black)
   );
 }
 
-.aspro-marker-cap {
+.melani-marker-cap {
   position: absolute;
   left: 82.394cqw;
   top: 0.704cqw;
@@ -481,13 +481,13 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 38%),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--aspro-tool-colour) 84%, white),
-      var(--aspro-tool-colour) 58%,
-      color-mix(in srgb, var(--aspro-tool-colour) 82%, black)
+      color-mix(in srgb, var(--melani-tool-colour) 84%, white),
+      var(--melani-tool-colour) 58%,
+      color-mix(in srgb, var(--melani-tool-colour) 82%, black)
     );
 }
 
-.aspro-marker-cap::after {
+.melani-marker-cap::after {
   content: "";
   position: absolute;
   right: 2.817cqw;
@@ -500,18 +500,18 @@
 
 /* ── eraser ────────────────────────────────────────────────────────────── */
 
-.aspro-eraser {
+.melani-eraser {
   container-type: inline-size;
   display: block;
   position: relative;
-  width: var(--aspro-eraser-width);
-  aspect-ratio: var(--aspro-eraser-ratio);
+  width: var(--melani-eraser-width);
+  aspect-ratio: var(--melani-eraser-ratio);
   filter:
     drop-shadow(0 1.1cqw 0.7cqw rgba(14, 18, 20, 0.4))
     drop-shadow(1.1cqw 2.2cqw 1.6cqw rgba(14, 18, 20, 0.2));
 }
 
-.aspro-eraser-shell {
+.melani-eraser-shell {
   position: absolute;
   inset: 0 0 8.511cqw 0;
   display: grid;
@@ -533,7 +533,7 @@
   transition: transform 85ms ease-out;
 }
 
-.aspro-eraser-felt {
+.melani-eraser-felt {
   position: absolute;
   z-index: -1;
   left: 5.319cqw;
@@ -548,7 +548,7 @@
 
 /* ── tools in the air ──────────────────────────────────────────────────── */
 
-.aspro-flight {
+.melani-flight {
   position: fixed;
   z-index: 30;
   left: 0;
@@ -559,11 +559,11 @@
   filter: drop-shadow(6px 12px 6px rgba(26, 30, 33, 0.24));
 }
 
-.aspro-flight[hidden] {
+.melani-flight[hidden] {
   display: none;
 }
 
-.aspro-flight-body {
+.melani-flight-body {
   position: absolute;
   left: 0;
   top: 0;
@@ -571,47 +571,47 @@
   height: 0;
 }
 
-.aspro-flight .aspro-marker,
-.aspro-flight .aspro-eraser {
+.melani-flight .melani-marker,
+.melani-flight .melani-eraser {
   position: absolute;
   filter: none;
   transition: none;
 }
 
-.aspro-flight .aspro-marker {
-  left: calc(-1 * var(--aspro-marker-tip-x));
-  top: calc(-1 * var(--aspro-marker-tip-y));
-  width: var(--aspro-marker-width);
+.melani-flight .melani-marker {
+  left: calc(-1 * var(--melani-marker-tip-x));
+  top: calc(-1 * var(--melani-marker-tip-y));
+  width: var(--melani-marker-width);
 }
 
-.aspro-flight .aspro-eraser {
-  left: calc(-1 * var(--aspro-eraser-tip-x));
-  top: calc(-1 * var(--aspro-eraser-tip-y));
-  width: var(--aspro-eraser-width);
+.melani-flight .melani-eraser {
+  left: calc(-1 * var(--melani-eraser-tip-x));
+  top: calc(-1 * var(--melani-eraser-tip-y));
+  width: var(--melani-eraser-width);
 }
 
 /* Touching the board pulls the shadow in tight underneath. */
-.aspro-flight[data-state="contact"] {
+.melani-flight[data-state="contact"] {
   filter: drop-shadow(2px 4px 2px rgba(26, 30, 33, 0.3));
 }
 
-.aspro-flight[data-aspro-flight="eraser"][data-state="contact"] {
+.melani-flight[data-melani-flight="eraser"][data-state="contact"] {
   filter:
     drop-shadow(0.5px 1px 0.75px rgba(22, 26, 28, 0.42))
     drop-shadow(1.5px 3px 2px rgba(26, 30, 33, 0.2));
 }
 
-.aspro-flight[data-state="contact"] .aspro-eraser-shell {
+.melani-flight[data-state="contact"] .melani-eraser-shell {
   transform: translateY(1.06cqw) scaleY(0.965);
 }
 
-.aspro-flight[data-direct] .aspro-eraser-shell {
+.melani-flight[data-direct] .melani-eraser-shell {
   transition: none;
 }
 
 /* ── controls ──────────────────────────────────────────────────────────── */
 
-.aspro-controls {
+.melani-controls {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -622,20 +622,20 @@
   padding: 4px;
   border: 1px solid rgba(55, 57, 54, 0.12);
   border-radius: 999px;
-  background: var(--aspro-control-surface);
+  background: var(--melani-control-surface);
   box-shadow:
     inset 0 1px rgba(255, 255, 255, 0.7),
     0 3px 7px rgba(37, 38, 36, 0.055);
   backdrop-filter: blur(12px);
 }
 
-.aspro-controls button {
+.melani-controls button {
   min-height: 32px;
   padding: 0 13px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--aspro-control-ink);
+  color: var(--melani-control-ink);
   font: inherit;
   font-size: 12px;
   font-weight: 620;
@@ -643,31 +643,31 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.aspro-controls button:disabled {
+.melani-controls button:disabled {
   opacity: 0.32;
   cursor: default;
 }
 
-.aspro-controls button:focus-visible {
-  outline: 2px solid var(--aspro-control-ink);
+.melani-controls button:focus-visible {
+  outline: 2px solid var(--melani-control-ink);
   outline-offset: 2px;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .aspro-controls button:not(:disabled):hover {
+  .melani-controls button:not(:disabled):hover {
     background: rgba(255, 255, 255, 0.72);
-    color: color-mix(in srgb, var(--aspro-control-ink) 70%, black);
+    color: color-mix(in srgb, var(--melani-control-ink) 70%, black);
   }
 }
 
-.aspro-controls-divider {
+.melani-controls-divider {
   width: 1px;
   height: 18px;
   margin: 0 3px;
   background: rgba(55, 57, 54, 0.13);
 }
 
-.aspro-offscreen {
+.melani-offscreen {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -682,38 +682,38 @@
 /* ── input and motion preferences ──────────────────────────────────────── */
 
 @media (pointer: coarse) {
-  .aspro {
+  .melani {
     /* Room under the board for finger-sized targets, and for the controls. */
-    --aspro-controls-space: 80px;
+    --melani-controls-space: 80px;
   }
 
   /* The target a tool answers to reaches down into the space under the board,
      never over the drawing surface, and never as far as the controls. */
-  .aspro-slot::before {
+  .melani-slot::before {
     content: "";
     position: absolute;
     left: 0;
     right: 0;
-    top: calc(-1 * max(0px, var(--aspro-frame-pad) - var(--aspro-tray-overlap)));
+    top: calc(-1 * max(0px, var(--melani-frame-pad) - var(--melani-tray-overlap)));
     bottom: -34px;
     min-width: 44px;
   }
 
-  .aspro-controls {
+  .melani-controls {
     margin-top: 36px;
   }
 
-  .aspro-controls button {
+  .melani-controls button {
     min-height: 44px;
     padding: 0 16px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aspro,
-  .aspro *,
-  .aspro *::before,
-  .aspro *::after {
+  .melani,
+  .melani *,
+  .melani *::before,
+  .melani *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

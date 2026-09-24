@@ -1,4 +1,4 @@
-/* Page chrome for the Aspro demo. None of this ships with the component. */
+/* Page chrome for the Melani demo. None of this ships with the component. */
 
 :root {
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -68,7 +68,7 @@ body {
 /* The component scales board and tray together inside the height it is given,
    so the whole object stays above the fold. */
 .demo-board {
-  --aspro-height: min(calc(100dvh - 232px), 760px);
+  --melani-height: min(calc(100dvh - 232px), 760px);
 }
 
 .demo-hint {
@@ -96,6 +96,6 @@ body {
   }
 
   .demo-board {
-    --aspro-height: min(calc(100dvh - 268px), 620px);
+    --melani-height: min(calc(100dvh - 268px), 620px);
   }
 }

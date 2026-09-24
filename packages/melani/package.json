@@ -1,5 +1,5 @@
 {
-  "name": "aspro",
+  "name": "melani",
   "version": "0.1.0",
   "description": "A tactile whiteboard for React: physical markers, a felt eraser and pressure-aware ink on an aluminium-framed board.",
   "license": "MIT",
@@ -7,9 +7,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nickzonzh/object-studies.git",
-    "directory": "packages/aspro"
+    "directory": "packages/melani"
   },
-  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/aspro#readme",
+  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/melani#readme",
   "bugs": "https://github.com/nickzonzh/object-studies/issues",
   "keywords": [
     "react",

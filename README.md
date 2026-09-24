@@ -5,7 +5,7 @@ Open-source React components that behave like the physical things they are named
 | Package | What it is | |
 | --- | --- | --- |
 | [`kimolia`](packages/kimolia) | κιμωλία, chalk. A slate chalkboard in an oak frame, with textured chalk and a felt duster. | `npm install kimolia` |
-| [`aspro`](packages/aspro) | άσπρο, white. An aluminium-framed whiteboard with four markers and an eraser in the tray. | `npm install aspro` |
+| [`melani`](packages/melani) | μελάνι, ink. An aluminium-framed whiteboard with four markers and an eraser in the tray. | `npm install melani` |
 | [`korniza`](packages/korniza) | κορνίζα, frame. Six dimensional gallery frames for images or any React content, with an optional mat and glazing. | `npm install korniza` |
 
 Live demo: https://nickzonzh.github.io/object-studies/
@@ -28,7 +28,7 @@ renders on the server. The two boards share an engine,
 ```
 packages/core      object-studies-core: tool motion, gesture history, validated persistence
 packages/kimolia   chalkboard
-packages/aspro     whiteboard
+packages/melani     whiteboard
 packages/korniza   gallery frames
 apps/site          the demo site, built from the packages exactly as npm users get them
 ```
@@ -41,7 +41,7 @@ Requires Node 24 (see `.nvmrc`).
 
 ```sh
 npm ci
-npm run dev --workspace kimolia   # a package's demo page (also aspro, korniza)
+npm run dev --workspace kimolia   # a package's demo page (also melani, korniza)
 npm run dev:site                  # build the packages, then run the demo site
 npm run check                     # lint, typecheck, test, build, package lint, consumer smoke test
 ```

@@ -1,16 +1,18 @@
-# Aspro
+# melani
 
 A tactile whiteboard for React. Physical markers and a felt eraser lie in an
 aluminium tray; pick one up and it becomes the cursor, drawing pressure-aware
 ink that pools where the nib rests and ghosts where the eraser has been.
 
+μελάνι — Greek for ink.
+
 ```sh
-npm install aspro
+npm install melani
 ```
 
 ```tsx
-import { Whiteboard } from 'aspro'
-import 'aspro/style.css'
+import { Whiteboard } from 'melani'
+import 'melani/style.css'
 
 export function Board() {
   return <Whiteboard />
@@ -43,10 +45,10 @@ MIT. React 19, no other runtime dependency beyond
 | `strokes` | `readonly Stroke[]` | — | Drawing to display. Passing it makes the board controlled: it shows exactly what you pass, and a drawing you do not accept is not an undo step. |
 | `onStrokesChange` | `(strokes: readonly Stroke[]) => void` | — | Called after every commit: a finished gesture, undo, redo, clear. |
 | `persistence` | `false \| { key: string }` | `false` | Off by default; a component should not claim storage unasked. |
-| `exportFileName` | `string` | `'aspro-board.png'` | |
+| `exportFileName` | `string` | `'melani-board.png'` | |
 | `showControls` | `boolean` | `true` | The built-in undo/redo/clear/save bar. |
 | `labels` | `Partial<WhiteboardLabels>` | English | Every user-visible string, including the live-region announcements. |
-| `brand` | `string` | `'ASPRO'` | Printed on the tools and the board. `''` for unbranded. |
+| `brand` | `string` | `'MELANI'` | Printed on the tools and the board. `''` for unbranded. |
 | `className`, `style`, `ref` | | | Applied to the component root. |
 
 ```tsx
@@ -79,13 +81,13 @@ The board, its tray and the tools are one object: everything inside scales from
 its width, so there is only ever one number to control.
 
 By default it fills the width it is given. To fit a height instead, give it
-`--aspro-height` — the most vertical space the component may take, controls
+`--melani-height` — the most vertical space the component may take, controls
 included — and it caps its own width to match:
 
 ```css
 .board {
-  --aspro-height: min(100dvh - 12rem, 760px);
-  --aspro-max-width: 1100px;
+  --melani-height: min(100dvh - 12rem, 760px);
+  --melani-max-width: 1100px;
 }
 ```
 
@@ -95,27 +97,27 @@ Set any of these on the component (via `className` or `style`):
 
 | Property | |
 | --- | --- |
-| `--aspro-frame-metal` | Base anodised aluminium |
-| `--aspro-frame-highlight` | Lit top edge of the extrusion |
-| `--aspro-frame-shadow` | Its shaded underside |
-| `--aspro-frame-edge` | Deepest edge, used for the tray channel |
-| `--aspro-cap-colour` | Moulded corner caps |
-| `--aspro-board-paper` | Board surface, and the PNG export background |
-| `--aspro-board-tint` | Cooler far corner of the surface |
-| `--aspro-control-ink`, `--aspro-control-surface` | The controls bar |
-| `--aspro-radius` | Frame radius |
-| `--aspro-height`, `--aspro-max-width` | See sizing above |
+| `--melani-frame-metal` | Base anodised aluminium |
+| `--melani-frame-highlight` | Lit top edge of the extrusion |
+| `--melani-frame-shadow` | Its shaded underside |
+| `--melani-frame-edge` | Deepest edge, used for the tray channel |
+| `--melani-cap-colour` | Moulded corner caps |
+| `--melani-board-paper` | Board surface, and the PNG export background |
+| `--melani-board-tint` | Cooler far corner of the surface |
+| `--melani-control-ink`, `--melani-control-surface` | The controls bar |
+| `--melani-radius` | Frame radius |
+| `--melani-height`, `--melani-max-width` | See sizing above |
 
 Ink colours are not CSS: they belong to the `markers` prop, because a stroke
 keeps the colour it was drawn with.
 
-The frame and tray are lit from the upper left. `--aspro-light-x` and
-`--aspro-light-y` move the specular highlight with the pointer while it is over
+The frame and tray are lit from the upper left. `--melani-light-x` and
+`--melani-light-y` move the specular highlight with the pointer while it is over
 the board; set them yourself to pin the light.
 
 ## Persistence
 
-`persistence={{ key: 'aspro:whiteboard:v2' }}` restores the board on mount and
+`persistence={{ key: 'melani:whiteboard:v2' }}` restores the board on mount and
 writes after every commit. Stored data is untrusted: a document that does not
 decode cleanly is left where it is and the board starts empty rather than
 half-restored, and a board too large for the store is reported rather than
@@ -190,9 +192,9 @@ and replay identically on any display.
 
 ```sh
 npm install
-npm run dev -w aspro          # demo at /
-npx vitest run packages/aspro # pixel, persistence and SSR tests
-npm run build -w aspro
+npm run dev -w melani          # demo at /
+npx vitest run packages/melani # pixel, persistence and SSR tests
+npm run build -w melani
 ```
 
 Pixel tests cover stroke continuity, sampling independence, pooling,

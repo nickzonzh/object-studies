@@ -1,4 +1,4 @@
-import { Whiteboard } from 'aspro'
+import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, type FrameMat, type FrameVariant, frameVariants } from 'korniza'
 import { type ReactNode, useState } from 'react'
@@ -25,7 +25,7 @@ export function App() {
           </p>
           <nav className="site-nav" aria-label="Studies">
             <a href="#kimolia">Kimolia</a>
-            <a href="#aspro">Aspro</a>
+            <a href="#melani">Melani</a>
             <a href="#korniza">Korniza</a>
             <a href="#wall">Gallery wall</a>
           </nav>
@@ -42,13 +42,13 @@ export function App() {
         </Study>
 
         <Study
-          id="aspro"
+          id="melani"
           number="02"
-          name="Aspro"
-          greek="άσπρο — white"
+          name="Melani"
+          greek="μελάνι — ink"
           summary="An aluminium-framed whiteboard. Four markers and an eraser wait in the tray; the ink pools, streaks and ghosts like the real thing."
         >
-          <Whiteboard persistence={{ key: 'object-studies:aspro' }} />
+          <Whiteboard persistence={{ key: 'object-studies:melani' }} />
         </Study>
 
         <Study
@@ -79,7 +79,7 @@ export function App() {
 }
 
 type StudyProps = {
-  id: 'kimolia' | 'aspro' | 'korniza'
+  id: 'kimolia' | 'melani' | 'korniza'
   number: string
   name: string
   greek: string

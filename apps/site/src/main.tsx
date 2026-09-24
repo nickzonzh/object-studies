@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import 'kimolia/style.css'
-import 'aspro/style.css'
+import 'melani/style.css'
 import 'korniza/style.css'
 import './site.css'
 import { App } from './App.tsx'
