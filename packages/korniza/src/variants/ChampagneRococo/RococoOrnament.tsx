@@ -24,9 +24,9 @@ const crests = [
 ]
 
 export function RococoOrnament() {
-  const id = `rococo-${useId().replace(/:/g, '')}`
+  const id = `rococo-${useId()}`
   return <>
-    <svg className="rococo-defs" aria-hidden="true" focusable="false"><defs>
+    <svg className="korniza-rococo-defs" aria-hidden="true" focusable="false"><defs>
       <g id={`${id}-body`}><path d={shell} />{scrolls.map((d, i) => <path key={i} d={d} />)}</g>
       <g id={`${id}-ribs`}>{ribs.map((d, i) => <path key={i} d={d} />)}</g>
       <g id={`${id}-crests`}>{crests.map((d, i) => <path key={i} d={d} />)}</g>
@@ -34,7 +34,7 @@ export function RococoOrnament() {
     {(['tl', 'tr', 'bl', 'br'] as const).map(position => {
       const sx = position.endsWith('r') ? -1 : 1
       const sy = position.startsWith('b') ? -1 : 1
-      return <svg key={position} className={`rococo-ornament rococo-ornament--${position}`} viewBox="-3 -3 114 114" aria-hidden="true" focusable="false">
+      return <svg key={position} className={`korniza-rococo korniza-rococo--${position}`} viewBox="-3 -3 114 114" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={`${id}-${position}`} x1={sx < 0 ? 1 : 0} y1={sy < 0 ? 1 : 0} x2={sx < 0 ? 0 : 1} y2={sy < 0 ? 0 : 1}>
             <stop stopColor="#f2e2bc" /><stop offset=".22" stopColor="#ddc38d" />
@@ -53,9 +53,9 @@ export function RococoOrnament() {
         {/* Two shallow carved folds within the existing stems, not extra ornament. */}
         <path d="M43 24 Q46 22 48 21 L46 25 Q44 27 42 28 Z M6 51 Q8 55 12 58 L10 60 Q6 57 6 51 Z" fill="#876044" opacity=".48" />
         <path d="M43 24 Q46 23 47 22 M6 51 Q8 55 12 58" transform={`translate(${sx * -.25} ${sy * -.3})`} fill="none" stroke="#f7e8c7" strokeWidth=".65" opacity=".72" />
-        <use className="rococo-ornament__light" href={`#${id}-crests`} fill="none" stroke="#fff2d3" strokeWidth="1" strokeLinecap="round" />
-        <use className="rococo-ornament__return" href={`#${id}-crests`} transform={`translate(${sx * .5} ${sy * .5})`} fill="none" stroke="#ebd0a2" strokeWidth=".7" />
-        <path className="rococo-ornament__micro" d="M17 5l1 .5 M8 22l1 .5 M58 7l2 .3" fill="none" stroke="#956b52" strokeWidth=".55" opacity=".4" />
+        <use className="korniza-rococo__light" href={`#${id}-crests`} fill="none" stroke="#fff2d3" strokeWidth="1" strokeLinecap="round" />
+        <use className="korniza-rococo__return" href={`#${id}-crests`} transform={`translate(${sx * .5} ${sy * .5})`} fill="none" stroke="#ebd0a2" strokeWidth=".7" />
+        <path className="korniza-rococo__micro" d="M17 5l1 .5 M8 22l1 .5 M58 7l2 .3" fill="none" stroke="#956b52" strokeWidth=".55" opacity=".4" />
       </svg>
     })}
   </>

@@ -5,6 +5,7 @@ import { DarkWalnut } from './variants/DarkWalnut/DarkWalnut.js'
 import { EbonisedBlack } from './variants/EbonisedBlack/EbonisedBlack.js'
 import { ModernBlack } from './variants/ModernBlack/ModernBlack.js'
 import type { GalleryFrameProps } from './components/GalleryFrame.js'
+import { frameVariants } from './variants.js'
 
 export type FrameProps = Omit<GalleryFrameProps, 'decoration'>
 const components = {
@@ -19,5 +20,8 @@ const components = {
 /** Width belongs to the wrapper; aspectRatio belongs to the recessed opening. */
 export function Frame({ variant, ...props }: FrameProps) {
   const Component = components[variant]
+  /* The variant often arrives from untyped data, so name the bad value rather
+     than letting React report an undefined element type. */
+  if (!Component) throw new Error(`korniza: unknown Frame variant ${JSON.stringify(variant)}. Expected one of ${frameVariants.map(item => item.variant).join(', ')}.`)
   return <Component {...props} />
 }

@@ -1,5 +1,6 @@
 export { Frame } from './Frame.js'
 export type { FrameProps } from './Frame.js'
 export { GalleryArtwork as FrameImage } from './components/GalleryFrame.js'
+export type { FrameMat } from './components/GalleryFrame.js'
 export { frameVariants } from './variants.js'
 export type { FrameVariant } from './variants.js'

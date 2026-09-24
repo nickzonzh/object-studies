@@ -1,9 +1,8 @@
 /* 0–12 eased outer bead; 12–52 shallow ogee; 52–65 recessed flute;
    65–83 fine inner roll; 83–95 ivory-gold slip; 95–100 dark rabbet.
    Champagne is built around warm ivory catches and rosy bronze cavities. */
-.gallery-frame[data-variant='champagne-rococo'] {
-  --frame-width: clamp(12px, 7.500cqw, 39px);
-  --frame-width: round(nearest, clamp(12px, 7.500cqw, 39px), 1px);
+.korniza-frame[data-variant='champagne-rococo'] {
+  --frame-width-base: clamp(12px, 7.500cqw, 39px);
   --profile: #806044 0%, #bb9660 2%, #eedbb0 5%, #f5e9ca 7%,
     #d3b477 10%, #95734e 13%, #b39160 17%, #d0b17d 24%,
     #e1c993 33%, #ebd7a8 38%, #d9bf8a 43%, #b48d60 50%,
@@ -18,48 +17,51 @@
     #b18f5f 68%, #d6be8b 73%, #e3d0a7 76%, #c4a873 80%,
     #8d6b49 84%, #c0a778 87%, #dac69f 91%, #ae916b 94%,
     #5d4431 96%, #29231c 100%;
+  /* Pale leaf gilding: bright, quick catches over a low ambient. */
+  --sheen-hot: #fff6dd52;
+  --sheen-warm: #f3dcae2a;
+  --sheen-key: #fff3d21a;
+  --sheen-shade: #4a331d2e;
   background: #987550;
 }
-.gallery-frame[data-variant='champagne-rococo']::before {
+.korniza-frame[data-variant='champagne-rococo']::before {
   content: '';
   position: absolute;
   inset: calc(var(--frame-width) * .17);
   padding: calc(var(--frame-width) * .28);
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   background:
     radial-gradient(ellipse 18px 1px at 24% 0%, #7d574418, transparent),
     radial-gradient(ellipse 1px 24px at 100% 68%, #7d57441a, transparent),
-    url('./gilt.svg'),
-    radial-gradient(ellipse at var(--light-x) var(--light-y), #fff4d52b, #f0d5a20b 32%, transparent 65%);
+    url('./gilt.svg');
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
 /* Forty drawing units = one moulding width. Each ornament includes its own
    tapered rail continuation: fixed scale, no repeated motifs or stretched leaves. */
-.rococo-ornament {
+.korniza-rococo {
   position: absolute;
   top: calc(var(--frame-width) * -.075);
   left: calc(var(--frame-width) * -.075);
   width: calc(var(--frame-width) * 2.85);
   height: calc(var(--frame-width) * 2.85);
   overflow: visible;
-  z-index: 3;
+  z-index: 6;
   pointer-events: none;
 }
-.rococo-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
-.rococo-ornament--tr, .rococo-ornament--br { left: auto; right: calc(var(--frame-width) * -.075); }
-.rococo-ornament--bl, .rococo-ornament--br { top: auto; bottom: calc(var(--frame-width) * -.075); }
-.rococo-ornament--tr { transform: scaleX(-1); }
-.rococo-ornament--bl { transform: scaleY(-1); }
-.rococo-ornament--br { transform: scale(-1); }
-.rococo-ornament__light { opacity: var(--relief-light, .43); }
-.rococo-ornament__return { opacity: var(--relief-return, .08); }
-@container (max-width: 300px) { .rococo-ornament__micro { opacity: .25; } }
+.korniza-rococo-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
+.korniza-rococo--tr, .korniza-rococo--br { left: auto; right: calc(var(--frame-width) * -.075); }
+.korniza-rococo--bl, .korniza-rococo--br { top: auto; bottom: calc(var(--frame-width) * -.075); }
+.korniza-rococo--tr { transform: scaleX(-1); }
+.korniza-rococo--bl { transform: scaleY(-1); }
+.korniza-rococo--br { transform: scale(-1); }
+.korniza-rococo__light { opacity: var(--relief-light, .43); }
+.korniza-rococo__return { opacity: var(--relief-return, .08); }
+@container (max-width: 300px) { .korniza-rococo__micro { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) {
-  .gallery-frame[data-variant='champagne-rococo'] { --light-x: 26% !important; --light-y: 16% !important; }
-  .rococo-ornament__light { opacity: .43; }
-  .rococo-ornament__return { opacity: .08; }
+  .korniza-rococo__light { opacity: .43; }
+  .korniza-rococo__return { opacity: .08; }
 }

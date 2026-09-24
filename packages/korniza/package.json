@@ -28,6 +28,30 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./baroque-gold": {
+      "types": "./dist/baroque-gold.d.ts",
+      "default": "./dist/baroque-gold.js"
+    },
+    "./champagne-rococo": {
+      "types": "./dist/champagne-rococo.d.ts",
+      "default": "./dist/champagne-rococo.js"
+    },
+    "./carved-oak": {
+      "types": "./dist/carved-oak.d.ts",
+      "default": "./dist/carved-oak.js"
+    },
+    "./dark-walnut": {
+      "types": "./dist/dark-walnut.d.ts",
+      "default": "./dist/dark-walnut.js"
+    },
+    "./ebonised-black": {
+      "types": "./dist/ebonised-black.d.ts",
+      "default": "./dist/ebonised-black.js"
+    },
+    "./modern-black": {
+      "types": "./dist/modern-black.d.ts",
+      "default": "./dist/modern-black.js"
+    },
     "./style.css": {
       "types": "./dist/style.css.d.ts",
       "default": "./dist/style.css"

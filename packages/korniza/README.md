@@ -1,40 +1,9 @@
-# KORNIZA
+# korniza
 
-Six dimensional React frames for images, typography and arbitrary content. CSS mouldings and SVG ornament provide depth without raster frame assets. The v1 collection is visually locked; this repository contains the components and a restrained comparison demo.
-
-## Collection
-
-| `variant` | Name | Character / use |
-| --- | --- | --- |
-| `baroque-gold` | Baroque Gold | Ornate antique gilt; paintings and expressive compositions |
-| `champagne-rococo` | Champagne Rococo | Pale airy ornament; delicate artwork and typography |
-| `carved-oak` | Carved Oak | Warm restrained timber; photography and everyday content |
-| `dark-walnut` | Dark Walnut | Rich formal timber; traditional artwork and portraits |
-| `ebonised-black` | Ebonised Black | Severe classical blackened timber with a fine gold lip |
-| `modern-black` | Modern Black | Contemporary architectural minimalism; photography and graphics |
-
-## Run locally
-
-Node 22.12+ and npm are required. React 19.2+ within major 19 is the supported peer range (verified here with React 19.3).
+Six dimensional React frames for images, typography and arbitrary content. The mouldings are CSS cross-sections and SVG ornament — no raster frame assets, no canvas, no runtime dependency beyond React.
 
 ```sh
-npm ci
-npm run dev
-npm run check     # TypeScript, demo build and library build
-npm run preview  # serve the production demo
-```
-
-The demo opens at `http://127.0.0.1:5173`. Its anchor is **Six frames. One painting.** Content, opening ratio and pointer-light controls apply identical conditions to all six variants. Below it are a single photograph, a live React card and a typography study. The demo images are local; no external service is required at runtime.
-
-## Use
-
-The package is not published. To try it in another local project:
-
-```sh
-# In this repository; prepack builds the library and its declarations
-npm pack --ignore-scripts=false
-# In a React application
-npm install /absolute/path/to/korniza-0.1.0.tgz
+npm install korniza
 ```
 
 ```tsx
@@ -50,81 +19,134 @@ export function Photograph() {
 }
 ```
 
-### Public API
+The stylesheet is a single file and must be imported once, anywhere in your app. Requires React 19.
+
+## The collection
+
+| `variant` | Name | Character / use |
+| --- | --- | --- |
+| `baroque-gold` | Baroque Gold | Ornate antique gilt with a carved gadroon; paintings and expressive compositions |
+| `champagne-rococo` | Champagne Rococo | Pale airy ornament; delicate artwork and typography |
+| `carved-oak` | Carved Oak | Warm oiled timber with a carved rope on the inner moulding; photography and everyday content |
+| `dark-walnut` | Dark Walnut | Rich formal timber with an antique-gold slip; traditional artwork and portraits |
+| `ebonised-black` | Ebonised Black | Severe classical blackened timber with a fine gold lip |
+| `modern-black` | Modern Black | Contemporary architectural minimalism; photography and graphics |
+
+`frameVariants` exports the same list — identifier, display name and a one-line description — in canonical order.
+
+## Props
 
 | Prop | Default | Meaning |
 | --- | --- | --- |
-| `variant` | required | One of the six kebab-case identifiers above |
-| `aspectRatio` | `"4 / 5"` | CSS aspect ratio of the **opening**, excluding rails; a positive number or ratio string |
+| `variant` | required | One of the six kebab-case identifiers above. An unknown value throws, naming the value and the valid set |
+| `aspectRatio` | `"4 / 5"` | CSS aspect ratio of the **opening**, excluding the mouldings. `"auto"` lets normal-flow content set the height |
 | `children` | none | Your unmodified React content |
-| `interactiveLight` | `true` | Enable restrained pointer-driven material highlights |
-| `className`, `style` | none | Applied to the outer width/container wrapper |
-| Other div attributes/events | none | Forwarded to the outer wrapper; handlers are composed with internal lighting |
+| `mat` | `false` | A bevelled mat board between the moulding and the content. `true`, or `{ width, color }` with any CSS length/colour |
+| `glazing` | `false` | A faint glass sheen in front of the opening, following the same light |
+| `interactiveLight` | `true` | Pointer-driven material highlights on the mouldings |
+| `className`, `style` | none | Applied to the outer wrapper, which is also the theming surface |
+| `ref` | none | Forwarded to the outer wrapper `div` |
+| Other div attributes/events | none | Forwarded to the wrapper; pointer handlers are composed with the internal lighting |
 
-`FrameImage` accepts normal image props and requires `alt` in TypeScript. It fills the opening using `object-fit: cover`; override `style={{ objectFit: 'contain' }}` or `objectPosition` when cropping is inappropriate. Use `alt=""` only for decorative images. The frame adds no image role or accessible label of its own: use meaningful child semantics and a surrounding `figure`/`figcaption` where appropriate.
+`FrameImage` accepts normal `img` props, requires `alt` in TypeScript, and fills the opening with `object-fit: cover`. Override with `style={{ objectFit: 'contain' }}` or `objectPosition` when cropping is inappropriate; use `alt=""` only for decorative images.
 
-Also exported: `FrameProps`, `FrameVariant`, and the readonly `frameVariants` metadata array in canonical collection order. The shell and variant-specific components are internal. There is no prototype variant in the public API. Earlier source-level `GalleryFrame` / variant imports and `ratio` are replaced by `Frame` and `aspectRatio`.
+Exported types: `FrameProps`, `FrameVariant`, `FrameMat`.
 
-### Width, ratios and content
-
-Frames fill their parent's available width. Use normal CSS, `className`, or `style` for a maximum width; no separate size prop is needed. A container wrapper makes rail thickness respond to the frame's own width, with whole-CSS-pixel rounding where supported and a maximum per material. Place it in a width-constrained block or grid. The supported practical minimum outer width is 220px; allow about 10px of space outside it for protruding ornament, and more for shadows.
-
-Use `aspectRatio={1}`, `"4 / 5"`, or `"3 / 2"` for fixed openings. `aspectRatio="auto"` lets normal-flow content determine height; use this for longer cards rather than a fill-positioned `FrameImage`. Invalid, zero or negative ratios are outside the API contract.
-
-Content is contained in the recessed opening with `overflow: auto`: oversized custom content can scroll instead of pushing the rails apart. Children are not cloned or assigned styles. Give a custom card its own padding, colors and sizing. The decorative layers ignore pointer events. Focus, selection, scrolling and media controls remain available. For simple art cards use `minHeight: '100%'`; for full-bleed video use absolute positioning and `objectFit` inside the fixed opening.
+### Mat and glazing
 
 ```tsx
-<Frame variant="carved-oak" aspectRatio={1} interactiveLight={false}>
-  <div style={{ minHeight: '100%', padding: 24, background: '#e9ddc9', boxSizing: 'border-box' }}>
-    <h2>A small idea</h2>
-    <p>Any semantic HTML or React component can live here.</p>
-    <button onClick={() => alert('Still your interface')}>Open the note</button>
-  </div>
+<Frame variant="dark-walnut" aspectRatio="3 / 2" mat glazing>
+  <FrameImage src="/painting.jpg" alt="Wheat field below cypresses" />
+</Frame>
+
+// A narrower, warmer board
+<Frame variant="champagne-rococo" mat={{ width: '7%', color: '#f3ece0' }}>
+  <YourCard />
 </Frame>
 ```
 
-```tsx
-// Compare the same content in every material.
-import { Frame, FrameImage, frameVariants } from 'korniza'
+The mat fills the opening and the artwork window is cut into it, so `aspectRatio` keeps describing the same rectangle whether or not a mat is present. The board width, its 45° bevel and the shadow the frame lip casts onto it all scale with the frame, like the mouldings. Both props are off by default.
 
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 40 }}>
-  {frameVariants.map(({ variant, name }) => (
-    <figure key={variant} style={{ margin: 0 }}>
-      <Frame variant={variant} aspectRatio="4 / 5">
-        <FrameImage src="/artwork.jpg" alt="Describe the artwork here" />
-      </Frame>
-      <figcaption>{name}</figcaption>
-    </figure>
-  ))}
-</div>
+## Per-variant imports
+
+Each material has its own entry point, so a single-variant consumer bundles one frame instead of six:
+
+```tsx
+import { Frame, FrameImage } from 'korniza/carved-oak'
+import 'korniza/style.css'
 ```
 
-### Light and accessibility
+The subpath exports the same component under the name `Frame` with its `variant` fixed, plus `FrameImage`, `FrameProps` and `FrameMat`. Subpaths are `korniza/baroque-gold`, `korniza/champagne-rococo`, `korniza/carved-oak`, `korniza/dark-walnut`, `korniza/ebonised-black` and `korniza/modern-black`. The stylesheet is not split: `korniza/style.css` carries all six materials (~105 kB raw, ~31 kB gzipped, textures included).
 
-The idle world light comes from above-left. Pointer motion only changes material highlights, never the artwork or frame position. Gold keeps a richer response than timber. Updates are batched into animation frames with no React state updates or idle animation loop. Leaving/cancelling a pointer, disabling the prop, changing reduced-motion preference and losing window focus restore the baseline. Touch and coarse-only pointers use static lighting. User handlers can call `preventDefault()` to suppress a light update.
+## Theming
 
-No keyboard interaction is needed for the decorative light. Supply accessible labels for your own content and controls. Long content remains scrollable; choose an automatic-height opening when that provides a better reading experience. See [QA.md](QA.md) for tested conditions and limitations.
+Every class the package ships is namespaced: the wrapper is `.korniza`, everything else is `korniza-*`. The wrapper is also where the documented custom properties are read, so `className` or `style` is enough to retune a frame.
 
-## Architecture and packaging
+| Property | Default | Effect |
+| --- | --- | --- |
+| `--korniza-frame-width` | per variant, `clamp(12px, 7.5–10.2cqw, 39–53px)` rounded to whole pixels | Moulding thickness; everything else is derived from it |
+| `--korniza-mat-width` | `calc(var(--frame-width) * .66)` | Mat board width |
+| `--korniza-mat-color` | `#ece7db` | Mat board colour |
+| `--korniza-mat-bevel` | `max(2px, calc(var(--frame-width) * .085))` | Depth of the 45° bevel |
+| `--korniza-opening-background` | `#ddd7c8` | Colour behind the content |
+| `--korniza-shadow` | four-layer cast shadow | The whole `box-shadow` of the frame |
+| `--korniza-light-x`, `--korniza-light-y` | `26%`, `16%` | Rest position of the key light |
+| `--korniza-sheen-strength` | `1` | Multiplier on the travelling highlight (`0` disables it) |
+| `--korniza-glazing-strength` | `1` | Multiplier on the glass sheen |
 
-- `src/index.ts`: intentional public exports.
-- `src/Frame.tsx` and `src/variants.ts`: six-variant dispatch and canonical metadata.
-- `src/components/GalleryFrame.tsx`: width container, eight frame slices and one content opening.
-- `src/components/usePointerLight.ts`: shared event-driven lighting and cleanup.
-- `src/variants/`: isolated material profiles, lightweight composition and locked SVG geometry.
-- `src/main.tsx`, `src/style.css`: demo only, excluded from the package.
-- `vite.lib.config.ts`, `tsconfig.lib.json`: ESM, declarations, external React, standalone CSS.
+```tsx
+<Frame variant="carved-oak" style={{ '--korniza-frame-width': '28px' } as CSSProperties} />
+```
 
-`npm run build` produces the demo in `dist/`; `npm run build:lib` produces the library in `dist-lib/`. Import the stylesheet once. Material SVG textures are embedded in the library CSS, so consumers need no asset-copy step. The package ships no demo photographs, React runtime or global page reset. The ESM entry includes a client boundary for React server-component hosts; normal server rendering is also supported. Multiple frames use unique SVG IDs.
+## Width, ratios and content
 
-Modern browsers with CSS container queries, masks and aspect ratio are required. The unrounded rail declaration is a fallback for browsers lacking CSS `round()`. This is not a legacy-browser compatibility library.
+Frames fill their parent's width; constrain them with ordinary CSS. The wrapper is a size container, so moulding thickness responds to the frame's own width rather than the viewport. The supported practical minimum outer width is 220px; allow about 10px outside it for protruding ornament and more for the cast shadow.
 
-`private: true` and `UNLICENSED` intentionally remain until the owner selects a license and approves publication. Packing and installing locally are supported. Before a public release, select the license, confirm package-name availability and version, and complete the remaining browser/device checks in QA.md. Nothing is published by the build commands.
+Content sits in the recessed opening with `overflow: auto`, so oversized custom content scrolls instead of pushing the mouldings apart. Children are never cloned or restyled: give a card its own padding, colours and sizing. Decorative layers ignore pointer events, so focus, selection, scrolling and media controls all keep working.
+
+**Containing-block caveat.** `.korniza` declares `container-type: inline-size`, which implies `contain: layout style inline-size`. The wrapper therefore becomes the containing block for `position: fixed` and `position: absolute` descendants and establishes a new stacking context. Content inside a frame that relies on `position: fixed` — a modal, a dropdown, a tooltip rendered in place — is positioned relative to the frame and clipped by the opening. Render those into a portal outside the frame. There is no opt-out that preserves container-relative moulding scale.
+
+## Light, motion and accessibility
+
+The key light sits above and to the left; cast shadows fall down and slightly right. Pointer motion moves the highlight along the mouldings and shifts the shading opposite it — it never moves the frame or touches the artwork. One `getBoundingClientRect` and one style write per animation frame, no React state, no idle animation loop.
+
+The baseline is restored when the pointer leaves or cancels, when the window loses focus, when `interactiveLight` becomes `false`, and when the reduced-motion or pointer-capability preference changes. Touch and coarse-only pointers keep the static rest light. `prefers-reduced-motion: reduce` pins the light position. A consumer handler may call `preventDefault()` to suppress a single update.
+
+Every decorative layer is `aria-hidden` and `pointer-events: none`, and the frame claims no role or label of its own — describe your own content, and wrap it in `figure`/`figcaption` where that is meaningful. No keyboard interaction is needed for the light.
+
+## Server rendering
+
+No `window`, `document`, `localStorage`, `matchMedia` or `devicePixelRatio` is touched at module scope or during render; the media queries live in an effect. `renderToString` is covered by the test suite for all six variants, including the mat and glazing layers. The ESM entry carries a `"use client"` banner for React Server Component hosts.
+
+## Browser support
+
+Modern evergreen browsers. The frames need CSS container queries, `mask-composite`, `aspect-ratio` and `clip-path`. Whole-pixel rail rounding uses `round()` behind an `@supports` query and is simply skipped where it is unavailable. This is not a legacy-browser compatibility library.
+
+## Development
+
+From the monorepo root: `npm install`, then
+
+```sh
+npm run dev -w korniza          # demo at http://127.0.0.1:5173
+npm run typecheck -w korniza
+npx vitest run packages/korniza
+npm run build -w korniza        # dist/: ESM entries, declarations, one style.css
+npm run check:package -w korniza
+```
+
+Two generators back the assets, and neither runs during a build:
+
+```sh
+node scripts/generate-grain.mjs      # timber grain SVG textures
+node scripts/build-demo-images.mjs   # demo painting derivatives from the Met API
+```
+
+`src/` is the library, `demo/` is the (unpublished) comparison demo, `test/` holds the vitest suite. `docs/spec.md` is the original design brief and `docs/qa.md` the manual acceptance record from the pre-package phase; both are kept as history, and paths inside them predate this layout.
 
 ## Demo asset credits
 
-- Vincent van Gogh, *Wheat Field with Cypresses* (1889), [The Metropolitan Museum of Art, 1993.132](https://www.metmuseum.org/art/collection/search/436535), public-domain collection image.
-- *The Blue Marble* (1972), Apollo 17 crew / [NASA](https://www.nasa.gov/image-article/apollo-17-blue-marble/). Used as a photographic content fixture; no NASA endorsement implied.
+- Vincent van Gogh, *Wheat Field with Cypresses* (1889), [The Metropolitan Museum of Art, 1993.132](https://www.metmuseum.org/art/collection/search/436535). Open Access, CC0.
+- *The Blue Marble* (1972), Apollo 17 crew / [NASA](https://www.nasa.gov/image-article/apollo-17-blue-marble/). Photographic fixture only; no endorsement implied.
 - `still-land.svg`: original graphic study included with the project.
 
-The historic design brief remains in `KORNIZA_SPEC.md`; the current API and scope are documented here.
+MIT © Nick
