@@ -108,9 +108,20 @@
 /* --- timber boards ------------------------------------------------------- */
 /* Full-length boards keep a texture continuous across the nine-slice joins.
    The geometry is shared; a variant only supplies --grain and --grain-vertical
-   so each SVG is inlined exactly once in the stylesheet. */
+   so each SVG is inlined exactly once in the stylesheet. Straight-grained ash
+   lives here rather than in a variant because two blackened variants paint
+   with it, and one inlined copy is all the stylesheet should carry. */
+.korniza-frame {
+  --grain-straight: url('./straight-grain.svg');
+  --grain-straight-vertical: url('./straight-grain-vertical.svg');
+}
 .korniza-boards { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.korniza-board { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; }
+/* --grain-blend lets a variant modulate the moulding with its figure instead
+   of painting over it, the same rule the carved bands below are drawn by. */
+.korniza-board {
+  position: absolute; background-repeat: no-repeat; background-size: 100% 100%;
+  background-blend-mode: var(--grain-blend, normal), normal;
+}
 .korniza-board--top, .korniza-board--bottom {
   left: 0; right: 0; height: var(--frame-width);
   clip-path: polygon(0 0, 100% 0, calc(100% - var(--frame-width)) 100%, var(--frame-width) 100%);
