@@ -1,4 +1,4 @@
-import type { DrawingStroke } from './types'
+import type { DrawingStroke } from './types.js'
 
 type Action =
   | { kind: 'draw'; strokes: DrawingStroke[] }

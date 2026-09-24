@@ -1,12 +1,12 @@
-import { createChalkBrushes, paintStamp } from './chalkBrush'
-import { createChalkSampler } from './chalkSampler'
-import { clipSegment } from './clip'
-import { createDusterSampler } from './dusterSampler'
-import { createDusterRenderer } from './dusterRenderer'
-import type { ChalkPoint, DrawingStroke, DrawingTool } from './types'
-import { createDrawingHistory, type HistoryState } from './history'
-import { createReplayCache, CHECKPOINT_INTERVAL } from './replayCache'
-import { createCooperativeTask } from './cooperativeTask'
+import { createChalkBrushes, paintStamp } from './chalkBrush.js'
+import { createChalkSampler } from './chalkSampler.js'
+import { clipSegment } from './clip.js'
+import { createDusterSampler } from './dusterSampler.js'
+import { createDusterRenderer } from './dusterRenderer.js'
+import type { ChalkPoint, DrawingStroke, DrawingTool } from './types.js'
+import { createDrawingHistory, type HistoryState } from './history.js'
+import { createReplayCache, CHECKPOINT_INTERVAL } from './replayCache.js'
+import { createCooperativeTask } from './cooperativeTask.js'
 
 export function createDrawingSurface(
   canvas: HTMLCanvasElement,

@@ -1,5 +1,5 @@
-import { advancePose, settled } from './geometry'
-import { toolIds, type Pose, type ToolId } from './types'
+import { advancePose, settled } from './geometry.js'
+import { toolIds, type Pose, type ToolId } from './types.js'
 
 type Flight = {
   root: HTMLElement

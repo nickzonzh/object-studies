@@ -1,27 +1,53 @@
 {
   "name": "kimolia",
-  "private": true,
   "version": "0.1.0",
+  "description": "A tactile chalkboard for React: pick up real-feeling chalk and a felt duster and draw on slate framed in oak.",
+  "license": "MIT",
+  "author": "Nick <nick@zonnioshunt.com.au>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickzonzh/object-studies.git",
+    "directory": "packages/kimolia"
+  },
+  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/kimolia#readme",
+  "bugs": "https://github.com/nickzonzh/object-studies/issues",
+  "keywords": [
+    "react",
+    "chalkboard",
+    "drawing",
+    "canvas",
+    "skeuomorphic",
+    "component"
+  ],
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "test": "node --test tests/*.test.ts",
-    "preview": "vite preview",
-    "materials": "node scripts/generate-materials.mjs"
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:package": "publint --strict && attw --pack --profile esm-only"
   },
   "dependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "object-studies-core": "^0.1.0"
   },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "oxlint": "^1.81.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

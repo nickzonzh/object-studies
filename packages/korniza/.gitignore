@@ -1,8 +1,0 @@
-node_modules/
-dist/
-dist-lib/
-*.tgz
-output/
-.playwright-cli/
-*.local
-.npm-cache/

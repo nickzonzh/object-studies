@@ -1,14 +1,14 @@
 import {
-  PointerEvent as ReactPointerEvent,
+  type PointerEvent as ReactPointerEvent,
   type CSSProperties,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react'
-import { Point, Stroke, BOARD_WIDTH, ERASER_WIDTH, ERASER_HEIGHT, boardPoint, createBoardRenderer } from '../lib/strokes'
+import { type Point, type Stroke, BOARD_WIDTH, ERASER_WIDTH, ERASER_HEIGHT, boardPoint, createBoardRenderer } from '../lib/strokes.js'
 
-import { createToolMotion } from '../lib/toolMotion'
+import { createToolMotion } from '../lib/toolMotion.js'
 
 type Marker = {
   id: string

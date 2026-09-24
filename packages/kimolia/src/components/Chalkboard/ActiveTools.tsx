@@ -1,8 +1,8 @@
 import { forwardRef } from 'react'
 import { createPortal } from 'react-dom'
-import { toolIds } from '../../tools/types'
-import { ChalkPiece } from './ChalkPiece'
-import { Duster } from './Duster'
+import { toolIds } from '../../tools/types.js'
+import { ChalkPiece } from './ChalkPiece.js'
+import { Duster } from './Duster.js'
 
 export const ActiveTools = forwardRef<HTMLDivElement>(
   function ActiveTools(_props, ref) {

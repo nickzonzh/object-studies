@@ -1,4 +1,4 @@
-import type { Point, Pose } from './types.ts'
+import type { Point, Pose } from './types.js'
 
 export function clampPoint(
   point: Point,

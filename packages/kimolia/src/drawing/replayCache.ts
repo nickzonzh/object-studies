@@ -1,4 +1,4 @@
-import type { DrawingStroke } from './types'
+import type { DrawingStroke } from './types.js'
 
 export const CHECKPOINT_INTERVAL = 24
 const MAX_BYTES = 32 * 1024 * 1024

@@ -1,4 +1,4 @@
-import type { ChalkPoint } from './types.ts'
+import type { ChalkPoint } from './types.js'
 
 // A pass is a sweep, not a pointer event. Sampling carries across packets;
 // reversing direction after meaningful travel starts another cleaning pass.

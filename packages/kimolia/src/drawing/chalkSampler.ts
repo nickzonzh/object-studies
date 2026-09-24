@@ -1,5 +1,5 @@
-import { random } from './random.ts'
-import type { ChalkPoint, ChalkStamp } from './types.ts'
+import { random } from './random.js'
+import type { ChalkPoint, ChalkStamp } from './types.js'
 
 export function pressureFor(pointerType: string, pressure: number) {
   return pointerType === 'pen' && Number.isFinite(pressure)
