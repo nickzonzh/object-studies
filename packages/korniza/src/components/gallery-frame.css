@@ -24,9 +24,11 @@
   width: 100%;
   background: #30312b;
   /* Key light sits upper-left, so the cast shadow falls down and slightly
-     right at roughly x:y = 1:2. */
-  box-shadow: var(--korniza-shadow, 0 1px 2px #24251d60, 2px 4px 7px -4px #24251d60,
-    8px 16px 22px -12px #34332835, 15px 30px 42px -22px #34332820);
+     right at roughly x:y = 1:2. A variant may replace --shadow; a consumer
+     overrides either of them with --korniza-shadow. */
+  --shadow: 0 1px 2px #24251d60, 2px 4px 7px -4px #24251d60,
+    8px 16px 22px -12px #34332835, 15px 30px 42px -22px #34332820;
+  box-shadow: var(--korniza-shadow, var(--shadow));
 }
 @supports (width: round(nearest, 1px, 1px)) {
   .korniza-frame { --frame-width: var(--korniza-frame-width, round(nearest, var(--frame-width-base), 1px)); }

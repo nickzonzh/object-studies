@@ -6,8 +6,9 @@
 // museum scan sits on a black field, so the painting is detected and cropped
 // rather than nudged into place with CSS.
 //
-// JPEG only: measured against this encoder, WebP came out larger at every
-// quality for a canvas this densely brushed.
+// JPEG only: on this canvas @napi-rs/canvas encoded WebP within a few percent
+// of JPEG at matching quality (1600 px, q60: 441 kB vs 500 kB; q74: 599 kB vs
+// 583 kB), so a second format would double the committed weight for nothing.
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
 

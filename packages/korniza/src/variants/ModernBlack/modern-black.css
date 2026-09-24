@@ -21,9 +21,8 @@
   --sheen-key: #e8ded40e;
   --sheen-shade: #08070630;
   background: #181615;
-  border-radius: 0;
   /* Existing contact/ambient hierarchy, less spread for a shallow gallery box. */
-  box-shadow: 0 1px 1px #18161566, 2px 4px 5px -2px #18161555,
+  --shadow: 0 1px 1px #18161566, 2px 4px 5px -2px #18161555,
     6px 12px 14px -8px #24211e38, 11px 22px 30px -18px #24211e24;
 }
 .korniza-frame[data-variant='modern-black']::after {
