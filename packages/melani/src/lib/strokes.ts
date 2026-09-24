@@ -103,10 +103,46 @@ function strokeBounds(stroke: Stroke): Bounds {
 
 /* ── ink texture ────────────────────────────────────────────────────────── */
 
-type Wash = { density: CanvasGradient }
 
-// Gradients belong to the context that created them; strokes keep theirs for as
-// long as they are being painted onto the same surface.
+// Active strokes revisit only a small box each frame. Chunks keep the texture
+// pass from walking all earlier samples just to reject them against that box.
+const STREAK_CHUNK_SIZE = 32
+type StreakChunk = { from: number; to: number; bounds: Bounds; count: number }
+type StreakIndex = { processed: number; chunks: StreakChunk[] }
+const streakIndices = new WeakMap<Stroke, StreakIndex>()
+
+function streakIndexFor(stroke: Stroke): StreakIndex {
+  let index = streakIndices.get(stroke)
+  if (!index || index.processed > stroke.points.length) {
+    index = { processed: 1, chunks: [] }
+    streakIndices.set(stroke, index)
+  }
+  for (let i = Math.max(1, index.processed); i < stroke.points.length; i++) {
+    const point = stroke.points[i]
+    const chunkIndex = Math.floor((i - 1) / STREAK_CHUNK_SIZE)
+    let chunk = index.chunks[chunkIndex]
+    if (!chunk) {
+      chunk = {
+        from: chunkIndex * STREAK_CHUNK_SIZE + 1,
+        to: (chunkIndex + 1) * STREAK_CHUNK_SIZE + 1,
+        bounds: { ...EMPTY },
+        count: 0,
+      }
+      index.chunks[chunkIndex] = chunk
+    }
+    if (point.breakBefore) continue
+    const previous = stroke.points[i - 1]
+    chunk.bounds.left = Math.min(chunk.bounds.left, previous.x, point.x)
+    chunk.bounds.top = Math.min(chunk.bounds.top, previous.y, point.y)
+    chunk.bounds.right = Math.max(chunk.bounds.right, previous.x, point.x)
+    chunk.bounds.bottom = Math.max(chunk.bounds.bottom, previous.y, point.y)
+    chunk.count++
+  }
+  index.processed = stroke.points.length
+  return index
+}
+
+type Wash = { density: CanvasGradient }
 const washes = new WeakMap<CanvasRenderingContext2D, WeakMap<Stroke, Wash>>()
 
 /** Fibre tracks laid across the nib, as a share of the ink's width. */
@@ -169,36 +205,46 @@ function paintStreaks(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bou
   // Segments well outside the region are dropped; the break that leaves is
   // further out than the line is wide, so nothing inside the clip can see it.
   const margin = across * 1.2
+  const index = streakIndexFor(stroke)
   for (let track = 0; track < STREAK_LINES; track++) {
     const offset = ((track + 0.5) / STREAK_LINES - 0.5) * STREAK_SPREAD
     ctx.strokeStyle = `rgba(0,0,0,${hash(seed, track) ** 1.6 * (eraser ? 0.12 : 0.26) + 0.02})`
     ctx.beginPath()
     let drawn = false
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1], b = points[i]
-      if (b.breakBefore) {
+    for (const chunk of index.chunks) {
+      const bounds = chunk.bounds
+      if (!chunk.count
+        || bounds.right + margin < region.left || bounds.left - margin > region.right
+        || bounds.bottom + margin < region.top || bounds.top - margin > region.bottom) {
         drawn = false
         continue
       }
-      const dx = b.x - a.x, dy = b.y - a.y
-      const length = Math.hypot(dx, dy)
-      if (length < 0.01) continue
-      const near = Math.min(a.x, b.x) - margin <= region.right
-        && Math.max(a.x, b.x) + margin >= region.left
-        && Math.min(a.y, b.y) - margin <= region.bottom
-        && Math.max(a.y, b.y) + margin >= region.top
-      if (!near) {
-        drawn = false
-        continue
+      for (let i = Math.max(1, chunk.from); i < Math.min(points.length, chunk.to); i++) {
+        const a = points[i - 1], b = points[i]
+        if (b.breakBefore) {
+          drawn = false
+          continue
+        }
+        const dx = b.x - a.x, dy = b.y - a.y
+        const length = Math.hypot(dx, dy)
+        if (length < 0.01) continue
+        const near = Math.min(a.x, b.x) - margin <= region.right
+          && Math.max(a.x, b.x) + margin >= region.left
+          && Math.min(a.y, b.y) - margin <= region.bottom
+          && Math.max(a.y, b.y) + margin >= region.top
+        if (!near) {
+          drawn = false
+          continue
+        }
+        // Pressure, not the position jitter: where a track sits must not depend
+        // on how finely the path was sampled.
+        const width = eraser ? across : effectiveWidth(stroke, (a.pressure + b.pressure) / 2)
+        const shift = offset * width
+        const nx = (-dy / length) * shift, ny = (dx / length) * shift
+        if (!drawn) ctx.moveTo(a.x + nx, a.y + ny)
+        ctx.lineTo(b.x + nx, b.y + ny)
+        drawn = true
       }
-      // Pressure, not the position jitter: where a track sits must not depend
-      // on how finely the path was sampled.
-      const width = eraser ? across : effectiveWidth(stroke, (a.pressure + b.pressure) / 2)
-      const shift = offset * width
-      const nx = (-dy / length) * shift, ny = (dx / length) * shift
-      if (!drawn) ctx.moveTo(a.x + nx, a.y + ny)
-      ctx.lineTo(b.x + nx, b.y + ny)
-      drawn = true
     }
     ctx.stroke()
   }
@@ -515,12 +561,16 @@ export function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, covera
  */
 export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
   const committed = document.createElement('canvas')
-  const coverage = document.createElement('canvas')
-  const settledInk = document.createElement('canvas')
-  // Full lift over re-wiped ground. It sits above the wash, so it is kept apart
-  // from the settled coverage and laid back over every area a frame rebuilds.
-  const liftedInk = document.createElement('canvas')
+  let coverage: HTMLCanvasElement | null = null
+  let settledInk: HTMLCanvasElement | null = null
+  let liftedInk: HTMLCanvasElement | null = null
   let painted: readonly Stroke[] = []
+  const makeLayer = () => {
+    const layer = document.createElement('canvas')
+    layer.width = canvas.width
+    layer.height = canvas.height
+    return layer
+  }
   let scale = 1
   let live: Stroke | null = null
   let settled = 0
@@ -529,7 +579,8 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
   let liveFromScratch = true
   let liveOnCanvas = false
 
-  const boardTransform = (ctx: CanvasRenderingContext2D) => ctx.setTransform(scale, 0, 0, scale, 0, 0)
+  const boardTransform = (ctx: CanvasRenderingContext2D) =>
+    ctx.setTransform(scale, 0, 0, scale, 0, 0)
 
   const repaintCommitted = (strokes: readonly Stroke[]) => {
     const base = committed.getContext('2d')!
@@ -539,7 +590,11 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
       base.clearRect(0, 0, committed.width, committed.height)
     }
     boardTransform(base)
-    for (let i = appended ? painted.length : 0; i < strokes.length; i++) drawStroke(base, strokes[i], coverage)
+    if (strokes.length) {
+      coverage ??= makeLayer()
+      for (let i = appended ? painted.length : 0; i < strokes.length; i++)
+        drawStroke(base, strokes[i], coverage)
+    }
     painted = strokes
   }
 
@@ -558,6 +613,7 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
     previousTail = null
     liveFromScratch = true
     for (const layer of [settledInk, liftedInk]) {
+      if (!layer) continue
       const ctx = layer.getContext('2d')!
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, layer.width, layer.height)
@@ -565,13 +621,16 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
   }
 
   const paintLive = (stroke: Stroke) => {
-    const ink = settledInk.getContext('2d')!
+    const settledLayer = settledInk ??= makeLayer()
+    const ink = settledLayer.getContext('2d')!
     boardTransform(ink)
     if (settled === 0) paintContact(ink, stroke)
     paintRange(ink, stroke, settled, stroke.points.length)
     const eraser = stroke.tool === 'eraser'
-    if (eraser) {
-      const lift = liftedInk.getContext('2d')!
+    let liftLayer: HTMLCanvasElement | null = null
+    if (eraser && revisitStateFor(stroke).revisited.includes(true)) {
+      liftLayer = liftedInk ??= makeLayer()
+      const lift = liftLayer.getContext('2d')!
       boardTransform(lift)
       paintRevisited(lift, stroke, lifted)
       lifted = stroke.points.length
@@ -590,17 +649,18 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
     const rect = deviceRect(dirty, scale, canvas)
     if (!rect) return
     blit(rect)
+    coverage ??= makeLayer()
     const scratch = coverage.getContext('2d')!
     scratch.setTransform(1, 0, 0, 1, 0, 0)
     scratch.clearRect(rect.x, rect.y, rect.width, rect.height)
-    scratch.drawImage(settledInk, rect.x, rect.y, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height)
+    scratch.drawImage(settledLayer, rect.x, rect.y, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height)
     boardTransform(scratch)
     paintTail(scratch, stroke)
     applyWash(scratch, stroke, boardBox(rect, scale))
     paintPools(scratch, stroke)
     const target = canvas.getContext('2d')!
     composite(target, stroke, coverage, rect)
-    if (eraser) composite(target, stroke, liftedInk, rect)
+    if (liftLayer) composite(target, stroke, liftLayer, rect)
   }
 
   return {
@@ -608,6 +668,7 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
       const deviceWidth = Math.max(1, Math.round(width * dpr))
       const deviceHeight = Math.max(1, Math.round(height * dpr))
       for (const layer of [canvas, committed, coverage, settledInk, liftedInk]) {
+        if (!layer) continue
         layer.width = deviceWidth
         layer.height = deviceHeight
       }

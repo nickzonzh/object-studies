@@ -1,4 +1,5 @@
 export { seededRandom } from './random.js'
+export { backingScale, MAX_BACKING_PIXELS } from './canvas.js'
 export {
   advancePose,
   clampPoint,
