@@ -1,5 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "paths": {} },
+  "compilerOptions": {
+    // Type-check against package sources so a fresh checkout needs no build
+    // first. Vite still serves the built packages, exactly as npm users get them.
+    "paths": {
+      "object-studies-core": ["../../packages/core/src/index.ts"],
+      "kimolia": ["../../packages/kimolia/src/index.ts"],
+      "melani": ["../../packages/melani/src/index.ts"],
+      "korniza": ["../../packages/korniza/src/index.ts"]
+    }
+  },
   "include": ["src", "vite.config.ts"]
 }
