@@ -276,26 +276,20 @@ function revisitStateFor(stroke: Stroke) {
   return state
 }
 
-function paintRevisited(
-  ctx: CanvasRenderingContext2D, stroke: Stroke, state: RevisitState,
-  region: Bounds, from: number,
-) {
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(region.left, region.top, region.right - region.left, region.bottom - region.top)
-  ctx.clip()
+/** Opaque coverage over every segment from `from` on that crosses ground this stroke already wiped. */
+function paintRevisited(ctx: CanvasRenderingContext2D, stroke: Stroke, from: number) {
+  const state = revisitStateFor(stroke)
   inkStyle(ctx, stroke)
   for (let i = Math.max(1, from); i < stroke.points.length; i++) {
     if (!state.revisited[i] || stroke.points[i].breakBefore) continue
     paintEraserSegment(ctx, stroke, stroke.points[i - 1], stroke.points[i])
   }
-  ctx.restore()
 }
 
 // Lift coverage away again. Marker ink keeps a little of the board showing
-// through; the eraser leaves a faint ghost of whatever it passed over, while
-// sustained scrubbing gets a second opaque lift over the revisited path.
-function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds, from = 1) {
+// through; the eraser leaves a faint ghost of whatever it passed over. (Ground
+// an eraser stroke wipes again is lifted completely, in a pass of its own.)
+function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds) {
   const { density } = washFor(ctx, stroke)
   const x = region.left, y = region.top, width = region.right - x, height = region.bottom - y
   ctx.save()
@@ -304,16 +298,7 @@ function applyWash(ctx: CanvasRenderingContext2D, stroke: Stroke, region: Bounds
   ctx.fillRect(x, y, width, height)
   ctx.restore()
   paintStreaks(ctx, stroke, region)
-  if (stroke.tool === 'eraser') {
-    const state = revisitStateFor(stroke)
-    ctx.save()
-    ctx.globalCompositeOperation = 'source-over'
-    ctx.globalAlpha = 1
-    paintRevisited(ctx, stroke, state, region, from)
-    ctx.restore()
-  }
 }
-
 
 // The nib rests where it lands and again where it leaves, so a little more ink
 // sits at both ends — denser where it started, and never a bead with an edge.
@@ -486,6 +471,13 @@ function composite(
   ctx.restore()
 }
 
+// A device rect back in board units. Washing exactly the pixels being
+// composited leaves no rim of unwashed coverage around a repainted box.
+const boardBox = (rect: Rect, scale: number): Bounds => ({
+  left: rect.x / scale, top: rect.y / scale,
+  right: (rect.x + rect.width) / scale, bottom: (rect.y + rect.height) / scale,
+})
+
 /**
  * Paint one whole stroke onto `ctx` through the scratch `coverage` canvas.
  * Coverage is built opaque and composited once, so overlapping samples inside a
@@ -504,9 +496,17 @@ export function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, covera
   paintContact(ink, stroke)
   paintRange(ink, stroke, 1, stroke.points.length)
   paintTail(ink, stroke)
-  applyWash(ink, stroke, bounds)
+  applyWash(ink, stroke, boardBox(rect, transform.a))
   paintPools(ink, stroke)
   composite(ctx, stroke, coverage, rect)
+  // Ground this stroke wipes again is lifted completely, as its own pass.
+  if (stroke.tool === 'eraser' && revisitStateFor(stroke).revisited.includes(true)) {
+    ink.setTransform(1, 0, 0, 1, 0, 0)
+    ink.clearRect(rect.x, rect.y, rect.width, rect.height)
+    ink.setTransform(transform)
+    paintRevisited(ink, stroke, 1)
+    composite(ctx, stroke, coverage, rect)
+  }
 }
 
 /**
@@ -517,10 +517,14 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
   const committed = document.createElement('canvas')
   const coverage = document.createElement('canvas')
   const settledInk = document.createElement('canvas')
+  // Full lift over re-wiped ground. It sits above the wash, so it is kept apart
+  // from the settled coverage and laid back over every area a frame rebuilds.
+  const liftedInk = document.createElement('canvas')
   let painted: readonly Stroke[] = []
   let scale = 1
   let live: Stroke | null = null
   let settled = 0
+  let lifted = 1
   let previousTail: Bounds | null = null
   let liveFromScratch = true
   let liveOnCanvas = false
@@ -550,19 +554,28 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
   const resetLive = (stroke: Stroke | null) => {
     live = stroke
     settled = 0
+    lifted = 1
     previousTail = null
     liveFromScratch = true
-    const ink = settledInk.getContext('2d')!
-    ink.setTransform(1, 0, 0, 1, 0, 0)
-    ink.clearRect(0, 0, settledInk.width, settledInk.height)
+    for (const layer of [settledInk, liftedInk]) {
+      const ctx = layer.getContext('2d')!
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, layer.width, layer.height)
+    }
   }
 
   const paintLive = (stroke: Stroke) => {
     const ink = settledInk.getContext('2d')!
     boardTransform(ink)
     if (settled === 0) paintContact(ink, stroke)
-    const revisitFrom = Math.max(1, settled - 2)
     paintRange(ink, stroke, settled, stroke.points.length)
+    const eraser = stroke.tool === 'eraser'
+    if (eraser) {
+      const lift = liftedInk.getContext('2d')!
+      boardTransform(lift)
+      paintRevisited(lift, stroke, lifted)
+      lifted = stroke.points.length
+    }
     // Segment i draws from points i - 2, so fresh pixels start two samples back.
     const fresh = liveFromScratch
       ? strokeBounds(stroke)
@@ -583,16 +596,18 @@ export function createBoardRenderer(canvas: HTMLCanvasElement): BoardRenderer {
     scratch.drawImage(settledInk, rect.x, rect.y, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height)
     boardTransform(scratch)
     paintTail(scratch, stroke)
-    applyWash(scratch, stroke, dirty, revisitFrom)
+    applyWash(scratch, stroke, boardBox(rect, scale))
     paintPools(scratch, stroke)
-    composite(canvas.getContext('2d')!, stroke, coverage, rect)
+    const target = canvas.getContext('2d')!
+    composite(target, stroke, coverage, rect)
+    if (eraser) composite(target, stroke, liftedInk, rect)
   }
 
   return {
     resize(width: number, height: number, dpr: number) {
       const deviceWidth = Math.max(1, Math.round(width * dpr))
       const deviceHeight = Math.max(1, Math.round(height * dpr))
-      for (const layer of [canvas, committed, coverage, settledInk]) {
+      for (const layer of [canvas, committed, coverage, settledInk, liftedInk]) {
         layer.width = deviceWidth
         layer.height = deviceHeight
       }

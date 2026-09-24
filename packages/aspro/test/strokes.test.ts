@@ -178,6 +178,29 @@ test('an active stroke painted sample by sample matches its committed replay', (
   assert.deepEqual(pixels(live), pixels(committed), 'Pen-up must not shift a single pixel of the stroke')
 })
 
+test('a scrub looks the same while erasing as after the eraser lifts', () => {
+  withDocument()
+  const live = canvas(456, 283)
+  const committed = canvas(456, 283)
+  const renderer = createBoardRenderer(live)
+  const replay = createBoardRenderer(committed)
+  renderer.resize(456, 283, 1)
+  replay.resize(456, 283, 1)
+  const ink = marker([point(200, 300), point(900, 300)], 40, 'ink')
+  // Back and forth over the same ground, one sample at a time.
+  const points = Array.from({ length: 48 }, (_, i) => {
+    const phase = (i % 16) / 15
+    return point(360 + (Math.floor(i / 16) % 2 ? 1 - phase : phase) * 360, 300, 0.5, 0)
+  })
+  const stroke = eraser([points[0]])
+  for (let i = 1; i < points.length; i++) {
+    stroke.points.push(points[i])
+    renderer.render([ink], stroke)
+  }
+  replay.render([ink, eraser([...stroke.points])])
+  assert.deepEqual(pixels(live), pixels(committed), 'Scrubbed ground must not reappear until pen-up')
+})
+
 test('resize preserves the whole drawing and clear/undo invalidate the committed cache', () => {
   withDocument()
   const board = canvas(1, 1)
