@@ -30,9 +30,13 @@ function decodePoints(value: unknown, limit: { left: number }): Point[] {
       || !isNumberWithin(raw.pressure, 0, 1)
     ) throw new Error('Invalid point')
     const point: Point = { x: raw.x, y: raw.y, pressure: raw.pressure }
-    if (raw.angle === undefined) return point
-    if (!isNumberWithin(raw.angle, -720, 720)) throw new Error('Invalid point')
-    return { ...point, angle: raw.angle }
+    if (raw.angle !== undefined && !isNumberWithin(raw.angle, -720, 720)) throw new Error('Invalid point')
+    if (raw.breakBefore !== undefined && typeof raw.breakBefore !== 'boolean') throw new Error('Invalid point')
+    return {
+      ...point,
+      ...(raw.angle === undefined ? {} : { angle: raw.angle }),
+      ...(raw.breakBefore ? { breakBefore: true } : {}),
+    }
   })
 }
 
