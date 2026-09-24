@@ -35,7 +35,7 @@ export const masses = [
   // the Gainsborough frame carries between its corners.
   'M106.9 11.2L105.8 11.4L106.2 12.8L106.1 14.8L104.8 14.9L103.7 13.2L103.2 12.2L102 12.9L100.1 13.5L99.6 12.3L100.9 10.7L101.7 9.9L100.6 9L99.5 7.4L100.4 6.5L102.4 7.3L103.3 7.8L103.9 6.5L105.1 4.9L106.2 5.5L106.1 7.6L105.9 8.7L107.3 8.8L109.2 9.5L108.9 10.7Z',
   'M12.1 103.8L14 104L15.1 105L13.9 106L12.1 106.2L11.8 106.7L12.2 108.5L11.6 109.9L10.2 109.1L9.5 107.4L9 107.2L7.4 108.1L5.9 108L6.2 106.5L7.6 105.3L7.6 104.7L6.2 103.5L5.9 102L7.4 101.9L9 102.8L9.5 102.6L10.3 100.9L11.6 100.2L12.2 101.6L11.8 103.4Z',
-] as const
+]
 
 /* Secondary turned surfaces inside the masses: they take a second ramp so a
  * member reads as several facets rather than one silhouette. */
@@ -45,7 +45,7 @@ export const folds = [
   'M23 17.5L19.2 22.7L13.1 20.7L13.1 14.3L19.2 12.3Z',
   // The rolled crest of the sweep, offset to the lit side of its centreline.
   'M61.2 15.6L60.1 15.1L58.9 13.8L58.6 12.1L59 10.2L60.4 8.8L62.3 8.1L64.4 8.3L66.3 9.5L67.5 11.5L67.7 13.9L66.7 16.2L64.8 17.9L62.2 18.7L59.6 18.2L57.8 17.1L55.7 15.8L53.1 14.2L50.4 12.7L47.8 11.6L45.2 10.6L42.4 9.7L39.5 9L36.7 8.5L34 8.2L31.4 8.2L28.8 8.4L26.3 8.8L23.9 9.4L21.7 10.3L19.5 11.5L17.4 13L15.5 14.7L13.8 16.6L12.4 18.6L11.3 20.8L10.5 23.2L9.9 25.8L9.5 28.4L9.3 31L9.2 33.7L9.3 36.5L9.6 39.4L10 42.2L10.7 44.9L11.6 47.6L12.8 50.5L14.1 53.4L15.3 55.8L16.3 57.7L16.5 60.5L15.5 63.1L13.5 64.9L11 65.6L8.6 65.2L6.6 63.7L5.6 61.7L5.6 59.5L6.5 57.6L8.1 56.4L10 56.1L11.8 56.7L13 58L13.4 59.1L13.6 59.1L13.3 57.8L12 56.3L10.1 55.5L7.9 55.8L5.9 57.1L4.7 59.3L4.6 61.9L5.8 64.4L8.1 66.3L11.1 66.9L14.2 66.1L16.7 64L18.1 60.8L18 57.3L17.2 55L16.2 52.5L15.1 49.6L14.2 46.8L13.6 44.2L13.4 41.7L13.4 39.1L13.5 36.5L13.7 33.9L14.1 31.5L14.5 29.2L15.1 27L15.7 24.9L16.5 23.2L17.4 21.7L18.4 20.3L19.7 18.9L21.1 17.7L22.7 16.5L24.3 15.6L25.9 14.8L27.7 14.2L29.7 13.7L31.8 13.4L34 13.2L36.3 13.1L38.9 13.3L41.6 13.6L44.3 14L46.8 14.6L49.2 15.4L51.9 16.6L54.5 17.8L56.8 19L59 20L62.4 20.4L65.6 19.3L68 17L69 14.1L68.7 11.1L67.1 8.7L64.7 7.3L62.1 7.1L59.9 8.1L58.4 9.9L58 12.1L58.5 14.1L59.9 15.5L61.1 15.9Z',
-] as const
+]
 
 /* Sockets that stay dark under every light direction. */
 export const undercuts = [
@@ -53,7 +53,7 @@ export const undercuts = [
   // that stays dark whatever the light does.
   'M64 13.7L61.1 15.8L60 12.4L63.6 12.4Z',
   'M13.7 59.6L10.7 61.7L9.5 58.2L13.2 58.2Z',
-] as const
+]
 
 /* Crest lines, drawn pale on the lit side and shadowed by an offset copy. */
 export const edges = [
@@ -66,7 +66,7 @@ export const edges = [
   'M42 10L45.4 6.9L50 4L55.5 4.6L60 6',
   'M8 30L4.5 31.8L1 35L.3 40.8L.5 46',
   'M10 42L6.9 45.4L4 50L4.6 55.5L6 60',
-] as const
+]
 
 /* Gouged veins: shallow shadowed grooves in the gilt. */
 export const cuts = [
@@ -75,4 +75,4 @@ export const cuts = [
   'M10 20L6.5 20L2.5 21L-.2 25.1L-2 29',
   'M78 13L80.9 9.9L85 7L90.4 7.4L95 8.5',
   'M13 78L9.9 80.9L7 85L7.4 90.4L8.5 95',
-] as const
+]

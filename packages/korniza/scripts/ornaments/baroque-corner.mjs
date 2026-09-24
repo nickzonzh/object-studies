@@ -16,7 +16,7 @@ export const masses = [
   'M53 56 C42 52 34 46 26 42 C15 44 8 39 5 33 C12 36 15 33 17 31 C5 29 0 23 1 16 C8 22 13 21 16 19 C7 14 5 5 8 -4 C12 2 20 1 23 8 C25 1 32 0 35 3 C29 8 32 15 35 19 C36 11 42 9 47 12 C42 16 42 23 43 28 C46 22 51 23 55 26 C49 31 47 36 48 41 C55 44 59 50 53 56 Z',
   // Fold that wraps the lower shoulder and turns back toward the opening.
   'M31 42 C36 39 43 40 49 44 C57 49 60 58 55 63 C51 66 46 62 48 59 C50 62 54 60 52 57 C48 51 41 55 37 52 C40 51 42 48 39 47 C32 49 26 47 24 43 Z',
-] as const
+]
 
 export const folds = [
   'M11 3 C17 10 23 11 28 21 C34 30 40 42 52 53 C38 48 25 35 22 25 C19 16 16 12 11 3 Z',
@@ -33,7 +33,7 @@ export const folds = [
   'M49 36 C55 40 60 37 63 34 C61 43 55 43 49 41 Z',
   'M23 45 C21 53 31 56 29 62 C34 57 29 51 27 47 Z',
   'M36 53 Q39 57 44 58 Q39 60 35 57 Z',
-] as const
+]
 
 /** Local tapered undercuts, not a global contrast increase. They sit below
  * fold planes; the unlit bronze pockets remain stable under pointer movement. */
@@ -45,7 +45,7 @@ export const undercuts = [
   'M47 42 Q55 47 62 38 Q61 47 53 47 L55 51 Q49 49 46 51 Z',
   'M27 55 Q32 60 27 65 Q35 62 34 57 L38 58 Q36 53 33 51 Z',
   'M40 50 C48 49 55 53 56 59 C52 54 46 56 43 54 Z',
-] as const
+]
 
 export const cuts = [
   'M14 9 C25 22 27 36 48 50',
@@ -54,7 +54,7 @@ export const cuts = [
   'M48 30 Q44 36 45 40 M41 48 Q51 49 55 56',
   'M47 30 C55 18 70 16 74 25 C77 33 68 38 62 34',
   'M23 50 C12 61 16 76 23 79 C31 83 37 75 33 69',
-] as const
+]
 
 export const edges = [
   'M9 -2 Q12 4 20 7 M3 17 Q7 25 17 25 M7 34 Q13 40 21 38',
@@ -64,4 +64,4 @@ export const edges = [
   'M12 54 Q7 66 15 77 M24 84 Q37 84 37 73',
   'M79 38 Q96 22 108 24 Q122 26 138 19 M23 96 Q18 108 20 130',
   'M50 36 Q57 40 62 35 M23 46 Q22 51 27 55',
-] as const
+]

@@ -69,14 +69,26 @@ The mat fills the opening and the artwork window is cut into it, so `aspectRatio
 
 ## Per-variant imports
 
-Each material has its own entry point, so a single-variant consumer bundles one frame instead of six:
+Each material has its own entry point and its own stylesheet, so a single-variant consumer bundles one frame instead of six:
 
 ```tsx
 import { Frame, FrameImage } from 'korniza/carved-oak'
-import 'korniza/style.css'
+import 'korniza/carved-oak.css'
 ```
 
-The subpath exports the same component under the name `Frame` with its `variant` fixed, plus `FrameImage`, `FrameProps` and `FrameMat`. Subpaths are `korniza/baroque-gold`, `korniza/champagne-rococo`, `korniza/carved-oak`, `korniza/dark-walnut`, `korniza/ebonised-black` and `korniza/modern-black`. The stylesheet is not split: `korniza/style.css` carries all six materials (125 kB raw, 37 kB gzipped, every inlined texture included).
+The subpath exports the same component under the name `Frame` with its `variant` fixed, plus `FrameImage`, `FrameProps` and `FrameMat`. Subpaths are `korniza/baroque-gold`, `korniza/champagne-rococo`, `korniza/carved-oak`, `korniza/dark-walnut`, `korniza/ebonised-black` and `korniza/modern-black`, each with a matching `korniza/<variant>.css` that carries the shared shell and that one material. `korniza/style.css` carries all six and is what the root `Frame` needs. Every texture and carving is inlined, so there are no asset files to serve:
+
+| Stylesheet | Raw | Gzipped |
+| --- | --- | --- |
+| `style.css` (all six) | 203 kB | 50 kB |
+| `baroque-gold.css` | 44 kB | 8.4 kB |
+| `champagne-rococo.css` | 59 kB | 12.4 kB |
+| `carved-oak.css` | 86 kB | 21.4 kB |
+| `dark-walnut.css` | 28 kB | 8.9 kB |
+| `ebonised-black.css` | 27 kB | 8.3 kB |
+| `modern-black.css` | 24 kB | 7.8 kB |
+
+The JavaScript is small because the carving is baked into the stylesheet: each variant chunk is under 1 kB, and the shared shell is 5.7 kB (1.9 kB gzipped).
 
 ## Theming
 
@@ -130,7 +142,7 @@ From the monorepo root: `npm install`, then
 npm run dev -w korniza          # demo at http://127.0.0.1:5173
 npm run typecheck -w korniza
 npx vitest run packages/korniza
-npm run build -w korniza        # dist/: ESM entries, declarations, one style.css
+npm run build -w korniza        # dist/: ESM entries, declarations, style.css and one stylesheet per variant
 npm run check:package -w korniza
 ```
 

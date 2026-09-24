@@ -63,8 +63,8 @@
   background: #100d0c;
 }
 /* The gold lip is a member of the section; this is the leaf's own catch. */
-.korniza-frame[data-variant='ebonised-black']::before {
-  content: ''; position: absolute; z-index: 5; pointer-events: none;
+.korniza-frame[data-variant='ebonised-black'] .korniza-glint {
+  position: absolute; z-index: 5; pointer-events: none;
   inset: calc(var(--frame-width) * .845); padding: calc(var(--frame-width) * .048);
   background: radial-gradient(ellipse at var(--light-x) var(--light-y), #f7e6b47a, #dcc07922 46%, transparent 70%);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);

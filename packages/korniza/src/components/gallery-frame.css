@@ -2,6 +2,20 @@
    wrapper keeps the bare `.korniza` class so the documented custom properties
    can be set through `className` or `style`. */
 .korniza { container-type: inline-size; width: 100%; min-width: 0; }
+
+/* The travelling light is written by usePointerLight straight onto the few
+   elements that paint with it, each marked `korniza-lit`. Registered as
+   non-inherited, a pointer move restyles those elements alone: the boards,
+   slices and bands resolve kilobytes of var() texture and gradient each time
+   they are restyled, and must never be touched by a light update. Browsers
+   without @property inherit the values instead, which is slower but paints
+   the same. */
+@property --light-x { syntax: '<percentage>'; inherits: false; initial-value: 26%; }
+@property --light-y { syntax: '<percentage>'; inherits: false; initial-value: 16%; }
+.korniza-lit {
+  --light-x: var(--korniza-light-x, 26%);
+  --light-y: var(--korniza-light-y, 16%);
+}
 .korniza, .korniza-frame, .korniza-frame__opening, .korniza-frame__window,
 .korniza-frame__slice { box-sizing: border-box; }
 
@@ -11,8 +25,6 @@
      property is never validated at parse time, so a second declaration cannot
      act as a fallback for browsers without round(). */
   --frame-width: var(--korniza-frame-width, var(--frame-width-base));
-  --light-x: var(--korniza-light-x, 26%);
-  --light-y: var(--korniza-light-y, 16%);
   --mat-width: var(--korniza-mat-width, calc(var(--frame-width) * .66));
   --mat-bevel: var(--korniza-mat-bevel, max(2px, calc(var(--frame-width) * .085)));
   display: grid;
@@ -108,13 +120,8 @@
 /* --- timber boards ------------------------------------------------------- */
 /* Full-length boards keep a texture continuous across the nine-slice joins.
    The geometry is shared; a variant only supplies --grain and --grain-vertical
-   so each SVG is inlined exactly once in the stylesheet. Straight-grained ash
-   lives here rather than in a variant because two blackened variants paint
-   with it, and one inlined copy is all the stylesheet should carry. */
-.korniza-frame {
-  --grain-straight: url('./straight-grain.svg');
-  --grain-straight-vertical: url('./straight-grain-vertical.svg');
-}
+   so each SVG is inlined exactly once in the stylesheet; straight-grained ash
+   shared by the blackened variants lives in straight-grain.css. */
 .korniza-boards { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 /* --grain-blend lets a variant modulate the moulding with its figure instead
    of painting over it, the same rule the carved bands below are drawn by. */
@@ -135,20 +142,23 @@
 .korniza-board--left { left: 0; background-image: var(--grain-vertical), linear-gradient(to right, var(--profile)); }
 .korniza-board--right { right: 0; transform: scale(-1); background-image: var(--grain-vertical), linear-gradient(to right, var(--profile-shadow)); }
 /* Fine fibres emerge where light grazes the broad face; --graze is 0 unless a
-   variant opts in, and the band is expressed in profile coordinates. */
-.korniza-board::before {
-  content: ''; position: absolute; inset: 0;
-  background: var(--grain) 0 0 / 100% 100% no-repeat;
+   variant opts in, and the band is expressed in profile coordinates. The
+   travelling mask lives on its own element and the fibres on a child of it,
+   so moving the light restyles the mask and never re-resolves the texture. */
+.korniza-graze, .korniza-graze > span { position: absolute; inset: 0; }
+.korniza-graze {
   opacity: var(--graze, 0);
   clip-path: polygon(0 var(--graze-from, 0%), 100% var(--graze-from, 0%), 100% var(--graze-to, 100%), 0 var(--graze-to, 100%));
   mask-image: radial-gradient(ellipse at var(--light-x) var(--light-y), #fff, transparent 68%);
 }
-.korniza-board--bottom::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
-.korniza-board--left::before, .korniza-board--right::before {
-  background-image: var(--grain-vertical);
+.korniza-graze > span { background: var(--grain) 0 0 / 100% 100% no-repeat; }
+.korniza-board--left .korniza-graze, .korniza-board--right .korniza-graze {
   clip-path: polygon(var(--graze-from, 0%) 0, var(--graze-to, 100%) 0, var(--graze-to, 100%) 100%, var(--graze-from, 0%) 100%);
 }
-.korniza-board--right::before { mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%); }
+.korniza-board--left .korniza-graze > span, .korniza-board--right .korniza-graze > span { background-image: var(--grain-vertical); }
+.korniza-board--bottom .korniza-graze, .korniza-board--right .korniza-graze {
+  mask-image: radial-gradient(ellipse at calc(100% - var(--light-x)) calc(100% - var(--light-y)), #fff, transparent 68%);
+}
 
 /* --- carved bands ------------------------------------------------------- */
 /* A repeating relief tile inset into the moulding. The tile carries light and
@@ -198,6 +208,13 @@
   background-size: 100% var(--band-wear-step);
 }
 
+/* --- baked ornament ----------------------------------------------------- */
+/* Carving drawn by scripts/generate-ornaments.mjs; each variant's generated
+   section places the spans and names the sheets. The containers set no
+   z-index, so every placement keeps its own layer in the frame. */
+.korniza-ornament, .korniza-relief { position: absolute; inset: 0; pointer-events: none; }
+.korniza-orn { position: absolute; pointer-events: none; }
+
 /* --- travelling light --------------------------------------------------- */
 /* One masked ring over the mouldings carries the whole lighting response: a
    specular band that slides along each rail, a broad key wash and a counter
@@ -218,7 +235,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .korniza-frame {
+  .korniza-lit {
     --light-x: var(--korniza-light-x, 26%) !important;
     --light-y: var(--korniza-light-y, 16%) !important;
   }
