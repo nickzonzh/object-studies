@@ -31,6 +31,8 @@ const MAX_SEQUINS = 800
 // Idle shimmer keeps going this long after the last sign of someone at the table, then
 // the table goes still until the pointer moves again: nobody watching, no battery spent.
 const SHIMMER_MS = 10_000
+/** Pouring was tuned by eye on a 165 Hz screen, one pour per frame. It now runs per second at that rate. */
+const POUR_TUNED_HZ = 165
 
 type Tool = 'glue' | 'scissors' | 'marker' | 'tape' | 'pipes' | 'eyes' | 'sequins' | 'pompoms' | 'stamp' | `glitter-${number}` | null
 type Eye = { id: number; x: number; y: number; size: number }
@@ -333,7 +335,9 @@ export function CraftTable() {
     pomId: 0,
     rng: createRng(20260927),
     light: null as { x: number; y: number } | null,
-    pointer: { x: 0, y: 0, speed: 0 },
+    pointer: { x: 0, y: 0, speed: 0, t: 0 },
+    // Glitter owed but not yet poured: pouring runs per second, and frames deliver it.
+    pourCarry: 0,
     drawing: false,
     pouring: false,
     tipUntil: 0,
@@ -590,16 +594,21 @@ export function CraftTable() {
       // Commit the held tool's pose in the same frame as fresh glue and glitter.
       if (pendingToolRef.current) { motionRef.current?.move(...pendingToolRef.current); pendingToolRef.current = null }
 
+      // The pour rates below are per tuned frame; scaling by elapsed time makes every screen pour the same.
+      const frames = dt * POUR_TUNED_HZ
       const t = toolRef.current
       if (s.pouring && t?.startsWith('glitter')) {
         const color = Number(t.split('-')[1])
-        const count = Math.round(5 + Math.min(s.pointer.speed, 1600) * 0.016)
-        s.pending.push(...pourFlakes(s.rng, s.pointer.x, s.pointer.y + 4, count, color, now, 16))
-        s.pointer.speed *= 0.8
+        s.pourCarry += (5 + Math.min(s.pointer.speed, 1600) * 0.016) * frames
+        const count = Math.floor(s.pourCarry)
+        s.pourCarry -= count
+        if (count) s.pending.push(...pourFlakes(s.rng, s.pointer.x, s.pointer.y + 4, count, color, now, 16))
+        s.pointer.speed *= Math.pow(0.8, frames)
       }
-      if (s.pouring && t === 'sequins' && s.rng() < 0.4 + Math.min(s.pointer.speed, 1200) * 0.0005) {
+      const sequinChance = 0.4 + Math.min(s.pointer.speed, 1200) * 0.0005
+      if (s.pouring && t === 'sequins' && s.rng() < 1 - Math.pow(1 - sequinChance, frames)) {
         s.pendingSequins.push(...pourFlakes(s.rng, s.pointer.x, s.pointer.y + 3, 1, 0, now, 18, 9, 4))
-        s.pointer.speed *= 0.85
+        s.pointer.speed *= Math.pow(0.85, frames)
       }
       if (s.pending.length) {
         s.pending = land(s.pending, s.flakes, now)
@@ -820,7 +829,7 @@ export function CraftTable() {
     if (!event.isPrimary) return
     const s = sim.current
     const p = toLogical(event.clientX, event.clientY)
-    s.pointer = { x: p.x, y: p.y, speed: 0 }
+    s.pointer = { x: p.x, y: p.y, speed: 0, t: event.timeStamp }
     const t = toolRef.current
     if (!t) {
       bumpGooglyEyes(1.2)
@@ -903,7 +912,10 @@ export function CraftTable() {
       if (Math.hypot(p.x - last.x, p.y - last.y) >= 2) s.cutting.push(p)
     }
     const moved = Math.hypot(p.x - s.pointer.x, p.y - s.pointer.y)
-    s.pointer = { x: p.x, y: p.y, speed: s.pointer.speed * 0.5 + moved * 60 * 0.5 }
+    // Shake speed from the events' own timing, in the units the pour was tuned in
+    // (distance per tuned frame x 60), so every screen reads the same shake.
+    const seconds = Math.max(0.004, (event.timeStamp - s.pointer.t) / 1000)
+    s.pointer = { x: p.x, y: p.y, speed: s.pointer.speed * 0.5 + (moved / seconds / POUR_TUNED_HZ) * 60 * 0.5, t: event.timeStamp }
     s.light = p
     s.dirty = true
     // The room light follows the pointer as a composited transform. No repaint, no style recalc.
