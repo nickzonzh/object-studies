@@ -1,20 +1,20 @@
 import { createRng } from './rng.js'
 
 export const GLITTERS = [
-  { id: 'gold', label: 'Gold', base: '#d8a531', deep: '#6f4c0c' },
-  { id: 'silver', label: 'Silver', base: '#cfd6de', deep: '#56616d' },
-  { id: 'pink', label: 'Pink', base: '#ec5ca6', deep: '#7a1c48' },
-  { id: 'teal', label: 'Teal', base: '#35b8c6', deep: '#0d525b' },
-]
+  { id: 'gold', base: '#d8a531', deep: '#6f4c0c' },
+  { id: 'silver', base: '#cfd6de', deep: '#56616d' },
+  { id: 'pink', base: '#ec5ca6', deep: '#7a1c48' },
+  { id: 'teal', base: '#35b8c6', deep: '#0d525b' },
+] as const
 
-/** Construction paper for a new sheet. */
-export const PAPERS = [
-  { id: 'cobalt', label: 'Cobalt', color: '#2f4f9e' },
-  { id: 'black', label: 'Black', color: '#26262b' },
-  { id: 'tomato', label: 'Tomato', color: '#c7433a' },
-  { id: 'sunflower', label: 'Sunflower', color: '#e6b23a' },
-  { id: 'kraft', label: 'Kraft', color: '#b58958' },
-]
+/** Construction paper for a new sheet. Frozen: every table reads it, and it is exported. */
+export const PAPERS = Object.freeze([
+  Object.freeze({ id: 'cobalt', label: 'Cobalt', color: '#2f4f9e' } as const),
+  Object.freeze({ id: 'black', label: 'Black', color: '#26262b' } as const),
+  Object.freeze({ id: 'tomato', label: 'Tomato', color: '#c7433a' } as const),
+  Object.freeze({ id: 'sunflower', label: 'Sunflower', color: '#e6b23a' } as const),
+  Object.freeze({ id: 'kraft', label: 'Kraft', color: '#b58958' } as const),
+] as const)
 
 export const SHADES = 10
 

@@ -7,10 +7,13 @@ import { paintFolk } from './folk.js'
 
 export type StyleId = 'ikaros' | 'black-figure' | 'red-figure'
 
+/** Every palette id. A style that lacks the one asked for paints in its first palette. */
+export type PaletteId = IkarosPaletteId | GreekPaletteId
+
 export type StyleDef = {
   id: StyleId
   label: string
-  palettes: { id: string; label: string }[]
+  palettes: { id: PaletteId; label: string }[]
 }
 
 export const STYLES: StyleDef[] = [
@@ -39,7 +42,7 @@ const hex = (h: string): [number, number, number] => {
 export function paintVessel(shape: Shape, style: StyleId, palette: string, seed: number, detail = 1) {
   const painter = new Painter(shape, detail)
   if (style === 'ikaros') {
-    const id = (palette in IKAROS_PALETTES ? palette : 'cobalt-gold') as IkarosPaletteId
+    const id = (Object.hasOwn(IKAROS_PALETTES, palette) ? palette : 'cobalt-gold') as IkarosPaletteId
     const pal = IKAROS_PALETTES[id]
     if (id === 'folk') {
       const surface = paintFolk(painter, shape, seed)
@@ -70,7 +73,7 @@ export function paintVessel(shape: Shape, style: StyleId, palette: string, seed:
     }
     return { ...surface, finish }
   }
-  const id = (palette in GREEK_PALETTES ? palette : 'attic') as GreekPaletteId
+  const id = (Object.hasOwn(GREEK_PALETTES, palette) ? palette : 'attic') as GreekPaletteId
   const pal = GREEK_PALETTES[id]
   const surface = paintGreek(painter, shape, style, id, seed)
   const finish: Finish = {

@@ -82,6 +82,33 @@ test('tipping the sheet removes only loose glitter', () => {
   assert.ok(flakes.every((f) => f.stuck))
 })
 
+// Pouring onto a table already full of glitter must neither grow without bound nor
+// repaint the cached glitter layer on every frame.
+test('a full table sweeps the oldest loose glitter a batch at a time, then turns new glitter away', () => {
+  const rng = createRng(8)
+  const pour = (count: number, stuck: (i: number) => boolean) =>
+    glitter.pourFlakes(rng, 100, 100, count, 0, 0).map((f, i) => { f.stuck = stuck(i); return f })
+
+  const under = pour(90, () => false)
+  assert.deepEqual(glitter.capFlakes(under, 100, 20), { flakes: under, evicted: false })
+
+  // 70 glued and 40 loose: 30 over the sweep line, so the 30 oldest loose flakes go.
+  const older = pour(60, (i) => i % 2 === 0)
+  const newer = pour(50, (i) => i % 5 !== 0)
+  const swept = glitter.capFlakes([...older, ...newer], 100, 20)
+  assert.ok(swept.evicted)
+  assert.equal(swept.flakes.length, 80)
+  assert.ok(older.every((f) => f.stuck === swept.flakes.includes(f)), 'the older loose flakes are swept, glued ones stay')
+  assert.ok(newer.every((f) => swept.flakes.includes(f)), 'newer loose flakes survive the sweep')
+
+  // Only glued glitter is left, so nothing already painted goes: the newest is refused.
+  const glued = pour(100, () => true)
+  const landed = pour(7, () => true)
+  const full = glitter.capFlakes([...glued, ...landed], 100, 20)
+  assert.equal(full.evicted, false)
+  assert.deepEqual(full.flakes, glued)
+})
+
 test('a flake glints hardest when its facet faces the light', () => {
   const facing = { x: 0, y: 0, nx: 0, ny: 0, nz: 1 }
   const tilted = { x: 0, y: 0, nx: Math.sin(0.5), ny: 0, nz: Math.cos(0.5) }
