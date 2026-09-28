@@ -1,9 +1,10 @@
-import { type CSSProperties, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useId, useRef, useState } from 'react'
 import { SHAPES, type ShapeId } from '../lib/shapes.js'
 import {
   DEFAULT_LIGHT,
   type Scene,
   VaseRenderer,
+  clampDetail,
   detailFor,
   frameFor,
   STILL_MOVING_BUDGET,
@@ -13,32 +14,39 @@ import {
   sharedRenderer,
 } from '../lib/renderer.js'
 import { paintSurface } from '../lib/paint.js'
-import type { StyleId } from '../lib/styles.js'
+import type { PaletteId, StyleId } from '../lib/styles.js'
 import '../styles.css'
 
 export type VaseProps = {
   shape?: ShapeId
   /** 'ikaros' | 'black-figure' | 'red-figure' */
   vaseStyle?: StyleId
-  palette?: string
-  /** Each seed is a different hand-painted piece. */
+  /** A palette id from `STYLES`. One the style does not have falls back to the style's first palette. */
+  palette?: PaletteId
+  /** Each seed is a different hand-painted piece. Use whole numbers from 1 to 4294967295. */
   seed?: number
   /**
-   * 'live' renders continuously on its own GPU context: use it for the one
-   * piece people will study. 'still' renders once in the room light and only
-   * comes alive (turning, catching the pointer's light) while hovered or
-   * focused. Still pieces share a single GPU context across the whole page.
+   * 'still' (the default) renders once in the room light and only comes alive
+   * (turning, catching the pointer's light) while hovered or focused. Still
+   * pieces share a single GPU context across the whole page, so a page can hold
+   * many. 'live' renders continuously on its own GPU context: use it for the
+   * one piece people will study.
    */
   mode?: 'live' | 'still'
-  /** Slow idle rotation, like a piece on a turntable. Still pieces only turn while hovered. */
+  /**
+   * Slow idle rotation, like a piece on a turntable. Still pieces only turn while hovered,
+   * and every piece pauses while it has keyboard focus. A live piece otherwise turns until
+   * this is false, so give people a control that stops it.
+   */
   turntable?: boolean
   /** Starting angle, radians. */
   angle?: number
   /** Let people drag to turn the piece. */
   draggable?: boolean
   /**
-   * Texture detail: 1 is standard. Leave it out and it follows the size the
-   * piece is shown at, so small pieces paint faster and use less GPU memory.
+   * Texture detail: 1 is standard, kept between 0.3 and 2. Leave it out (or pass
+   * 0) and it follows the size the piece is shown at, so small pieces paint
+   * faster and use less GPU memory.
    */
   detail?: number
   /** Idle turntable speed multiplier. */
@@ -47,10 +55,16 @@ export type VaseProps = {
   maxFps?: number
   className?: string
   label?: string
+  /** Called once a new design (shape, style, palette or seed) is first on screen. */
   onReady?: () => void
 }
 
 const CANVAS_FILL = { position: 'absolute', inset: 0, width: '100%', height: '100%' } as const
+
+const FAILURES = {
+  webgl: 'This piece needs WebGL2 to render.',
+  paint: 'This piece could not be painted.',
+}
 
 const SPIN = 0.16 // rad/s
 const FRICTION = 3.2
@@ -58,31 +72,40 @@ const FRICTION = 3.2
 // Painting a surface takes a few hundred milliseconds, so pieces on the same
 // page take turns: one paint at a time, whether it runs in the paint worker or
 // (where there is none) on the main thread, which must not freeze all at once.
-type PaintJob = { run: (cancelled: () => boolean) => Promise<void>; cancelled: boolean }
+type PaintJob = {
+  run: (cancelled: () => boolean) => Promise<void>
+  cancelled: boolean
+  /** 2 on screen, 1 near it, 0 scrolled past: read when the turn comes, not when the job is queued. */
+  priority: () => number
+}
 const paintQueue: PaintJob[] = []
 let draining = false
-function schedulePaint(run: PaintJob['run']) {
-  const job: PaintJob = { run, cancelled: false }
+function schedulePaint(run: PaintJob['run'], priority: PaintJob['priority']) {
+  const job: PaintJob = { run, cancelled: false, priority }
   paintQueue.push(job)
   if (!draining) drain()
   return () => {
     job.cancelled = true
   }
 }
+/** The next job to paint: the most urgent, oldest first. A cancelled one (the design changed, the piece left the page) gives up its turn. */
+function takeNext(): PaintJob | undefined {
+  for (let i = paintQueue.length - 1; i >= 0; i--) if (paintQueue[i].cancelled) paintQueue.splice(i, 1)
+  let best = 0
+  for (let i = 1; i < paintQueue.length; i++) if (paintQueue[i].priority() > paintQueue[best].priority()) best = i
+  return paintQueue.splice(best, 1)[0]
+}
 function drain() {
-  // A cancelled job (the design changed, the piece left the page) gives up its turn at once.
-  let job = paintQueue.shift()
-  while (job?.cancelled) job = paintQueue.shift()
-  if (!job) {
-    draining = false
-    return
-  }
   draining = true
-  const next = job
   window.setTimeout(async () => {
+    const next = takeNext()
+    if (!next) {
+      draining = false
+      return
+    }
     // Always hand on the turn: one failed paint must not stall every piece on the page.
     try {
-      if (!next.cancelled) await next.run(() => next.cancelled)
+      await next.run(() => next.cancelled)
     } finally {
       drain()
     }
@@ -94,7 +117,7 @@ export function Vase({
   vaseStyle = 'ikaros',
   palette = 'cobalt-gold',
   seed = 7,
-  mode = 'live',
+  mode = 'still',
   turntable = true,
   angle = 0,
   draggable = true,
@@ -106,15 +129,18 @@ export function Vase({
   onReady,
 }: VaseProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const hintId = useId()
   const wrapRef = useRef<HTMLDivElement>(null)
   const ownRenderer = useRef<VaseRenderer | null>(null)
   const stopListening = useRef<(() => void) | null>(null)
   const sceneRef = useRef<Scene | null>(null)
   const paintedRef = useRef<string | null>(null)
   /** A freshly painted design waiting for its first frame before it is shown. */
-  const revealRef = useRef<string | null>(null)
+  const revealRef = useRef<{ key: string; look: string } | null>(null)
+  /** The look onReady last announced, so a repaint for detail or a lost context stays quiet. */
+  const announcedRef = useRef<string | null>(null)
   const loopRef = useRef<{ wake: () => void; draw: () => void } | null>(null)
-  const [failed, setFailed] = useState<string | null>(null)
+  const [failed, setFailed] = useState<{ design: string; reason: keyof typeof FAILURES } | null>(null)
   const [paintedKey, setPaintedKey] = useState<string | null>(null)
   const [awake, setAwake] = useState(false)
   /** Within reach of the viewport, so worth painting. */
@@ -137,16 +163,26 @@ export function Vase({
     dirty: true,
     /** A still piece is 'engaged' while hovered, focused or dragged. */
     engaged: false,
+    /** Focused from the keyboard: the arrow keys are turning it, so the turntable waits. */
+    keyed: false,
     turntable: turntable && !isPlate,
     reduced: false,
     visible: true,
+    /** Within reach of the viewport right now; `near` stays true once it has been. */
+    near: false,
     spin,
     maxFps,
   })
+  const detailValue = clampDetail(detail) ?? (autoDetail?.shape === shape ? autoDetail.value : 0)
+  const look = `${shape}|${vaseStyle}|${palette}|${seed}`
+  const design = `${mode}|${look}|${generation}`
+  const key = `${design}|${detailValue}`
+  // A new design, or the context coming back, gets a fresh attempt.
+  if (failed && failed.design !== design) setFailed(null)
   // What the loop and the painter read, without restarting either.
-  const latest = useRef({ onReady })
+  const latest = useRef({ onReady, design })
   useEffect(() => {
-    latest.current = { onReady }
+    latest.current = { onReady, design }
     // a wall plate stays put until someone spins it
     Object.assign(state.current, { turntable: turntable && !isPlate, spin, maxFps })
   })
@@ -155,9 +191,6 @@ export function Vase({
     Object.assign(state.current, { rotation: angle, velocity: 0, dirty: true })
   }, [shape, angle])
   const { aspect } = frameFor(SHAPES[shape])
-  const detailValue = detail ?? (autoDetail?.shape === shape ? autoDetail.value : 0)
-  const design = `${mode}|${shape}|${vaseStyle}|${palette}|${seed}|${generation}`
-  const key = `${design}|${detailValue}`
   // Repainting only to add detail keeps the piece on show; a new design fades in.
   const painting = !failed && paintedKey?.slice(0, paintedKey.lastIndexOf('|')) !== design
 
@@ -177,9 +210,17 @@ export function Vase({
   // Paint the surface whenever the design changes, once the piece is near the viewport.
   useEffect(() => {
     if (failed || !near || !detailValue || paintedRef.current === key) return
+    const st = state.current
     return schedulePaint(async (cancelled) => {
+      let r: VaseRenderer
       try {
-        const r = acquireRenderer()
+        r = acquireRenderer()
+      } catch (err) {
+        console.error('[keramos]', err)
+        setFailed({ design, reason: 'webgl' })
+        return
+      }
+      try {
         if (r.lost) return
         const t0 = performance.now()
         const s = await paintSurface({ shape, style: vaseStyle, palette, seed, detail: detailValue })
@@ -196,14 +237,14 @@ export function Vase({
         console.debug(`[keramos] painted ${shape} in ${Math.round(performance.now() - t0)}ms`)
       } catch (err) {
         console.error('[keramos]', err)
-        setFailed(err instanceof Error ? err.message : String(err))
+        setFailed({ design, reason: 'paint' })
         return
       }
       paintedRef.current = key
-      revealRef.current = key
-      state.current.dirty = true
+      revealRef.current = { key, look }
+      st.dirty = true
       loopRef.current?.draw()
-    })
+    }, () => (st.visible ? 2 : st.near ? 1 : 0))
 
     function acquireRenderer() {
       const repaint = () => {
@@ -224,7 +265,7 @@ export function Vase({
       if (!stopListening.current) stopListening.current = shared.onRestore(repaint)
       return shared
     }
-  }, [key, failed, near, mode, shape, vaseStyle, palette, seed, detailValue])
+  }, [key, design, look, failed, near, mode, shape, vaseStyle, palette, seed, detailValue])
 
   // sizing and the frame loop
   useEffect(() => {
@@ -254,13 +295,16 @@ export function Vase({
         const revealed = revealRef.current
         if (drawn && revealed) {
           revealRef.current = null
-          setPaintedKey(revealed)
-          latest.current.onReady?.()
+          setPaintedKey(revealed.key)
+          if (revealed.look !== announcedRef.current) {
+            announcedRef.current = revealed.look
+            latest.current.onReady?.()
+          }
         }
         return drawn
       } catch (err) {
         console.error('[keramos]', err)
-        setFailed(err instanceof Error ? err.message : String(err))
+        setFailed({ design: latest.current.design, reason: 'paint' })
         return true
       }
     }
@@ -293,7 +337,8 @@ export function Vase({
     // Paint a little ahead of scrolling, so pieces are ready as they arrive.
     const approach = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setNear(true)
+        st.near = entries.some((e) => e.isIntersecting)
+        if (st.near) setNear(true)
       },
       { rootMargin: '50% 0px' },
     )
@@ -330,7 +375,7 @@ export function Vase({
       if (now - last < 1000 / fps - 2) return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
-      const turning = mode === 'live' ? st.turntable : st.turntable && st.engaged
+      const turning = !st.keyed && (mode === 'live' ? st.turntable : st.turntable && st.engaged)
       if (!st.dragging) {
         if (Math.abs(st.velocity) > 0.002) {
           st.rotation += st.velocity * dt
@@ -456,19 +501,29 @@ export function Vase({
     e.preventDefault()
   }
 
+  const name = label ?? `${SHAPES[shape].label}, ${vaseStyle.replace('-', ' ')} style`
   return (
     <div
       ref={wrapRef}
       className={`keramos-vase${draggable ? ' keramos-vase--draggable' : ''}${painting ? ' keramos-vase--painting' : ''}${awake ? ' keramos-vase--awake' : ''}${className ? ` ${className}` : ''}`}
       style={{ aspectRatio: `${aspect}`, '--keramos-aspect': aspect } as CSSProperties}
       role="img"
-      aria-label={label ?? `${SHAPES[shape].label}, ${vaseStyle.replace('-', ' ')} style`}
+      // The fallback message below sits inside role="img", where it is not read out.
+      aria-label={failed ? `${name}. ${FAILURES[failed.reason]}` : name}
+      aria-describedby={draggable ? hintId : undefined}
       tabIndex={draggable ? 0 : undefined}
       onKeyDown={draggable ? onKeyDown : undefined}
       onPointerEnter={(e) => engage(true, e)}
       onPointerLeave={() => engage(false)}
-      onFocus={() => engage(true)}
-      onBlur={() => engage(false)}
+      onFocus={(e) => {
+        // Only keyboard focus: a click to drag the piece focuses it too, and should leave the turntable running.
+        state.current.keyed = e.currentTarget.matches(':focus-visible')
+        engage(true)
+      }}
+      onBlur={() => {
+        state.current.keyed = false
+        engage(false)
+      }}
     >
       <canvas
         // A canvas keeps its first context type, so a live (WebGL) piece and a still (2D) one each need their own.
@@ -482,7 +537,12 @@ export function Vase({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       />
-      {failed ? <p className="keramos-vase__fallback">This piece needs WebGL2 to render.</p> : null}
+      {draggable ? (
+        <span id={hintId} hidden>
+          Use the left and right arrow keys to turn it.
+        </span>
+      ) : null}
+      {failed ? <p className="keramos-vase__fallback">{FAILURES[failed.reason]}</p> : null}
     </div>
   )
 }

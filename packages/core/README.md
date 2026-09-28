@@ -29,7 +29,8 @@ seededRandom(seed: number): () => number
 ```
 
 mulberry32. Stable across engines, so a stored stroke seed replays the same
-grain on every device.
+grain on every device. The sequence a seed produces is part of the public
+contract and never changes within a major version.
 
 ### Pose geometry
 
