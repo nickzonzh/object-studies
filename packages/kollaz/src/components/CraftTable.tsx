@@ -1217,7 +1217,11 @@ export function CraftTable() {
       const footprint = coverWith(piece, at.dx, at.dy)
       const box = bounds(footprint)
       unglue(hitMask(shapePath2D(footprint), box), box)
-      setPieces((list) => list.map((p) => (p.id === id ? { ...p, ...at, glued } : p)))
+      // Last in the list is drawn on top, where it now lies.
+      setPieces((list) => {
+        const laid = list.find((p) => p.id === id)
+        return laid ? [...list.filter((p) => p.id !== id), { ...laid, ...at, glued }] : list
+      })
       if (glued) say('Stuck down. The glue under it was still purple.')
     }
     target.addEventListener('pointermove', move)
