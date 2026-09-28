@@ -1,5 +1,7 @@
-.kimolia {
-  /* Theming surface. Override any of these from a wrapper or `style`. */
+/* Theming surface. The defaults sit on the document root with no specificity,
+   so a value set on any ancestor of the board, on the board, or in `style`
+   inherits past them. */
+:where(:root) {
   --kimolia-frame-width: clamp(19px, 2.9cqi, 30px);
   --kimolia-radius: 2px;
   --kimolia-timber: #7c5a3b;
@@ -18,7 +20,8 @@
   --kimolia-focus: #65725b;
   --kimolia-light-x: 24%;
   --kimolia-light-y: 0%;
-
+}
+.kimolia {
   container-type: inline-size;
   position: relative;
   color: var(--kimolia-text);

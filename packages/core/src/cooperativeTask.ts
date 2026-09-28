@@ -56,7 +56,15 @@ export function createCooperativeTask(
         const start = clock.now()
         let units = 0
         do {
-          if (iterator.next().done) {
+          let done: boolean | undefined
+          try {
+            done = iterator.next().done
+          } catch (error) {
+            // A failed job must not leave the board reporting busy forever.
+            cancel()
+            throw error
+          }
+          if (done) {
             work = null
             report(false)
             return

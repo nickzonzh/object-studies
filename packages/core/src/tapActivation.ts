@@ -35,7 +35,9 @@ export type TapActivation = {
  * Wire all four handlers to the control (or to one delegating group of them)
  * and act on the returned result; a null result is not an activation.
  */
-export function createTapActivation(slop = 12): TapActivation {
+export function createTapActivation({
+  slop = 12,
+}: { slop?: number } = {}): TapActivation {
   let touch: { id: number; x: number; y: number; target: HTMLElement } | null =
     null
   let modality = ''

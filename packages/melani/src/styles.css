@@ -346,10 +346,12 @@
   box-shadow: 0 0 0 1px rgba(16, 20, 23, 0.7) inset;
 }
 
+/* Offset by however far the slot reaches past its place in the tray (see the
+   coarse pointer rules), so the tools lie where they always do. */
 .melani-slot .melani-marker,
 .melani-slot .melani-eraser {
   position: absolute;
-  bottom: 0;
+  bottom: var(--melani-slot-reach-bottom, 0px);
   transition: transform 150ms ease;
   /* Lying on the floor of the channel: a close, tight contact shadow. */
   filter: drop-shadow(0 0.9cqw 0.7cqw rgba(10, 13, 15, 0.5));
@@ -362,8 +364,8 @@
 }
 
 .melani-slot .melani-eraser {
-  right: 0;
-  width: min(100%, calc(var(--melani-eraser-width) * 0.78));
+  right: var(--melani-slot-reach-right, 0px);
+  width: min(100% - var(--melani-slot-reach-right, 0px), calc(var(--melani-eraser-width) * 0.78));
   transform: translateY(0.1cqw);
 }
 
@@ -548,6 +550,14 @@
 
 /* ── tools in the air ──────────────────────────────────────────────────── */
 
+/* Portalled out of the component, and boxless, so the host page's layout never
+   sees them: the flights inside are fixed to the viewport. */
+.melani-tool-portal,
+.melani-tool-layer {
+  display: contents;
+  pointer-events: none;
+}
+
 .melani-flight {
   position: fixed;
   z-index: 30;
@@ -643,7 +653,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.melani-controls button:disabled {
+.melani-controls button[aria-disabled="true"] {
   opacity: 0.32;
   cursor: default;
 }
@@ -654,7 +664,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .melani-controls button:not(:disabled):hover {
+  .melani-controls button:not([aria-disabled="true"]):hover {
     background: rgba(255, 255, 255, 0.72);
     color: color-mix(in srgb, var(--melani-control-ink) 70%, black);
   }
@@ -687,16 +697,28 @@
     --melani-controls-space: 80px;
   }
 
-  /* The target a tool answers to reaches down into the space under the board,
-     never over the drawing surface, and never as far as the controls. */
-  .melani-slot::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(-1 * max(0px, var(--melani-frame-pad) - var(--melani-tray-overlap)));
-    bottom: -34px;
-    min-width: 44px;
+  /* The button itself is the target, since a tap only counts inside it. It
+     reaches down into the space under the board, never over the drawing
+     surface, and never as far as the controls. Padding grows it, a matching
+     negative margin keeps the tray's layout, and the tool inside is offset by
+     the same reach. */
+  .melani-slot {
+    --melani-slot-reach-top: max(0px, var(--melani-frame-pad) - var(--melani-tray-overlap));
+    --melani-slot-reach-bottom: 34px;
+    box-sizing: content-box;
+    margin-top: calc(-1 * var(--melani-slot-reach-top));
+    margin-bottom: calc(-1 * var(--melani-slot-reach-bottom));
+    padding-top: var(--melani-slot-reach-top);
+    padding-bottom: var(--melani-slot-reach-bottom);
+  }
+
+  /* The eraser's slot is 12% of the channel: 10.128cqw of the board, given the
+     tray inset and channel padding above. That is under a fingertip on a phone,
+     so it also reaches right, into the empty end of the tray. */
+  .melani-slot--eraser {
+    --melani-slot-reach-right: max(0px, 44px - 10.128cqw);
+    margin-right: calc(-1 * var(--melani-slot-reach-right));
+    padding-right: var(--melani-slot-reach-right);
   }
 
   .melani-controls {
@@ -713,7 +735,10 @@
   .melani,
   .melani *,
   .melani *::before,
-  .melani *::after {
+  .melani *::after,
+  .melani-tool-portal *,
+  .melani-tool-portal *::before,
+  .melani-tool-portal *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

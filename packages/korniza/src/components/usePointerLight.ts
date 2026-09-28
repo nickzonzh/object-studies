@@ -38,6 +38,8 @@ export function usePointerLight(enabled: boolean, variant: string) {
   }
 
   useEffect(() => {
+    // jsdom and some embedded webviews have no matchMedia; the light then stays at rest.
+    if (typeof matchMedia !== 'function') return
     const motion = matchMedia('(prefers-reduced-motion: reduce)')
     const pointer = matchMedia('(any-pointer: fine)')
     media.current = { motion, pointer }

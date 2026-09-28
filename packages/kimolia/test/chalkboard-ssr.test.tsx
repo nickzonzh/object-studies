@@ -20,10 +20,16 @@ test('labels are overridable, and the defaults are not baked into markup', () =>
   const html = renderToString(
     <Chalkboard
       showControls={false}
-      labels={{ board: 'Tafel', empty: 'Kreide aufnehmen.' }}
+      labels={{
+        board: 'Tafel',
+        empty: 'Kreide aufnehmen.',
+        chalk: { white: 'Weiße Kreide' },
+      }}
     />,
   )
   assert.ok(html.includes('aria-label="Tafel"'))
+  assert.ok(html.includes('aria-label="Weiße Kreide"'))
+  assert.ok(html.includes('aria-label="Pale yellow chalk"'))
   assert.ok(html.includes('Kreide aufnehmen.'))
   assert.ok(!html.includes('Pick up chalk'))
   assert.ok(!html.includes('kimolia-control-group'))

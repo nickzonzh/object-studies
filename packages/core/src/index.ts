@@ -1,9 +1,7 @@
 export { seededRandom } from './random.js'
 export { backingScale, MAX_BACKING_PIXELS } from './canvas.js'
 export {
-  advancePose,
   clampPoint,
-  settled,
   type Point,
   type Pose,
   type PoseWeights,
@@ -26,9 +24,10 @@ export {
 } from './replayCache.js'
 export {
   createPersistence,
+  type LoadStatus,
   type Persistence,
   type PersistenceOptions,
-  type PersistenceStatus,
+  type SaveStatus,
   type StorageLike,
 } from './persistence.js'
 export {
@@ -36,6 +35,7 @@ export {
   type ToolMotion,
   type ToolMotionConfig,
   type ToolMotionElements,
+  type ToolMotionOptions,
 } from './toolMotion.js'
 export {
   createTapActivation,
