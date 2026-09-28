@@ -1,6 +1,7 @@
 // Scissor cuts through a sheet of paper. Shapes are GeoJSON-style multipolygons in
 // table units; boolean operations come from polygon-clipping.
 import polygonClipping, { type MultiPolygon, type Pair, type Polygon } from 'polygon-clipping'
+import { pathLength } from './pipe.js'
 import type { Point } from './tornEdge.js'
 
 export type Shape = MultiPolygon
@@ -13,8 +14,6 @@ export type CutResult =
 
 /** How close the end of a stroke must come back to its start to count as a closed loop. */
 export const CLOSE_DISTANCE = 30
-
-const pathLength = (path: Point[]) => path.reduce((sum, p, i) => (i ? sum + Math.hypot(p.x - path[i - 1].x, p.y - path[i - 1].y) : 0), 0)
 
 /** Nobody closes a hand-cut loop exactly. The bigger the loop, the bigger the forgivable gap. */
 export const closeDistance = (path: Point[]) => Math.max(CLOSE_DISTANCE, pathLength(path) * 0.12)

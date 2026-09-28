@@ -80,8 +80,12 @@ function drain() {
   draining = true
   const next = job
   window.setTimeout(async () => {
-    if (!next.cancelled) await next.run(() => next.cancelled)
-    drain()
+    // Always hand on the turn: one failed paint must not stall every piece on the page.
+    try {
+      if (!next.cancelled) await next.run(() => next.cancelled)
+    } finally {
+      drain()
+    }
   }, 24)
 }
 
@@ -148,8 +152,10 @@ export function Vase({
   })
   const { aspect } = frameFor(SHAPES[shape])
   const detailValue = detail ?? (autoDetail?.shape === shape ? autoDetail.value : 0)
-  const key = `${mode}|${shape}|${vaseStyle}|${palette}|${seed}|${detailValue}|${generation}`
-  const painting = !failed && paintedKey !== key
+  const design = `${mode}|${shape}|${vaseStyle}|${palette}|${seed}|${generation}`
+  const key = `${design}|${detailValue}`
+  // Repainting only to add detail keeps the piece on show; a new design fades in.
+  const painting = !failed && paintedKey?.slice(0, paintedKey.lastIndexOf('|')) !== design
 
   // The renderer is created on first paint; this only lets go of it.
   useEffect(() => {
@@ -430,7 +436,11 @@ export function Vase({
     st.dirty = true
   }
   const onPointerUp = () => {
-    state.current.dragging = false
+    const st = state.current
+    st.dragging = false
+    // A hand that stopped before letting go doesn't fling the piece.
+    const held = performance.now() - st.lastT
+    st.velocity *= Math.exp(-Math.max(0, held - 40) / 40)
   }
   const onKeyDown = (e: React.KeyboardEvent) => {
     const st = state.current
@@ -457,6 +467,8 @@ export function Vase({
       onBlur={() => engage(false)}
     >
       <canvas
+        // A canvas keeps its first context type, so a live (WebGL) piece and a still (2D) one each need their own.
+        key={mode}
         ref={canvasRef}
         className="keramos-vase__canvas"
         // Inline, so the canvas can never size its own wrapper (and loop) without the stylesheet.

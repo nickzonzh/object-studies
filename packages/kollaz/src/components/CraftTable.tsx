@@ -816,6 +816,8 @@ export function CraftTable() {
   }
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    // One hand at a time: a second finger would start its own stroke and hijack the first.
+    if (!event.isPrimary) return
     const s = sim.current
     const p = toLogical(event.clientX, event.clientY)
     s.pointer = { x: p.x, y: p.y, speed: 0 }
@@ -920,6 +922,7 @@ export function CraftTable() {
   }
 
   const endStroke = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary) return
     const s = sim.current
     if (s.drawing) {
       // A stroke dries as one piece, so its tackiness matches how purple it looks.
@@ -1272,7 +1275,6 @@ export function CraftTable() {
     redrawPrints()
     setPieces([])
     setPipes([])
-    s.tapes = []
     clearGlue(s.field)
     s.dirty = true
     setEyes([])
