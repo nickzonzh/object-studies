@@ -160,7 +160,7 @@
   margin: -8px 0;
   min-width: 0;
 }
-.kimolia-action:disabled {
+.kimolia-action[aria-disabled='true'] {
   color: color-mix(in srgb, var(--kimolia-muted) 82%, #c8c9c0);
   cursor: default;
 }
@@ -197,6 +197,9 @@
   }
   .kimolia-slot[aria-pressed='true'] {
     outline: 2px solid Highlight;
+  }
+  .kimolia-action[aria-disabled='true'] {
+    color: GrayText;
   }
   .kimolia-slot:focus-visible,
   .kimolia-action:focus-visible,

@@ -3,20 +3,31 @@ import { createTapActivation, type TapResult } from 'object-studies-core'
 
 type UtilityButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  'onClick'
+  'onClick' | 'disabled'
 > & {
   onActivate: (keyboard: boolean) => void
+  disabled?: boolean
 }
 
-export function UtilityButton({ onActivate, ...props }: UtilityButtonProps) {
+/**
+ * Disabled through `aria-disabled` rather than the attribute: a button that
+ * disables itself when used (Undo at the last step, Clear, Save) would
+ * otherwise drop keyboard focus to the page, and the shortcuts with it.
+ */
+export function UtilityButton({
+  onActivate,
+  disabled = false,
+  ...props
+}: UtilityButtonProps) {
   const [tap] = useState(createTapActivation)
   const activate = (hit: TapResult | null) => {
-    if (hit && !props.disabled) onActivate(hit.source === 'keyboard')
+    if (hit && !disabled) onActivate(hit.source === 'keyboard')
   }
   return (
     <button
       {...props}
       type="button"
+      aria-disabled={disabled}
       onPointerDown={tap.pointerDown}
       onPointerUp={(event) => activate(tap.pointerUp(event))}
       onPointerCancel={tap.pointerCancel}

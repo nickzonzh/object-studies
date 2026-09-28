@@ -63,8 +63,13 @@ export const defaultLabels: ChalkboardLabels = {
     'Choose chalk, then drag on the slate to draw. Choose it again, use Put back, or press Escape to return it. Keyboard selection moves focus to the slate: use arrow keys to move, Shift for larger steps, and hold Space or Enter while moving to draw or erase. The duster leaves faint residue; repeated passes remove more. Undo and Redo also work with Control or Command Z, and Shift Z to redo, while the board or its controls have focus. Clear can be undone. Save PNG downloads the slate only.',
 }
 
+/** Any subset of the labels, including single chalk colours. */
+export type ChalkboardLabelOverrides = Partial<Omit<ChalkboardLabels, 'chalk'>> & {
+  chalk?: Partial<ChalkboardLabels['chalk']>
+}
+
 export function mergeLabels(
-  overrides: Partial<ChalkboardLabels> | undefined,
+  overrides: ChalkboardLabelOverrides | undefined,
 ): ChalkboardLabels {
   if (!overrides) return defaultLabels
   return {
