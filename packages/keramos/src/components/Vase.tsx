@@ -103,6 +103,8 @@ export function Vase({
   const stopListening = useRef<(() => void) | null>(null)
   const sceneRef = useRef<Scene | null>(null)
   const paintedRef = useRef<string | null>(null)
+  /** A freshly painted design waiting for its first frame before it is shown. */
+  const revealRef = useRef<string | null>(null)
   const loopRef = useRef<{ wake: () => void; draw: () => void } | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [paintedKey, setPaintedKey] = useState<string | null>(null)
@@ -180,10 +182,9 @@ export function Vase({
         return
       }
       paintedRef.current = key
+      revealRef.current = key
       state.current.dirty = true
       loopRef.current?.draw()
-      setPaintedKey(key)
-      latest.current.onReady?.()
     })
 
     function acquireRenderer() {
@@ -231,6 +232,13 @@ export function Vase({
             ? (ownRenderer.current?.render(scene, view) ?? false)
             : renderInto(scene, view, canvas, atRest ? STILL_REST_BUDGET : STILL_MOVING_BUDGET)
         st.dirty = !drawn
+        // Show a new design only once it is on screen: the shader may still be compiling.
+        const revealed = revealRef.current
+        if (drawn && revealed) {
+          revealRef.current = null
+          setPaintedKey(revealed)
+          latest.current.onReady?.()
+        }
         return drawn
       } catch (err) {
         console.error('[keramos]', err)

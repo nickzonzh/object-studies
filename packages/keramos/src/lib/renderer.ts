@@ -58,13 +58,14 @@ export type Scene = {
 }
 
 /**
- * Texture detail for a piece shown `cssHeight` CSS px tall: about two texels per
- * device pixel, matching the supersampled render, so a small shelf piece or a
- * phone never paints a texture far larger than it can show.
+ * Texture detail for a piece shown `cssHeight` CSS px tall: 1.8 texels per
+ * device pixel, for the supersampled render (it reproduces the hand-tuned 1.34
+ * for a large bench piece and 0.8 on a shelf), so a small piece or a phone never
+ * paints a texture far larger than it can show.
  */
 export function detailFor(shape: Shape, cssHeight: number, dpr: number) {
   const unitPx = (cssHeight * Math.min(dpr || 1, 2)) / frameFor(shape).height
-  return Math.max(0.3, Math.min(1.5, (2 * unitPx) / unitTexels(shape)))
+  return Math.max(0.3, Math.min(1.5, (1.8 * unitPx) / unitTexels(shape)))
 }
 
 /** Pixel budgets for supersampling: the live piece, a still while it moves, a still at rest. */
@@ -156,6 +157,8 @@ export class VaseRenderer {
     for (const shader of this.shaders) gl.attachShader(program, shader)
     gl.bindAttribLocation(program, 0, 'aPos')
     gl.linkProgram(program)
+    // Send the commands now: nothing else may flush this context until the shader is ready.
+    gl.flush()
     this.program = program
     this.linked = false
 

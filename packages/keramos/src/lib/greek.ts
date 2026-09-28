@@ -868,7 +868,11 @@ function tondo(g: G, zone: (r: Zone['role']) => Zone | undefined) {
   }
   inscribeArc(g, rng.pick(WORDS.filter((w) => w.length > 5)), well.to - 0.026, Math.PI / 2, 0.02)
   meanderBand(g, ring.from, ring.to)
-  if (mode === 'black') p.ring('over', (ring.to + 0.5) / 2, pal.red, 0.004, rng, 0.85)
+  // a palmette frieze round the rim, so the plate does not read as a bare black disc
+  const rim = zone('collar')!
+  const inset = (rim.to - rim.from) * 0.2
+  palmetteBand(g, rim.from + inset, rim.to - inset)
+  if (mode === 'black') p.ring('over', (ring.to + rim.from) / 2, pal.red, 0.004, rng, 0.85)
 }
 
 // --------------------------------------------------------------------- main
