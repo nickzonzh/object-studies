@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { afterEach, test } from 'vitest'
 import { createCanvas } from '@napi-rs/canvas'
 import { createBoardRenderer, drawStroke, boardPoint, type Point, type Stroke } from '../src/lib/strokes.ts'
+import { decodeStrokes } from '../src/lib/decode.ts'
 
 type TestCanvas = HTMLCanvasElement
 
@@ -176,6 +177,28 @@ test('an active stroke painted sample by sample matches its committed replay', (
   }
   replay.render([marker([...stroke.points], 14, 'live')])
   assert.deepEqual(pixels(live), pixels(committed), 'Pen-up must not shift a single pixel of the stroke')
+})
+
+// Precision is cut when a sample is taken, not when it is stored: otherwise a
+// reloaded board would differ, pixel by pixel, from the one that was drawn.
+test('a stroke drawn live looks the same after it is saved and reloaded', () => {
+  withDocument()
+  const live = canvas(456, 283)
+  const reloaded = canvas(456, 283)
+  const renderer = createBoardRenderer(live)
+  const replay = createBoardRenderer(reloaded)
+  renderer.resize(456, 283, 1)
+  replay.resize(456, 283, 1)
+  // Pointer positions on an awkwardly sized board, as a real one delivers them.
+  const points = Array.from({ length: 30 }, (_, i) =>
+    boardPoint(40.137 + i * 12.913, 120.771 + Math.sin(i / 4) * 60.3, 413.37, 0.31 + (i % 7) * 0.0917))
+  const stroke = marker([points[0]], 13.37, 'sampled')
+  for (let i = 1; i < points.length; i++) {
+    stroke.points.push(points[i])
+    renderer.render([], stroke)
+  }
+  replay.render(decodeStrokes(JSON.parse(JSON.stringify([stroke]))))
+  assert.deepEqual(pixels(live), pixels(reloaded), 'Reloading must not move a single pixel of the ink')
 })
 
 test('a scrub looks the same while erasing as after the eraser lifts', () => {

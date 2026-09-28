@@ -8,16 +8,22 @@ import {
   type TapResult, type ToolMotion,
 } from 'object-studies-core'
 import {
-  BOARD_WIDTH, ERASER_HEIGHT, ERASER_WIDTH, boardPoint, createBoardRenderer,
+  BOARD_WIDTH, DEFAULT_PRESSURE, ERASER_HEIGHT, ERASER_WIDTH, boardPoint, createBoardRenderer, roundTo,
   type BoardRenderer, type Point, type Stroke,
 } from '../lib/strokes.js'
+import { reconcile, sameDrawing } from '../lib/controlled.js'
+import { MAX_TOOL_SIZE, checkStrokes } from '../lib/decode.js'
 import { createBoardPersistence, type BoardPersistence } from '../lib/persistence.js'
-import { ERASER_ID, MARKER_REST_ANGLE, restingAngle, trayPose } from '../lib/tools.js'
-import type { ToolId, WhiteboardLabels, WhiteboardProps } from '../types.js'
+import { ERASER_ID, MARKER_REST_ANGLE, restingAngle, trayPose, type ToolId } from '../lib/tools.js'
+import type { WhiteboardLabels, WhiteboardProps } from '../types.js'
 
 type BoardOptions = Required<Pick<WhiteboardProps, 'markers' | 'persistence' | 'exportFileName'>>
   & Pick<WhiteboardProps, 'defaultStrokes' | 'strokes' | 'onStrokesChange' | 'ref'>
-  & { labels: WhiteboardLabels }
+  & {
+    labels: WhiteboardLabels
+    /** The portal node the flying tools render into; null until it is mounted. */
+    overlay: HTMLElement | null
+  }
 
 type Snapshot = {
   strokes: readonly Stroke[]
@@ -38,8 +44,10 @@ const snapshotOf = (history: GestureHistory<Stroke>): Snapshot => ({
 
 export function useBoard({
   markers, persistence, exportFileName, defaultStrokes, strokes: controlled,
-  onStrokesChange, labels, ref,
+  onStrokesChange, labels, overlay, ref,
 }: BoardOptions) {
+  checkStrokes(controlled, 'strokes')
+  checkStrokes(defaultStrokes, 'defaultStrokes')
   const rootRef = useRef<HTMLDivElement>(null)
   const objectRef = useRef<HTMLDivElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
@@ -49,12 +57,17 @@ export function useBoard({
   const lightRef = useRef<HTMLSpanElement>(null)
   const sheenRef = useRef<HTMLSpanElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const layerRef = useRef<HTMLDivElement>(null)
 
   const rendererRef = useRef<BoardRenderer | null>(null)
   const motionRef = useRef<ToolMotion<ToolId> | null>(null)
   const storeRef = useRef<BoardPersistence | null>(null)
+  // Another tab's save that arrived mid-mark, and how to take it up.
+  const incomingRef = useRef(false)
+  const adoptRef = useRef<(() => void) | null>(null)
+  // Storage cannot be read during render; a saved drawing replaces this in an effect.
   const [initialHistory] = useState(() =>
-    createGestureHistory<Stroke>(defaultStrokes ?? controlled ?? []))
+    createGestureHistory<Stroke>(controlled ?? defaultStrokes ?? []))
   const historyRef = useRef(initialHistory)
 
   const [snapshot, setSnapshot] = useState<Snapshot>(() => snapshotOf(initialHistory))
@@ -63,14 +76,14 @@ export function useBoard({
   const [announcement, setAnnouncement] = useState('')
 
   const strokes = controlled ?? snapshot.strokes
+  // A controlled owner that refused or replaced the last drawing handed out has
+  // one the history knows nothing about: there is nothing in it to undo or redo.
+  const synced = !controlled || sameDrawing(controlled, snapshot.strokes)
   // What the handlers and the render loop need to see, without re-binding them.
-  const latestRef = useRef({ strokes, labels, onStrokesChange, markers })
+  const latestRef = useRef({ strokes, controlled, defaultStrokes, labels, onStrokesChange, markers })
   useEffect(() => {
-    latestRef.current = { strokes, labels, onStrokesChange, markers }
+    latestRef.current = { strokes, controlled, defaultStrokes, labels, onStrokesChange, markers }
   })
-  // The last drawing this board handed out, so a controlled owner echoing it
-  // back is not mistaken for a replacement.
-  const publishedRef = useRef(controlled)
 
   const activeToolRef = useRef<ToolId | null>(null)
   const activeStrokeRef = useRef<Stroke | null>(null)
@@ -113,6 +126,12 @@ export function useBoard({
     activeToolRef.current = null
     setActiveTool(null)
     previousPointerRef.current = null
+  }
+  const clearReturn = () => {
+    if (returnTimerRef.current !== null) {
+      window.clearTimeout(returnTimerRef.current)
+      returnTimerRef.current = null
+    }
   }
 
   const cacheRects = () => {
@@ -158,13 +177,12 @@ export function useBoard({
   const toolKey = JSON.stringify(markers.map((marker) => marker.id))
 
   useEffect(() => {
-    const canvas = canvasRef.current!, surface = surfaceRef.current!
-    const object = objectRef.current!, root = rootRef.current!
-    const renderer = createBoardRenderer(canvas)
+    if (!overlay) return
+    const layer = layerRef.current!, root = rootRef.current!
     const motion = createToolMotion<ToolId>({
       tools: [...latestRef.current.markers.map((marker) => marker.id), ERASER_ID],
       elements: (id) => {
-        const flight = root.querySelector<HTMLElement>(`[data-melani-flight=${CSS.escape(id)}]`)!
+        const flight = layer.querySelector<HTMLElement>(`[data-melani-flight=${CSS.escape(id)}]`)!
         return {
           root: flight,
           rotation: flight.firstElementChild as HTMLElement,
@@ -181,16 +199,40 @@ export function useBoard({
       // and coalesced input agree; the motion layer must not ease it again.
       weights: (id) => ({ position: id === ERASER_ID ? 0.42 : 0.12, rotation: 0 }),
     })
-    rendererRef.current = renderer
     motionRef.current = motion
+    return () => {
+      motion.destroy()
+      motionRef.current = null
+      // The rebuilt tray may not hold the tool that was in hand.
+      activeToolRef.current = null
+      pendingMoveActiveRef.current = false
+      previousPointerRef.current = null
+      clearReturn()
+      setActiveTool(null)
+    }
+  }, [toolKey, overlay])
 
+  useEffect(() => {
+    const canvas = canvasRef.current!, surface = surfaceRef.current!
+    const object = objectRef.current!, root = rootRef.current!
+    const renderer = createBoardRenderer(canvas)
+    rendererRef.current = renderer
+
+    // The tray has moved. Tools at rest go straight home; the one in hand stays
+    // in hand, waiting over its new slot, or with the pointer while it marks.
+    const settleTools = () => {
+      const motion = motionRef.current
+      if (!motion || activeStrokeRef.current) return
+      motion.dockAll({ immediate: true })
+      if (activeToolRef.current) motion.ready(activeToolRef.current, { immediate: true })
+    }
     const layout = () => {
       cacheRects()
       const rect = surfaceRectRef.current!
       renderer.resize(rect.width, rect.height, backingScale(
         rect.width, rect.height, window.devicePixelRatio || 1, 2,
       ))
-      motion.dockAll({ immediate: true })
+      settleTools()
       previousPointerRef.current = null
       render()
     }
@@ -217,13 +259,11 @@ export function useBoard({
     return () => {
       observer.disconnect()
       resolution?.removeEventListener('change', onResolutionChange)
-      motion.destroy()
       rendererRef.current = null
-      motionRef.current = null
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
       frameRef.current = null
     }
-  }, [toolKey, render])
+  }, [render])
 
   /* ── board state ──────────────────────────────────────────────────────── */
 
@@ -234,66 +274,93 @@ export function useBoard({
   }, [])
 
   const publish = useCallback((message?: string) => {
-    const history = historyRef.current
-    const next = snapshotOf(history)
-    publishedRef.current = next.strokes
+    const next = snapshotOf(historyRef.current)
     setSnapshot(next)
     latestRef.current.onStrokesChange?.(next.strokes)
     const store = storeRef.current
     let spoken = message
-    // Losing a board to a full or blocked store is worth interrupting for; the
-    // strokes themselves are not announced one by one.
-    if (store && store.save(next.strokes) !== 'saved' && !saveFailedRef.current) {
-      saveFailedRef.current = true
-      spoken = latestRef.current.labels.saveFailed
+    if (store) {
+      // Losing a board to a full or blocked store is worth interrupting for,
+      // each time it starts; the strokes themselves are not announced one by one.
+      const failed = store.save(next.strokes) !== 'saved'
+      if (failed && !saveFailedRef.current) spoken = latestRef.current.labels.saveFailed
+      saveFailedRef.current = failed
     }
     if (spoken) announce(spoken)
   }, [announce])
 
+  // Every change starts from the drawing on show. For a controlled board that
+  // is its owner's, whatever became of the one last handed out.
+  const currentHistory = useCallback(() => {
+    historyRef.current = reconcile(historyRef.current, latestRef.current.controlled)
+    return historyRef.current
+  }, [])
+
   const undo = useCallback(() => {
-    const history = historyRef.current
+    const history = currentHistory()
     if (!history.state().canUndo) return
     history.undo()
     publish(latestRef.current.labels.undone)
-  }, [publish])
+  }, [currentHistory, publish])
 
   const redo = useCallback(() => {
-    const history = historyRef.current
+    const history = currentHistory()
     if (!history.state().canRedo) return
     history.redo()
     publish(latestRef.current.labels.redone)
-  }, [publish])
+  }, [currentHistory, publish])
 
   const clear = useCallback(() => {
-    const history = historyRef.current
+    const history = currentHistory()
     if (!history.state().hasMarks) return
     history.clear()
     publish(latestRef.current.labels.cleared)
-  }, [publish])
+  }, [currentHistory, publish])
 
+  // One key is one drawing. Restoring replaces the board and its history: what
+  // was drawn before, or under another key, is not this drawing's past. A
+  // controlled board keeps showing its owner's drawing.
   const storageKey = persistence ? persistence.key : null
   useEffect(() => {
     if (!storageKey) return
     const store = createBoardPersistence(storageKey)
     storeRef.current = store
-    const restored = store.load()
     saveFailedRef.current = false
-    if (restored.strokes?.length) {
-      historyRef.current = createGestureHistory<Stroke>(restored.strokes)
-      setSnapshot(snapshotOf(historyRef.current))
+    const replace = (next: readonly Stroke[]) => {
+      historyRef.current = createGestureHistory<Stroke>(next)
+      const snapshot = snapshotOf(historyRef.current)
+      setSnapshot(snapshot)
+      return snapshot
     }
-    return () => { storeRef.current = null }
-  }, [storageKey])
-
-  // A controlled board follows its prop. A drawing the owner replaced is a
-  // different document, not an undo step — but the drawings we handed them and
-  // got back unchanged are exactly the ones we already have.
-  useEffect(() => {
-    if (!controlled || controlled === publishedRef.current) return
-    publishedRef.current = controlled
-    historyRef.current = createGestureHistory<Stroke>(controlled)
-    setSnapshot(snapshotOf(historyRef.current))
-  }, [controlled])
+    const restored = store.load()
+    if (restored.status === 'invalid') announce(latestRef.current.labels.storageInvalid)
+    if (!latestRef.current.controlled) replace(restored.strokes ?? latestRef.current.defaultStrokes ?? [])
+    // Another tab saved this drawing: follow it. Not while this board's own
+    // last save failed, though, because then it holds the only copy of its
+    // drawing; and a controlled board shows its owner's drawing.
+    const adopt = () => {
+      if (latestRef.current.controlled || saveFailedRef.current) return
+      const saved = store.load().strokes
+      if (!saved) return
+      const next = replace(saved)
+      latestRef.current.onStrokesChange?.(next.strokes)
+    }
+    // Mid-mark, it waits for the mark to end. A mark that commits saves over
+    // it, so the other tab follows this one instead.
+    const follow = (event: StorageEvent) => {
+      if (event.key !== storageKey || event.storageArea !== localStorage) return
+      if (activeStrokeRef.current) incomingRef.current = true
+      else adopt()
+    }
+    adoptRef.current = adopt
+    window.addEventListener('storage', follow)
+    return () => {
+      storeRef.current = null
+      adoptRef.current = null
+      incomingRef.current = false
+      window.removeEventListener('storage', follow)
+    }
+  }, [storageKey, announce])
 
   /* ── tools ────────────────────────────────────────────────────────────── */
 
@@ -302,13 +369,6 @@ export function useBoard({
 
   const inside = (rect: DOMRect | null, x: number, y: number) =>
     Boolean(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom)
-
-  const clearReturn = () => {
-    if (returnTimerRef.current !== null) {
-      window.clearTimeout(returnTimerRef.current)
-      returnTimerRef.current = null
-    }
-  }
 
   const scheduleReturn = () => {
     clearReturn()
@@ -399,6 +459,7 @@ export function useBoard({
 
   const sample = (
     event: { clientX: number; clientY: number; pointerType: string; pressure: number },
+    eraser: boolean,
   ): Point | null => {
     const rect = surfaceRectRef.current!
     const within = inside(rect, event.clientX, event.clientY)
@@ -407,9 +468,12 @@ export function useBoard({
       surfaceOutsideRef.current = true
       return null
     }
-    const point = boardPoint(event.clientX - rect.left, event.clientY - rect.top, rect.width)
-    point.pressure = event.pointerType === 'mouse' ? 0.5 : event.pressure || 0.5
-    point.angle = angleRef.current
+    const point = boardPoint(
+      event.clientX - rect.left, event.clientY - rect.top, rect.width,
+      event.pointerType === 'mouse' ? DEFAULT_PRESSURE : event.pressure || DEFAULT_PRESSURE,
+    )
+    // Only the eraser's felt turns with the hand; a nib is round.
+    if (eraser) point.angle = roundTo(angleRef.current, 3)
     const breakBefore = surfaceOutsideRef.current
     surfaceOutsideRef.current = false
     if (breakBefore) point.breakBefore = true
@@ -422,19 +486,22 @@ export function useBoard({
     event.currentTarget.setPointerCapture(event.pointerId)
     pointerIdRef.current = event.pointerId
     surfaceOutsideRef.current = false
-    const point = sample(event)
-    if (!point) return
     const id = activeToolRef.current
     const eraser = id === ERASER_ID
+    const point = sample(event, eraser)
+    if (!point) return
     const marker = latestRef.current.markers.find((item) => item.id === id) ?? latestRef.current.markers[0]
     // Tools are drawn at a screen scale; their footprint has to stay in board units.
+    // On a very small board that footprint can outgrow what a saved board may
+    // hold, so it is capped to stay loadable.
     const size = toolScale() / (surfaceRectRef.current!.width / BOARD_WIDTH)
+    const footprint = (value: number) => roundTo(Math.min(MAX_TOOL_SIZE, value * size), 2)
     activeStrokeRef.current = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       tool: eraser ? 'eraser' : 'marker',
       color: marker?.ink ?? '#1b2022',
-      width: (eraser ? ERASER_WIDTH : MARKER_WIDTH) * (eraser ? HELD_SCALE : 1) * size,
-      ...(eraser ? { height: ERASER_HEIGHT * HELD_SCALE * size } : {}),
+      width: footprint(eraser ? ERASER_WIDTH * HELD_SCALE : MARKER_WIDTH),
+      ...(eraser ? { height: footprint(ERASER_HEIGHT * HELD_SCALE) } : {}),
       points: [point],
     }
     render()
@@ -444,8 +511,9 @@ export function useBoard({
     if (!event.isPrimary) return
     if (activeStrokeRef.current && event.pointerId === pointerIdRef.current) {
       const coalesced = event.nativeEvent.getCoalescedEvents?.() ?? []
+      const eraser = activeStrokeRef.current.tool === 'eraser'
       for (const input of coalesced.length ? coalesced : [event.nativeEvent]) {
-        const point = sample(input)
+        const point = sample(input, eraser)
         if (point) activeStrokeRef.current.points.push(point)
       }
       scheduleRender()
@@ -459,7 +527,7 @@ export function useBoard({
     const stroke = activeStrokeRef.current
     const cancelled = event.type !== 'pointerup'
     if (!cancelled) {
-      const point = sample(event)
+      const point = sample(event, stroke.tool === 'eraser')
       const last = stroke.points.at(-1)!
       if (point && (last.x !== point.x || last.y !== point.y || point.breakBefore)) stroke.points.push(point)
     }
@@ -471,11 +539,14 @@ export function useBoard({
     moveTool(event.clientX, event.clientY)
     const outsideRoot = !inside(rootRectRef.current, event.clientX, event.clientY)
     if (event.pointerType === 'touch' || cancelled) motionRef.current?.dockAll()
+    const incoming = incomingRef.current
+    incomingRef.current = false
     if (cancelled) {
       render()
+      if (incoming) adoptRef.current?.()
       return
     }
-    historyRef.current.commit([stroke])
+    currentHistory().commit([stroke])
     publish()
     if (outsideRoot) scheduleReturn()
   }
@@ -536,17 +607,19 @@ export function useBoard({
       link.href = url
       link.click()
       setTimeout(() => URL.revokeObjectURL(url), 0)
-    })
-  }, [toBlob, exportFileName])
+    }, () => announce(latestRef.current.labels.exportFailed))
+  }, [toBlob, exportFileName, announce])
 
   useImperativeHandle(ref, () => ({
-    undo, redo, clear, toBlob, getStrokes: () => latestRef.current.strokes,
+    undo, redo, clear, toBlob,
+    // A copy: the history keeps changing its own array.
+    getStrokes: () => latestRef.current.controlled ?? [...historyRef.current.strokes()],
   }), [undo, redo, clear, toBlob])
 
   return {
-    rootRef, objectRef, surfaceRef, lightRef, sheenRef, canvasRef,
+    rootRef, objectRef, surfaceRef, lightRef, sheenRef, canvasRef, layerRef,
     activeTool, announcement,
-    canUndo: snapshot.canUndo, canRedo: snapshot.canRedo, hasMarks: strokes.length > 0,
+    canUndo: synced && snapshot.canUndo, canRedo: synced && snapshot.canRedo, hasMarks: strokes.length > 0,
     slotProps,
     surfaceProps: {
       onPointerDown: beginStroke,

@@ -11,7 +11,7 @@ export type Stroke = {
   height?: number
   points: Point[]
 }
-export type Bounds = { left: number; top: number; right: number; bottom: number }
+type Bounds = { left: number; top: number; right: number; bottom: number }
 export type BoardRenderer = {
   resize(width: number, height: number, dpr: number): void
   render(strokes: readonly Stroke[], active?: Stroke | null): void
@@ -23,9 +23,19 @@ export const DEFAULT_PRESSURE = 0.5
 export const ERASER_WIDTH = 84
 export const ERASER_HEIGHT = 34
 
-export function boardPoint(x: number, y: number, displayWidth: number): Point {
+export const roundTo = (value: number, places: number) => {
+  const factor = 10 ** places
+  return Math.round(value * factor) / factor
+}
+
+/**
+ * A sample in board units. Precision is cut at the sample, finer than any
+ * screen can show, so a saved board stays small and the ink drawn live is the
+ * ink replayed later.
+ */
+export function boardPoint(x: number, y: number, displayWidth: number, pressure = DEFAULT_PRESSURE): Point {
   const scale = BOARD_WIDTH / displayWidth
-  return { x: x * scale, y: y * scale, pressure: DEFAULT_PRESSURE }
+  return { x: roundTo(x * scale, 2), y: roundTo(y * scale, 2), pressure: roundTo(pressure, 3) }
 }
 
 const effectiveWidth = (stroke: Stroke, pressure: number) =>

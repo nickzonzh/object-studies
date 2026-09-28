@@ -41,14 +41,15 @@ MIT. React 19, no other runtime dependency beyond
 | Prop | Type | Default | |
 | --- | --- | --- | --- |
 | `markers` | `readonly Marker[]` | four markers | Tray contents. `{ id, label, color, ink }` — `color` is the plastic, `ink` is what it draws with, `label` is the button's accessible name. |
-| `defaultStrokes` | `readonly Stroke[]` | `[]` | Starting drawing for an uncontrolled board. |
-| `strokes` | `readonly Stroke[]` | — | Drawing to display. Passing it makes the board controlled: it shows exactly what you pass, and a drawing you do not accept is not an undo step. |
+| `defaultStrokes` | `readonly Stroke[]` | `[]` | Starting drawing for an uncontrolled board. A saved drawing, when there is one, takes its place. |
+| `strokes` | `readonly Stroke[]` | — | Drawing to display. Passing it makes the board controlled: it shows exactly what you pass, and a change you do not accept is not an undo step. Strokes are compared by identity, so keep the ones the board hands you (a copied array is fine). |
 | `onStrokesChange` | `(strokes: readonly Stroke[]) => void` | — | Called after every commit: a finished gesture, undo, redo, clear. |
 | `persistence` | `false \| { key: string }` | `false` | Off by default; a component should not claim storage unasked. |
 | `exportFileName` | `string` | `'melani-board.png'` | |
 | `showControls` | `boolean` | `true` | The built-in undo/redo/clear/save bar. |
-| `labels` | `Partial<WhiteboardLabels>` | English | Every user-visible string, including the live-region announcements. |
+| `labels` | `Partial<WhiteboardLabels>` | `defaultLabels` | Every user-visible string, including the live-region announcements. |
 | `brand` | `string` | `'MELANI'` | Printed on the tools and the board. `''` for unbranded. |
+| `portalContainer` | `HTMLElement \| null` | `document.body` | Where the tools in the air are rendered. See below. |
 | `className`, `style`, `ref` | | | Applied to the component root. |
 
 ```tsx
@@ -68,12 +69,34 @@ const board = useRef<WhiteboardHandle>(null)
 board.current?.undo()
 board.current?.redo()
 board.current?.clear()
-board.current?.getStrokes()             // readonly Stroke[]
+board.current?.getStrokes()             // readonly Stroke[], a copy
 await board.current?.toBlob('image/png') // painted on the board colour
 ```
 
-`Marker`, `Stroke`, `Point`, `StrokeTool`, `ToolId`, `WhiteboardProps`,
-`WhiteboardHandle` and `WhiteboardLabels` are all exported.
+`Marker`, `Stroke`, `Point`, `StrokeTool`, `WhiteboardProps`,
+`WhiteboardHandle` and `WhiteboardLabels` are exported as types, alongside
+`defaultLabels`, `defaultMarkers`, `BOARD_WIDTH`, `BOARD_HEIGHT` and
+`decodeStrokes`.
+
+### Drawings from elsewhere
+
+`strokes` and `defaultStrokes` are checked when they arrive: a malformed stroke
+throws an error that names the prop and the stroke, before it can reach the
+renderer. To check a drawing from your own server or a file before it gets that
+far, pass it through `decodeStrokes(value)`. It returns a clean copy, or throws
+for anything malformed or beyond what the board can store (4000 strokes, 40,000
+points).
+
+### Tools in the air
+
+A tool that has been picked up follows the pointer in viewport coordinates, so
+it is portalled out of the component into its own element at the end of
+`document.body`. That keeps it under the pointer inside a transformed, filtered
+or clipping ancestor such as an animated dialog. If the board sits in something
+that renders above the page, such as a `<dialog>` opened with `showModal()`,
+pass that element as `portalContainer`: the tools are rendered in an element of
+their own inside it, and it is not otherwise touched. The portal is created
+after mount, so the server render has no tools in the air.
 
 ## Sizing
 
@@ -117,40 +140,55 @@ the board; set them yourself to pin the light.
 
 ## Persistence
 
-`persistence={{ key: 'melani:whiteboard:v2' }}` restores the board on mount and
-writes after every commit. Stored data is untrusted: a document that does not
-decode cleanly is left where it is and the board starts empty rather than
-half-restored, and a board too large for the store is reported rather than
-silently dropped (the component announces it once in its live region).
+`persistence={{ key: 'notes:board' }}` keeps the board in `localStorage` under
+that key. It is restored on mount, and saved after every commit.
 
-If the key ends in `:v2`, a version 1 document under the matching `:v1` key is
-imported once. Version 1 stored display pixels without recording the size it was
-drawn at, so it is replayed on the original desktop-sized board: a drawing made
-on a small viewport cannot have its scale reconstructed exactly. The old
-document is never deleted.
+One key is one drawing. A board that exists under the key is restored as it
+was, including an empty one: a board cleared before a reload stays clear, and
+`defaultStrokes` only applies when nothing is saved. Changing the key switches
+the board to that key's drawing, or to `defaultStrokes` if it has none, and
+starts a fresh undo history. Other tabs showing the same key follow the latest
+save, with a fresh undo history and a call to `onStrokesChange`. A tab in the
+middle of a mark finishes it first, and its own save becomes the latest. A tab
+whose last save failed keeps its drawing, since it holds the only copy. Two
+boards on the same key in one page overwrite each other; give each its own. A
+controlled board shows its `strokes`, never restores or follows other tabs,
+though it still saves.
+
+Stored data is untrusted. A document that does not decode cleanly is never
+half-restored: the board starts from `defaultStrokes` (or empty), announces
+that the saved board could not be opened, and the first new mark replaces it.
+When the store cannot keep the board, because it is full or blocked, the board
+announces it each time saving starts to fail. These announcements are made in
+the component's live region only; there is no visible notice.
 
 ## Server rendering
 
 Nothing touches `window`, `document`, `localStorage` or `matchMedia` at module
 scope or during render, so the component server-renders as it is — no
-client-only wrapper, no dynamic import. Storage is read, the canvas is sized and
-the tools are bound in effects. The build ships a `"use client"` banner for
-React Server Component frameworks.
+client-only wrapper, no dynamic import. Storage is read, the canvas is sized,
+the tools' portal is created and the tools are bound in effects. The build
+ships a `"use client"` banner for React Server Component frameworks.
 
 ## Accessibility
 
 - Every tool is a real `button` with `aria-pressed`, reachable and operable from
   the keyboard; choosing one with the keyboard lifts it out of the tray without
   the flight animation.
-- Undo, redo, clear and a failed save are announced in a polite live region.
+- Undo, redo and clear are announced in a polite live region, as are a failed
+  save, a saved board that could not be opened and a failed PNG export.
   Individual strokes are not: that would be noise.
+- Undo, redo and clear stay focusable when there is nothing to do: they are
+  marked `aria-disabled` rather than disabled, so a button that runs out of work
+  under the keyboard keeps focus.
 - **Drawing itself requires a pointing device** — mouse, pen or touch. The
   canvas carries a description saying so, and there is no keyboard drawing mode.
   Applications that must be operable without a pointer should provide another
   way in and treat the board as an enhancement.
-- Touch targets are at least 44×44 CSS pixels on coarse pointers: the tray
-  slots reach into the space under the board rather than over the drawing
-  surface.
+- On coarse pointers the tray buttons themselves grow to at least 44 CSS
+  pixels tall, reaching into the space under the board rather than over the
+  drawing surface, and the eraser reaches sideways to 44 wide. The marker slots
+  are 44 wide on any board wider than about 250px.
 - `prefers-reduced-motion: reduce` places the tools directly instead of flying
   them, and the rule is scoped to the component — it will not disable motion in
   the host application.
@@ -200,4 +238,5 @@ npm run build -w melani
 Pixel tests cover stroke continuity, sampling independence, pooling,
 translucency, rotated eraser coverage, ghosting, resize/DPR, cache invalidation
 and that a stroke painted sample by sample is pixel-identical to its committed
-replay. Real touch and stylus hardware still need a hands-on check.
+replay, before and after a save and reload. Real touch and stylus hardware
+still need a hands-on check.

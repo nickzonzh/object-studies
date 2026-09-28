@@ -1,6 +1,9 @@
 import type { Pose } from 'object-studies-core'
 import type { CSSProperties } from 'react'
-import type { Marker, ToolId } from '../types.js'
+import type { Marker } from '../types.js'
+
+/** A marker id, or the built-in eraser. */
+export type ToolId = string
 
 export const ERASER_ID = 'eraser'
 
@@ -32,7 +35,7 @@ export const TOOL_VARIABLES = {
   '--melani-eraser-tip-y': `${ERASER_ART.tipY}px`,
 } as CSSProperties
 
-export const DEFAULT_MARKERS: readonly Marker[] = [
+export const defaultMarkers: readonly Marker[] = [
   { id: 'black', label: 'Black marker', color: '#1e2224', ink: '#1b2022' },
   { id: 'blue', label: 'Blue marker', color: '#1f5f9c', ink: '#1768ad' },
   { id: 'red', label: 'Red marker', color: '#b63c36', ink: '#c33d36' },
