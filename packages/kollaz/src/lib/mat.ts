@@ -5,13 +5,13 @@ export const TABLE_WIDTH = 1000
 export const TABLE_HEIGHT = 640
 const CM = TABLE_WIDTH / 45
 
-export function drawMat(canvas: HTMLCanvasElement) {
-  const rect = canvas.getBoundingClientRect()
+/** Paint the mat for a table shown `width` CSS px wide. */
+export function drawMat(canvas: HTMLCanvasElement, width: number) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  canvas.width = Math.round(rect.width * dpr)
-  canvas.height = Math.round(rect.height * dpr)
+  canvas.width = Math.round(width * dpr)
+  canvas.height = Math.round(((width * TABLE_HEIGHT) / TABLE_WIDTH) * dpr)
   const ctx = canvas.getContext('2d')!
-  const s = (rect.width / TABLE_WIDTH) * dpr
+  const s = (width / TABLE_WIDTH) * dpr
   ctx.setTransform(s, 0, 0, s, 0, 0)
   const ground = ctx.createLinearGradient(0, 0, TABLE_WIDTH * 0.4, TABLE_HEIGHT)
   ground.addColorStop(0, '#317259')

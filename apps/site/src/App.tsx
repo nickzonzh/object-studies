@@ -1,6 +1,8 @@
 import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, type FrameMat, type FrameVariant, frameVariants } from 'korniza'
+import { Vase, type ShapeId, type StyleId } from 'keramos'
+import { CraftTable } from 'kollaz'
 import { type ReactNode, useState } from 'react'
 
 const repo = 'https://github.com/nickzonzh/object-studies'
@@ -21,13 +23,16 @@ export function App() {
           <h1>Real objects, rebuilt for the web.</h1>
           <p className="site-lede">
             Open-source React components that behave like the things they are named after. Pick up
-            the chalk. Uncap a marker. Hang a painting.
+            the chalk. Uncap a marker. Hang a painting. Turn a painted vase to the light. Glue
+            first, then glitter.
           </p>
           <nav className="site-nav" aria-label="Studies">
             <a href="#kimolia">Kimolia</a>
             <a href="#melani">Melani</a>
             <a href="#korniza">Korniza</a>
             <a href="#wall">Gallery wall</a>
+            <a href="#keramos">Keramos</a>
+            <a href="#kollaz">Kollaz</a>
           </nav>
         </header>
 
@@ -69,6 +74,26 @@ export function App() {
       <GalleryWall />
 
       <div className="site">
+        <Study
+          id="keramos"
+          number="04"
+          name="Keramos"
+          greek="κέραμος — potter's clay"
+          summary="Hand-painted Greek pottery, glazed and lit by your pointer. Every seed paints a different piece, stroke by stroke, in the Rhodian, black-figure or red-figure tradition. Drag a piece to turn it."
+        >
+          <KeramosBench />
+        </Study>
+
+        <Study
+          id="kollaz"
+          number="05"
+          name="Kollaz"
+          greek="κολάζ — collage"
+          summary="A craft table. Purple glue that dries clear, glitter that only sticks while it is wet, scissors that cut everything under the blades, tape, pom poms and googly eyes."
+        >
+          <CraftTable />
+        </Study>
+
         <footer className="site-footer">
           <span>MIT licensed.</span>
           <a href={repo}>Source on GitHub</a>
@@ -79,7 +104,7 @@ export function App() {
 }
 
 type StudyProps = {
-  id: 'kimolia' | 'melani' | 'korniza'
+  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz'
   number: string
   name: string
   greek: string
@@ -106,6 +131,43 @@ function Study({ id, number, name, greek, summary, children }: StudyProps) {
       </div>
       <div className="site-study-stage">{children}</div>
     </section>
+  )
+}
+
+type Piece = { shape: ShapeId; style: StyleId; palette: string; seed: number; label: string }
+
+// One of each tradition to pick from; the chosen piece is shown live on the bench.
+const PIECES: Piece[] = [
+  { shape: 'rhodos', style: 'ikaros', palette: 'cobalt-gold', seed: 42, label: 'Rhodos bottle, cobalt and gold' },
+  { shape: 'plate', style: 'ikaros', palette: 'folk', seed: 4, label: 'Wall plate, folk' },
+  { shape: 'amphora', style: 'black-figure', palette: 'attic', seed: 3, label: 'Neck amphora, black-figure' },
+  { shape: 'lekythos', style: 'red-figure', palette: 'attic', seed: 6, label: 'Lekythos, red-figure' },
+]
+
+function KeramosBench() {
+  const [chosen, setChosen] = useState(0)
+  const [seed, setSeed] = useState(PIECES[0].seed)
+  const piece = PIECES[chosen]
+  const choose = (index: number) => {
+    setChosen(index)
+    setSeed(PIECES[index].seed)
+  }
+  return (
+    <div className="site-keramos">
+      <div className="site-keramos-bench">
+        <Vase shape={piece.shape} vaseStyle={piece.style} palette={piece.palette} seed={seed} className="site-keramos-live" />
+        <button type="button" className="site-button" onClick={() => setSeed((s) => (s * 7919 + 13) % 99991)}>
+          Paint another
+        </button>
+      </div>
+      <div className="site-keramos-picks" role="group" aria-label="Pieces">
+        {PIECES.map((p, index) => (
+          <button key={p.label} type="button" className="site-keramos-pick" aria-pressed={index === chosen} aria-label={p.label} onClick={() => choose(index)}>
+            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} draggable={false} angle={p.shape === 'lekythos' ? -0.35 : 0.2} />
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 

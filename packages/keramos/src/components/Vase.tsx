@@ -49,6 +49,8 @@ export type VaseProps = {
   onReady?: () => void
 }
 
+const CANVAS_FILL = { position: 'absolute', inset: 0, width: '100%', height: '100%' } as const
+
 const SPIN = 0.16 // rad/s
 const FRICTION = 3.2
 
@@ -451,6 +453,8 @@ export function Vase({
       <canvas
         ref={canvasRef}
         className="keramos-vase__canvas"
+        // Inline, so the canvas can never size its own wrapper (and loop) without the stylesheet.
+        style={CANVAS_FILL}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
