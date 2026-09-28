@@ -1,6 +1,6 @@
 {
   "name": "object-studies-core",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Framework-agnostic engine shared by the Object Studies boards: tool motion, gesture history, validated persistence, seeded randomness and cooperative scheduling.",
   "license": "MIT",
   "author": "Nick <nick@zonnioshunt.com.au>",
