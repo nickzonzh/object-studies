@@ -1,6 +1,6 @@
 {
   "name": "kollaz",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "A tactile craft table for React: a glue stick that dries clear, glitter that only sticks to wet glue, scissors, tape, pom poms and googly eyes.",
   "license": "MIT",
   "author": "Nick <nick@zonnioshunt.com.au>",
@@ -44,7 +44,7 @@
     "check:package": "publint --strict && attw --pack --profile esm-only"
   },
   "dependencies": {
-    "object-studies-core": "^0.1.0",
+    "object-studies-core": "^0.0.0",
     "polygon-clipping": "^0.15.7"
   },
   "peerDependencies": {

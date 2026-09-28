@@ -1,6 +1,6 @@
 {
   "name": "keramos",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Hand-painted Greek pottery for React: glazed vessels and wall plates, painted stroke by stroke from a seed and rendered live in WebGL2.",
   "license": "MIT",
   "author": "Nick <nick@zonnioshunt.com.au>",
@@ -44,7 +44,7 @@
     "check:package": "publint --strict && attw --pack --profile esm-only"
   },
   "dependencies": {
-    "object-studies-core": "^0.1.0"
+    "object-studies-core": "^0.0.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"

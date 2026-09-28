@@ -10,10 +10,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "melani": "^0.1.0",
-    "kimolia": "^0.1.0",
-    "korniza": "^0.1.0",
-    "keramos": "^0.1.0",
-    "kollaz": "^0.1.0"
+    "melani": "^0.0.0",
+    "kimolia": "^0.0.0",
+    "korniza": "^0.0.0",
+    "keramos": "^0.0.0",
+    "kollaz": "^0.0.0"
   }
 }
