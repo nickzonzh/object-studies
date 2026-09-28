@@ -915,7 +915,7 @@ function paintPlate(c: Ctx, zone: (r: Zone['role']) => Zone | undefined) {
  * can be tucked into bare ground without landing on anything.
  */
 class Probe {
-  readonly w = 512
+  readonly w: number
   readonly h: number
   readonly data: Uint8ClampedArray
   private field: [number, number, number] | null
@@ -924,14 +924,16 @@ class Probe {
   constructor(c: Ctx) {
     this.c = c
     const { p, pal } = c
-    this.h = Math.round((this.w * p.height) / p.width)
+    // Read the fixed-size sketch, never the texture, so gaps are found the same at any detail.
+    this.w = p.sketch.width
+    this.h = p.sketch.height
     const probe = document.createElement('canvas')
     probe.width = this.w
     probe.height = this.h
     const pc = probe.getContext('2d', { willReadFrequently: true })!
-    pc.drawImage(p.layers.paint, 0, 0, this.w, this.h)
-    pc.drawImage(p.layers.over, 0, 0, this.w, this.h)
-    pc.drawImage(p.layers.gold, 0, 0, this.w, this.h)
+    pc.drawImage(p.sketch.layers.paint, 0, 0)
+    pc.drawImage(p.sketch.layers.over, 0, 0)
+    pc.drawImage(p.sketch.layers.gold, 0, 0)
     this.data = pc.getImageData(0, 0, this.w, this.h).data
     if (pal.field) {
       const n = parseInt(pal.field.slice(1), 16)

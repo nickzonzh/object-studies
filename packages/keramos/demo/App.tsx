@@ -45,7 +45,7 @@ function Wall({ pieces, onPick }: { pieces: Piece[]; onPick: (p: Piece) => void 
       {pieces.map((p) => (
         <figure className="wall-plate" key={`${p.shape}-${p.palette}-${p.seed}`}>
           <span className="wall-hook" aria-hidden="true" />
-          <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} maxFps={30} detail={0.8} />
+          <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} maxFps={30} />
           <figcaption>
             <button type="button" onClick={() => onPick(p)}>
               <span>{SHAPES[p.shape].label}</span>
@@ -64,7 +64,7 @@ function Shelf({ pieces, onPick, label }: { pieces: Piece[]; onPick: (p: Piece) 
       <div className="shelf-row">
         {pieces.map((p, i) => (
           <figure className={`shelf-piece shelf-piece--${p.shape}`} key={`${p.shape}-${p.palette}-${p.seed}`}>
-            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} angle={i * 1.3 + (p.shape === 'mug' ? 1.2 : 0)} spin={0.9} maxFps={40} detail={0.8} />
+            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} angle={i * 1.3 + (p.shape === 'mug' ? 1.2 : 0)} spin={0.9} maxFps={40} />
             <figcaption>
               <button type="button" onClick={() => onPick(p)}>
                 <span>{SHAPES[p.shape].label}</span>
@@ -144,7 +144,6 @@ function Showroom() {
             palette={piece.palette}
             seed={piece.seed}
             turntable={turntable}
-            detail={1.34}
             className="bench-vase"
           />
           <div className="bench-ledge" aria-hidden="true" />
