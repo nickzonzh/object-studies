@@ -103,6 +103,22 @@ export function settleFlake(flake: Flake, field: GlueField) {
   flake.stuck = tackiness(field, flake.x, flake.y, flake.landAt) > 0
 }
 
+/**
+ * Keep at most `max` flakes on the table. The oldest loose glitter goes first, like it
+ * fell on the floor, `batch` at a time: every removal repaints the cached glitter layer,
+ * so it happens once per batch rather than on every pouring frame. Once only glued
+ * glitter is left the glue is full, and the newest flakes (landed since the layer was
+ * last painted) are turned away. `evicted` says whether any painted flake went.
+ */
+export function capFlakes(flakes: Flake[], max: number, batch: number) {
+  if (flakes.length <= max) return { flakes, evicted: false }
+  let excess = flakes.length - Math.max(0, max - batch)
+  const kept = flakes.filter((f) => f.stuck || excess-- <= 0)
+  const evicted = kept.length < flakes.length
+  if (kept.length > max) kept.length = max
+  return { flakes: kept, evicted }
+}
+
 /** Cosine between a flake's facet and the half vector from light (lx, ly, lz) to a viewer straight above. */
 export function facing(flake: Pick<Flake, 'x' | 'y' | 'nx' | 'ny' | 'nz'>, lx: number, ly: number, lz: number) {
   let dx = lx - flake.x

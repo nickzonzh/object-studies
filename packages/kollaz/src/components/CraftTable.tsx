@@ -1,11 +1,12 @@
-import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { PaperShapeView } from './PaperShape.js'
 import { GooglyEye } from './GooglyEye.js'
 import { bumpGooglyEyes } from '../lib/bump.js'
 import { EyePot, GlueStickBody, InkPad, MarkerBody, PipeBundle, PipeInHand, Pom, PomCup, ScissorsBody, SequinTub, ShakerBody, StampBody, TapeRoll } from './CraftObjects.js'
 import { createRng } from '../lib/rng.js'
 import {
-  GLUE_DRY_MS, clearGlue, createGlueField, paintGlue, pourFlakes, settleFlake, tackiness, tipStep, type Flake,
+  GLUE_DRY_MS, capFlakes, clearGlue, createGlueField, paintGlue, pourFlakes, settleFlake, tackiness, tipStep, type Flake,
 } from '../lib/glitter.js'
 import { paintFlakes, paintGlints, paintGlue as paintGlueFilm, paintPompoms, paintSequins, paintSparkles, type GlueStroke, type Sparkle } from '../lib/render.js'
 import { dropPompom, isRolling, nudgePompoms, settlePompom, stepPompoms, type Pompom } from '../lib/pompom.js'
@@ -22,11 +23,22 @@ import {
   SNIP_LENGTH, bounds, cutSheet, fromPoints, inShape, shapeMask, shapePath2D, translateShape, unionOf,
   type PaperShape, type Shape,
 } from '../lib/cut.js'
+import { type CraftTableLabels, defaultLabels } from '../labels.js'
 import '../styles.css'
+
+export type CraftTableProps = {
+  labels?: Partial<CraftTableLabels>
+  /** Where the tools in hand are portalled; a body-level element by default. */
+  portalContainer?: HTMLElement | null
+  className?: string
+  style?: CSSProperties
+}
 
 const SHEET = { x: 150, y: 48, w: 700, h: 520 }
 const GLUE_WIDTH = 24
 const MAX_FLAKES = 20000
+// Loose glitter swept off at once when the table is full.
+const FLAKE_SWEEP = 1000
 const MAX_SEQUINS = 800
 // Idle shimmer keeps going this long after the last sign of someone at the table, then
 // the table goes still until the pointer moves again: nobody watching, no battery spent.
@@ -40,7 +52,8 @@ type Box = { x: number; y: number; width: number; height: number }
 /**
  * A piece cut out of the sheet. It carries a snapshot of everything that was on it.
  * Geometry lives in the piece's own frame (where the snapshot was taken); `dx`/`dy`
- * say where it has been moved since. A piece cut again keeps its parent's snapshot.
+ * say where it has been moved since. A piece cut again keeps the part of its parent's
+ * snapshot that lies under it.
  */
 type Piece = {
   id: number
@@ -122,22 +135,18 @@ const leanFor = (tool: string): [number, number, number, number] => {
   return [0, 0, 0, 0]
 }
 
-const toolHint = (tool: Tool, ink: number) => {
-  if (tool === 'glue') return 'Draw with the glue. It goes on purple and dries clear in about 15 seconds.'
-  if (tool === 'eyes') return 'Tap to stick an eye down. Tap the pot to put it back.'
-  if (tool === 'scissors') return 'Cut all the way round a shape to lift it out, or cut from one edge to the other to split the sheet.'
-  if (tool === 'marker') return 'Draw with the texta. It is permanent, so it goes wherever the paper goes.'
-  if (tool === 'tape') return 'Drag to lay a strip of masking tape. Tape over a cut-out piece or a pipe cleaner holds it down.'
-  if (tool === 'pipes') return 'Draw a path and a pipe cleaner bends along it, up to about 15 cm. Drag it, glue it or tape it down.'
-  if (tool === 'sequins') return 'Hold down to sprinkle sequins. Like glitter, they only stick to purple glue.'
-  if (tool === 'pompoms') return 'Tap to drop a pom pom. Pressed into purple glue it stays put. Anywhere else it rolls.'
-  if (tool === 'stamp') {
-    return ink > 0
-      ? 'Stamp the paper. Each print uses a little ink, so they fade as you go.'
-      : 'Press the stamp on the ink pad first.'
-  }
-  if (tool?.startsWith('glitter')) return 'Hold down to shake. Glitter only sticks where the glue is still purple.'
-  return 'Pick something up from the caddy. Drag the eyes, cut-out pieces and pipe cleaners around, or tap the mat to give it a knock.'
+const toolHint = (tool: Tool, ink: number, text: CraftTableLabels) => {
+  if (tool === 'glue') return text.glueHint
+  if (tool === 'eyes') return text.googlyEyesHint
+  if (tool === 'scissors') return text.scissorsHint
+  if (tool === 'marker') return text.textaHint
+  if (tool === 'tape') return text.tapeHint
+  if (tool === 'pipes') return text.pipeCleanersHint
+  if (tool === 'sequins') return text.sequinsHint
+  if (tool === 'pompoms') return text.pomPomsHint
+  if (tool === 'stamp') return ink > 0 ? text.stampHint : text.stampDryHint
+  if (tool?.startsWith('glitter')) return text.glitterHint
+  return text.empty
 }
 
 /**
@@ -239,9 +248,8 @@ function erase(ctx: CanvasRenderingContext2D, k: number, path: Path2D) {
 }
 
 /**
- * Shows a painted canvas. It is copied rather than moved into place: a piece cut from a
- * piece keeps its parent's snapshot, and a canvas can only be in one place at a time.
- * Copying pixels is far cheaper than encoding the snapshot as an image.
+ * Shows a painted canvas by copying its pixels into a canvas React owns. Copying
+ * pixels is far cheaper than encoding the snapshot as an image.
  */
 function CanvasCopy({ source, className, style }: { source: HTMLCanvasElement; className: string; style?: CSSProperties }) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -252,6 +260,27 @@ function CanvasCopy({ source, className, style }: { source: HTMLCanvasElement; c
     canvas.getContext('2d')!.drawImage(source, 0, 0)
   }, [source])
   return <canvas ref={ref} className={className} style={style} aria-hidden="true" />
+}
+
+/**
+ * The part of a piece's snapshot under `box`, cut on whole pixels so every pixel lands
+ * on screen exactly where it did in the full snapshot.
+ */
+function cropArt({ art, artBox }: Piece, box: Box): Pick<Piece, 'art' | 'artBox'> {
+  const sx = art.width / artBox.width
+  const sy = art.height / artBox.height
+  const x0 = Math.max(0, Math.floor((box.x - artBox.x) * sx))
+  const y0 = Math.max(0, Math.floor((box.y - artBox.y) * sy))
+  const x1 = Math.min(art.width, Math.ceil((box.x + box.width - artBox.x) * sx))
+  const y1 = Math.min(art.height, Math.ceil((box.y + box.height - artBox.y) * sy))
+  const crop = document.createElement('canvas')
+  crop.width = Math.max(1, x1 - x0)
+  crop.height = Math.max(1, y1 - y0)
+  crop.getContext('2d')!.drawImage(art, x0, y0, crop.width, crop.height, 0, 0, crop.width, crop.height)
+  return {
+    art: crop,
+    artBox: { x: artBox.x + x0 / sx, y: artBox.y + y0 / sy, width: crop.width / sx, height: crop.height / sy },
+  }
 }
 
 /** A piece's snapshot, shaped to the piece so nothing spills past its cut edge. */
@@ -274,7 +303,64 @@ function PieceArt({ piece }: { piece: Piece }) {
   )
 }
 
-export function CraftTable() {
+/** Everything on the table that the render loop and the handlers share. */
+const createSim = () => ({
+  field: createGlueField(TABLE_WIDTH, TABLE_HEIGHT),
+  glue: [] as GlueStroke[],
+  flakes: [] as Flake[],
+  pending: [] as Flake[],
+  sequins: [] as Flake[],
+  pendingSequins: [] as Flake[],
+  poms: [] as Pompom[],
+  prints: [] as Print[],
+  // Holes cut in the sheet, oldest first. Glue and prints made before a cut are clipped by it.
+  cuts: [] as Cut[],
+  slits: [] as Path2D[],
+  cutting: null as Point[] | null,
+  marks: [] as Mark[],
+  tapes: [] as LaidTape[],
+  // Everything in the ink layer (prints, texta, tape) is replayed in this order.
+  seq: 10,
+  marking: null as Mark | null,
+  taping: null as Point | null,
+  piping: null as Point[] | null,
+  nextPipe: 4,
+  pipeId: 0,
+  sheetPath: null as Path2D | null,
+  // Stacking order shared by glue strokes and pieces, and each piece's footprint on the table.
+  order: 0,
+  covers: [] as { id: number; order: number; shape: Shape }[],
+  clipCache: new Map<string, Path2D | null>(),
+  snipTravel: 0,
+  pieceId: 0,
+  tapeId: 0,
+  eyeId: 2,
+  ink: 0,
+  nextPom: 0,
+  pomId: 0,
+  rng: createRng(20260927),
+  light: null as { x: number; y: number } | null,
+  pointer: { x: 0, y: 0, speed: 0, t: 0 },
+  // Glitter owed but not yet poured: pouring runs per second, and frames deliver it.
+  pourCarry: 0,
+  drawing: false,
+  pouring: false,
+  tipUntil: 0,
+  dirty: true,
+  eyeCount: 0,
+  seeded: false,
+  // Resting glitter is painted once into a cached layer; see the render loop.
+  baseCount: 0,
+  baseStale: true,
+  visible: true,
+  /** When someone last moved over the table, or it came into view. */
+  lastActive: 0,
+})
+
+export function CraftTable({ labels, portalContainer, className, style }: CraftTableProps) {
+  const text = { ...defaultLabels, ...labels }
+  const instructionsId = useId()
+  const [portal, setPortal] = useState<HTMLElement | null>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const matRef = useRef<HTMLCanvasElement>(null)
   const inkRef = useRef<HTMLCanvasElement>(null)
@@ -292,7 +378,7 @@ export function CraftTable() {
 
   const [tool, setTool] = useState<Tool>(null)
   const toolRef = useRef<Tool>(null)
-  const [sheet, setSheet] = useState(() => ({ color: PAPERS[0].color, seed: 4, shape: freshSheet(4) }))
+  const [sheet, setSheet] = useState<{ color: string; seed: number; shape: PaperShape }>(() => ({ color: PAPERS[0].color, seed: 4, shape: freshSheet(4) }))
   const sheetRef = useRef(sheet)
   const [pieces, setPieces] = useState<Piece[]>([])
   const [pipes, setPipes] = useState<Pipe[]>([])
@@ -315,58 +401,49 @@ export function CraftTable() {
   const [nextPom, setNextPom] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const sim = useRef({
-    field: createGlueField(TABLE_WIDTH, TABLE_HEIGHT),
-    glue: [] as GlueStroke[],
-    flakes: [] as Flake[],
-    pending: [] as Flake[],
-    sequins: [] as Flake[],
-    pendingSequins: [] as Flake[],
-    poms: [] as Pompom[],
-    prints: [] as Print[],
-    // Holes cut in the sheet, oldest first. Glue and prints made before a cut are clipped by it.
-    cuts: [] as Cut[],
-    slits: [] as Path2D[],
-    cutting: null as Point[] | null,
-    marks: [] as Mark[],
-    tapes: [] as LaidTape[],
-    // Everything in the ink layer (prints, texta, tape) is replayed in this order.
-    seq: 10,
-    marking: null as Mark | null,
-    taping: null as Point | null,
-    piping: null as Point[] | null,
-    nextPipe: 4,
-    pipeId: 0,
-    sheetPath: null as Path2D | null,
-    // Stacking order shared by glue strokes and pieces, and each piece's footprint on the table.
-    order: 0,
-    covers: [] as { id: number; order: number; shape: Shape }[],
-    clipCache: new Map<string, Path2D | null>(),
-    snipTravel: 0,
-    pieceId: 0,
-    tapeId: 0,
-    eyeId: 2,
-    ink: 0,
-    nextPom: 0,
-    pomId: 0,
-    rng: createRng(20260927),
-    light: null as { x: number; y: number } | null,
-    pointer: { x: 0, y: 0, speed: 0, t: 0 },
-    // Glitter owed but not yet poured: pouring runs per second, and frames deliver it.
-    pourCarry: 0,
-    drawing: false,
-    pouring: false,
-    tipUntil: 0,
-    dirty: true,
-    eyeCount: 0,
-    seeded: false,
-    // Resting glitter is painted once into a cached layer; see the render loop.
-    baseCount: 0,
-    baseStale: true,
-    visible: true,
-    /** When someone last moved over the table, or it came into view. */
-    lastActive: 0,
-  })
+  // Built once, not on every render: it allocates the whole glue field.
+  const [initialSim] = useState(createSim)
+  const sim = useRef(initialSim)
+
+  // Delayed steps reach back into the canvases, so they are cancelled if the table goes first.
+  const [timers] = useState(() => new Set<number>())
+  const later = (step: () => void, ms: number) => {
+    const id = window.setTimeout(() => { timers.delete(id); step() }, ms)
+    timers.add(id)
+  }
+  useEffect(() => () => {
+    for (const id of timers) window.clearTimeout(id)
+    timers.clear()
+    window.clearTimeout(noticeTimer.current)
+  }, [timers])
+
+  // Tools in hand are posed in viewport coordinates, so they fly outside any
+  // transformed or clipping ancestor. The node is made after mount, which keeps
+  // the server render and the first client render identical, and it is always
+  // the table's own: a consumer's container is never restyled.
+  useEffect(() => {
+    const node = document.createElement('div')
+    node.className = 'kollaz-tool-portal'
+    // The printing on the tools keeps the table's typeface in the air.
+    node.style.fontFamily = getComputedStyle(rootRef.current!).fontFamily
+    ;(portalContainer ?? document.body).append(node)
+    setPortal(node)
+    return () => {
+      node.remove()
+      setPortal(null)
+    }
+  }, [portalContainer])
+
+  // A tool in hand when the portal moves is picked up again by the next pointer move.
+  useEffect(() => {
+    if (!portal) return
+    const motion = createToolMotion(rootRef.current!, portal, ANCHORS)
+    motionRef.current = motion
+    return () => {
+      motion.destroy()
+      motionRef.current = null
+    }
+  }, [portal])
 
   // The render loop sleeps while nothing on the table is changing. Anything that
   // changes it calls redraw(), which marks it for drawing and wakes the loop.
@@ -576,12 +653,10 @@ export function CraftTable() {
   // Size canvases to the surface and keep them sharp.
   useEffect(() => {
     const surface = surfaceRef.current!
-    const motion = createToolMotion(rootRef.current!, ANCHORS)
-    motionRef.current = motion
     seedSample()
     if (!baseRef.current) baseRef.current = document.createElement('canvas')
     const resize = () => {
-      motion.dockAll(false)
+      motionRef.current?.dockAll(false)
       rectRef.current = null
       const rect = surface.getBoundingClientRect()
       scaleRef.current = rect.width / TABLE_WIDTH
@@ -615,7 +690,7 @@ export function CraftTable() {
     resize()
     const observer = new ResizeObserver(resize)
     observer.observe(surface)
-    return () => { observer.disconnect(); motion.destroy(); window.clearTimeout(sharpen) }
+    return () => { observer.disconnect(); window.clearTimeout(sharpen) }
   }, [seedSample, redrawPrints, redraw])
 
   // The render loop. Resting glitter lives in a cached layer that is only extended
@@ -682,13 +757,9 @@ export function CraftTable() {
       }
       if (s.pending.length) {
         s.pending = land(s.pending, s.flakes, now)
-        if (s.flakes.length > MAX_FLAKES) {
-          // Drop the oldest loose glitter first, like it fell on the floor.
-          const excess = s.flakes.length - MAX_FLAKES
-          let removed = 0
-          s.flakes = s.flakes.filter((f) => f.stuck || removed++ >= excess)
-          s.baseStale = true
-        }
+        const capped = capFlakes(s.flakes, MAX_FLAKES, FLAKE_SWEEP)
+        s.flakes = capped.flakes
+        if (capped.evicted) s.baseStale = true
         s.dirty = true
       }
       if (s.pendingSequins.length) {
@@ -715,8 +786,9 @@ export function CraftTable() {
       }
       const wet = s.glue.some((g) => now - g.points[g.points.length - 1].t < GLUE_DRY_MS)
       const twinkle = !reduced && !s.light && now - s.lastActive < SHIMMER_MS && (s.flakes.length > 0 || s.sequins.length > 0)
-      // Keep ticking only while something is changing.
-      const busy = s.dirty || s.pouring || s.pending.length > 0 || s.pendingSequins.length > 0 || tilting
+      // Keep ticking only while something is changing. Nothing is drawn out of view,
+      // so a pending redraw waits for the observer to wake the loop on the way back.
+      const busy = (s.visible && s.dirty) || s.pouring || s.pending.length > 0 || s.pendingSequins.length > 0 || tilting
         || isRolling(s.poms) || pendingToolRef.current !== null || (s.visible && (wet || twinkle))
       if (busy) frame = requestAnimationFrame(render)
       if (!s.visible) return
@@ -881,12 +953,12 @@ export function CraftTable() {
     }
   }
 
-  const scissorsFlight = () => rootRef.current?.querySelector<HTMLElement>('[data-kollaz-flight="scissors"] .kollaz-scissors') ?? null
+  const scissorsFlight = () => portal?.querySelector<HTMLElement>('[data-kollaz-flight="scissors"] .kollaz-scissors') ?? null
 
   /** A quick press and release, for tools that act once per tap. */
   const tap = (clientX: number, clientY: number) => {
     updateTool(clientX, clientY, true)
-    window.setTimeout(() => updateTool(clientX, clientY, false), 140)
+    later(() => updateTool(clientX, clientY, false), 140)
   }
 
   const selectTool = (next: Exclude<Tool, null>, event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -903,22 +975,24 @@ export function CraftTable() {
   }
 
   const inkStamp = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    if (toolRef.current !== 'stamp') { say('Pick up the stamp, then press it on the ink pad.'); return }
+    if (toolRef.current !== 'stamp') { say(text.inkPadFirst); return }
     sim.current.ink = 1
     setInk(1)
     setNotice(null)
     setPadPressed(true)
-    window.setTimeout(() => setPadPressed(false), 500)
+    later(() => setPadPressed(false), 500)
     if (event.detail !== 0) tap(event.clientX, event.clientY)
   }
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     // One hand at a time: a second finger would start its own stroke and hijack the first.
     if (!event.isPrimary) return
+    const t = toolRef.current
+    // Only the main button works a tool; the others belong to the browser.
+    if (t && event.button !== 0) return
     const s = sim.current
     const p = toLogical(event.clientX, event.clientY)
     s.pointer = { x: p.x, y: p.y, speed: 0, t: event.timeStamp }
-    const t = toolRef.current
     if (!t) {
       bumpGooglyEyes(1.2)
       nudgePompoms(s.poms, s.rng, 1.4)
@@ -965,7 +1039,7 @@ export function CraftTable() {
       setNextPom(next)
       redraw()
     } else if (t === 'stamp') {
-      if (s.ink <= 0) { say('The stamp is dry. Press it on the ink pad.'); return }
+      if (s.ink <= 0) { say(text.stampDry); return }
       const print: Print = { x: p.x, y: p.y, angle: (s.rng() - 0.5) * 0.2, level: s.ink, seed: Math.floor(s.rng() * 1e6), epoch: s.cuts.length, seq: ++s.seq, order: s.order }
       s.prints.push(print)
       printStamp(inkRef.current!.getContext('2d')!, inkScale(), print)
@@ -1134,7 +1208,8 @@ export function CraftTable() {
 
   /**
    * Cut the pieces lying under the blades. Each piece is cut in its own frame; the part
-   * inside the cut becomes a new loose piece that keeps the parent's snapshot and eyes.
+   * inside the cut becomes a new loose piece that keeps its share of the parent's
+   * snapshot and eyes.
    */
   const cutPieces = (path: Point[]): { fresh: number[] } | null => {
     const s = sim.current
@@ -1153,7 +1228,10 @@ export function CraftTable() {
       const keep = result.sheet
       if (keep.outer.length) {
         const box = padBox(keep.outer)
-        next.push({ ...piece, shape: keep, box, eyes: eyesInFrame.filter((e) => !inCut(e)).map((e) => ({ ...e, x: e.x - box.x, y: e.y - box.y })) })
+        next.push({
+          ...piece, ...cropArt(piece, box), shape: keep, box,
+          eyes: eyesInFrame.filter((e) => !inCut(e)).map((e) => ({ ...e, x: e.x - box.x, y: e.y - box.y })),
+        })
         coverWith({ ...piece, shape: keep }, piece.dx, piece.dy)
       } else {
         uncover([piece.id])
@@ -1161,7 +1239,7 @@ export function CraftTable() {
       const box = padBox(result.piece.outer)
       const id = ++s.pieceId
       const cutOut: Piece = {
-        ...piece, id, shape: result.piece, box, glued: false,
+        ...piece, ...cropArt(piece, box), id, shape: result.piece, box, glued: false,
         eyes: eyesInFrame.filter(inCut).map((e) => ({ ...e, x: e.x - box.x, y: e.y - box.y })),
       }
       next.push(cutOut)
@@ -1226,7 +1304,7 @@ export function CraftTable() {
         const laid = list.find((p) => p.id === id)
         return laid ? [...list.filter((p) => p.id !== id), { ...laid, ...at, glued }] : list
       })
-      if (glued) say('Stuck down. The glue under it was still purple.')
+      if (glued) say(text.stuckDown)
     }
     target.addEventListener('pointermove', move)
     target.addEventListener('pointerup', up)
@@ -1295,7 +1373,7 @@ export function CraftTable() {
     paintLaidTape(inkRef.current!.getContext('2d')!, inkScale(), laid)
     if (pinnedPieces.length) setPieces((list) => list.map((p) => (pinnedPieces.includes(p.id) ? { ...p, glued: true } : p)))
     if (pinnedPipes.length) setPipes((list) => list.map((p) => (pinnedPipes.includes(p.id) ? { ...p, glued: true } : p)))
-    if (pinnedPieces.length || pinnedPipes.length) say('Taped down.')
+    if (pinnedPieces.length || pinnedPipes.length) say(text.tapedDown)
   }
 
   // ---------- Pipe cleaners ----------
@@ -1350,7 +1428,7 @@ export function CraftTable() {
       target.removeEventListener('pointercancel', up)
       const glued = pipeSticks(pipe, at.dx, at.dy, e.timeStamp)
       setPipes((list) => list.map((p) => (p.id === id ? { ...p, ...at, glued } : p)))
-      if (glued) say('Stuck down. The glue under it was still purple.')
+      if (glued) say(text.stuckDown)
     }
     target.addEventListener('pointermove', move)
     target.addEventListener('pointerup', up)
@@ -1358,17 +1436,19 @@ export function CraftTable() {
   }
 
   const tipOff = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (!hasLoose || tipping) return
     const s = sim.current
     s.tipUntil = event.timeStamp + 1300
     redraw()
     setTipping(true)
     bumpGooglyEyes(2)
-    window.setTimeout(() => setTipping(false), 900)
+    say(text.tippedOff)
+    later(() => setTipping(false), 900)
     // Loose pieces slide off the mat with everything else.
     const falling = piecesRef.current.filter((p) => !p.glued).map((p) => p.id)
     setPieces((list) => list.map((p) => (p.glued ? p : { ...p, falling: true })))
     setPipes((list) => list.map((p) => (p.glued ? p : { ...p, falling: true })))
-    window.setTimeout(() => {
+    later(() => {
       uncover(falling)
       setPieces((list) => list.filter((p) => !p.falling))
       setPipes((list) => list.filter((p) => !p.falling))
@@ -1399,6 +1479,7 @@ export function CraftTable() {
     setEyes([])
     setHasLoose(false)
     setSheet((current) => ({ color, seed: current.seed + 1, shape: freshSheet(current.seed + 1) }))
+    say(text.sheetChanged)
   }
 
   // Dragging moves the element directly and commits to state once, on release,
@@ -1436,8 +1517,9 @@ export function CraftTable() {
 
   return (
     <section
-      className="kollaz"
-      aria-label="Craft table"
+      className={className ? `kollaz ${className}` : 'kollaz'}
+      style={style}
+      aria-label={text.table}
       ref={rootRef}
       onPointerMove={(event) => {
         const s = sim.current
@@ -1455,6 +1537,11 @@ export function CraftTable() {
       <div
         className={`kollaz-mat${tool ? ' kollaz-mat--holding' : ''}${tipping ? ' kollaz-mat--tipping' : ''}`}
         ref={surfaceRef}
+        role="group"
+        aria-label={text.mat}
+        aria-describedby={instructionsId}
+        // Anything above the table may have moved it since the last scroll or resize.
+        onPointerDownCapture={() => { rectRef.current = null }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endStroke}
@@ -1526,82 +1613,85 @@ export function CraftTable() {
         <span className="kollaz-mat__edge" />
       </div>
 
-      <div className="kollaz-caddy" role="group" aria-label="Craft caddy">
+      <div className="kollaz-caddy" role="group" aria-label={text.toolGroup}>
         <div className="kollaz-caddy__row">
         <button type="button" className="kollaz-well kollaz-well--long" data-kollaz-slot="glue"
-          aria-pressed={tool === 'glue'} aria-label="Glue stick" onClick={(event) => selectTool('glue', event)}>
+          aria-pressed={tool === 'glue'} aria-label={text.glue} onClick={(event) => selectTool('glue', event)}>
           <GlueStickBody />
         </button>
         <button type="button" className="kollaz-well kollaz-well--scissors" data-kollaz-slot="scissors"
-          aria-pressed={tool === 'scissors'} aria-label="Scissors" onClick={(event) => selectTool('scissors', event)}>
+          aria-pressed={tool === 'scissors'} aria-label={text.scissors} onClick={(event) => selectTool('scissors', event)}>
           <ScissorsBody />
         </button>
         <button type="button" className="kollaz-well kollaz-well--texta" data-kollaz-slot="marker"
-          aria-pressed={tool === 'marker'} aria-label="Texta" onClick={(event) => selectTool('marker', event)}>
+          aria-pressed={tool === 'marker'} aria-label={text.texta} onClick={(event) => selectTool('marker', event)}>
           <MarkerBody />
         </button>
         <button type="button" className={`kollaz-well kollaz-well--pipes${tool === 'pipes' ? ' is-picked' : ''}`} data-kollaz-slot="pipes"
-          aria-pressed={tool === 'pipes'} aria-label="Pipe cleaners" onClick={(event) => selectTool('pipes', event)}>
+          aria-pressed={tool === 'pipes'} aria-label={text.pipeCleaners} onClick={(event) => selectTool('pipes', event)}>
           <PipeBundle />
         </button>
         {GLITTERS.map((g, i) => (
           <button key={g.id} type="button" className="kollaz-well kollaz-well--tube" data-kollaz-slot={`glitter-${i}`}
-            aria-pressed={glitterIndex === i} aria-label={`${g.label} glitter`} onClick={(event) => selectTool(`glitter-${i}`, event)}>
+            aria-pressed={glitterIndex === i} aria-label={text[`${g.id}Glitter` as const]} onClick={(event) => selectTool(`glitter-${i}`, event)}>
             <ShakerBody index={i} />
           </button>
         ))}
         </div>
         <div className="kollaz-caddy__row">
         <button type="button" className="kollaz-well kollaz-well--round kollaz-well--sequins" data-kollaz-slot="sequins"
-          aria-pressed={tool === 'sequins'} aria-label="Holographic sequins" onClick={(event) => selectTool('sequins', event)}>
+          aria-pressed={tool === 'sequins'} aria-label={text.sequins} onClick={(event) => selectTool('sequins', event)}>
           <SequinTub />
         </button>
         <button type="button" className={`kollaz-well kollaz-well--round kollaz-well--eyes${tool === 'eyes' ? ' is-picked' : ''}`} data-kollaz-slot="eyes"
-          aria-pressed={tool === 'eyes'} aria-label="Googly eyes" onClick={(event) => selectTool('eyes', event)}>
+          aria-pressed={tool === 'eyes'} aria-label={text.googlyEyes} onClick={(event) => selectTool('eyes', event)}>
           <EyePot />
         </button>
         <button type="button" className={`kollaz-well kollaz-well--round kollaz-well--poms${tool === 'pompoms' ? ' is-picked' : ''}`} data-kollaz-slot="pompoms"
-          aria-pressed={tool === 'pompoms'} aria-label="Pom poms" onClick={(event) => selectTool('pompoms', event)}>
+          aria-pressed={tool === 'pompoms'} aria-label={text.pomPoms} onClick={(event) => selectTool('pompoms', event)}>
           <PomCup />
         </button>
         <button type="button" className="kollaz-well kollaz-well--round kollaz-well--stamp" data-kollaz-slot="stamp"
-          aria-pressed={tool === 'stamp'} aria-label="Rubber stamp" onClick={(event) => selectTool('stamp', event)}>
+          aria-pressed={tool === 'stamp'} aria-label={text.stamp} onClick={(event) => selectTool('stamp', event)}>
           <StampBody ink={ink} />
         </button>
-        <button type="button" className="kollaz-well kollaz-well--pad" aria-label="Ink pad" onClick={inkStamp}>
+        <button type="button" className="kollaz-well kollaz-well--pad" aria-label={text.inkPad} onClick={inkStamp}>
           <InkPad pressed={padPressed} />
         </button>
         <button type="button" className="kollaz-well kollaz-well--round kollaz-well--tape" data-kollaz-slot="tape"
-          aria-pressed={tool === 'tape'} aria-label="Masking tape" onClick={(event) => selectTool('tape', event)}>
+          aria-pressed={tool === 'tape'} aria-label={text.tape} onClick={(event) => selectTool('tape', event)}>
           <TapeRoll />
         </button>
         </div>
       </div>
 
-      <div className="kollaz-utility-bar">
-        <span className="kollaz-utility-label">New sheet</span>
-        <div className="kollaz-paper-stack" role="group" aria-label="New sheet of paper">
+      <div className="kollaz-utility-bar" role="group" aria-label={text.controlGroup}>
+        <span className="kollaz-utility-label">{text.newSheet}</span>
+        <div className="kollaz-paper-stack" role="group" aria-label={text.paperGroup}>
           {PAPERS.map((paper, i) => (
             <button
               key={paper.id}
               type="button"
               className="kollaz-paper-chip"
               style={{ '--paper': paper.color, '--tilt': `${[-4, 3, -2, 5, -3][i]}deg` } as CSSProperties}
-              aria-label={`New ${paper.label.toLowerCase()} sheet`}
-              title={paper.label}
+              aria-label={text[`${paper.id}Sheet` as const]}
+              title={text[`${paper.id}Sheet` as const]}
               onClick={() => newSheet(paper.color)}
             />
           ))}
         </div>
         <span className="kollaz-utility-divider" />
-        <button type="button" className="kollaz-utility-button" onClick={tipOff} disabled={!hasLoose || tipping}>
-          Tip off loose bits
+        {/* aria-disabled rather than disabled: a button that disables itself under the
+            keyboard would drop focus to the page. tipOff does nothing when it can't. */}
+        <button type="button" className="kollaz-utility-button" onClick={tipOff} aria-disabled={!hasLoose || tipping}>
+          {text.tipOff}
         </button>
       </div>
 
-      <p className="kollaz-table-hint" aria-live="polite">{notice ?? toolHint(tool, ink)}</p>
+      <p className="kollaz-table-hint" aria-live="polite">{notice ?? toolHint(tool, ink, text)}</p>
+      <p className="kollaz-offscreen" id={instructionsId}>{text.instructions}</p>
 
-      {Object.entries(ANCHORS).map(([id, anchor]) => (
+      {portal ? createPortal(Object.entries(ANCHORS).map(([id, anchor]) => (
         <div className="kollaz-tool-flight" data-kollaz-flight={id} key={id} aria-hidden="true" hidden>
           <span
             className="kollaz-flight-body"
@@ -1619,7 +1709,7 @@ export function CraftTable() {
             {id === 'pipes' && <PipeInHand color={nextPipe} />}
           </span>
         </div>
-      ))}
+      )), portal) : null}
     </section>
   )
 }

@@ -2,19 +2,21 @@
  * Kollaz — a tactile craft table.
  *
  * Every rule is scoped to kollaz classes; nothing here styles the page. The
- * table, the torn paper and the googly eyes each work on their own.
+ * table, the torn paper and the googly eyes each work on their own. The tools in
+ * hand are portalled out of the table, so they get the same base rules.
  */
 
 .kollaz,
 .kollaz-googly-eye,
-.kollaz-paper {
+.kollaz-paper,
+.kollaz-tool-portal {
   --ink-soft: #696b69;
   --glue-purple: #7a4cc6;
   --contact: drop-shadow(0 1px .65px rgba(29, 30, 29, .38)) drop-shadow(1px 2px 1.5px rgba(29, 30, 29, .16));
 }
 
 /* Zero specificity, so every component rule below still wins. */
-:where(.kollaz, .kollaz-googly-eye, .kollaz-paper) :where(*, *::before, *::after) { box-sizing: border-box; }
+:where(.kollaz, .kollaz-googly-eye, .kollaz-paper, .kollaz-tool-portal) :where(*, *::before, *::after) { box-sizing: border-box; }
 
 :where(.kollaz) :where(button, canvas) { -webkit-tap-highlight-color: transparent; }
 :where(.kollaz) :where(button) { font: inherit; color: inherit; }
@@ -109,6 +111,18 @@
   cursor: grabbing;
   transform: translate(-50%, calc(-50% - 3px)) scale(1.04);
   filter: drop-shadow(3px 8px 5px rgba(0, 0, 0, 0.22));
+}
+
+.kollaz-offscreen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .kollaz-table-hint {
@@ -350,9 +364,9 @@
   font-weight: 620;
   cursor: pointer;
 }
-.kollaz-utility-button:disabled { opacity: .32; cursor: default; }
+.kollaz-utility-button[aria-disabled="true"] { opacity: .32; cursor: default; }
 @media (hover: hover) and (pointer: fine) {
-  .kollaz-utility-button:not(:disabled):hover { background: rgba(255, 255, 255, .72); color: #242624; }
+  .kollaz-utility-button:not([aria-disabled="true"]):hover { background: rgba(255, 255, 255, .72); color: #242624; }
 }
 
 /* ---------- Glue stick ---------- */
@@ -972,6 +986,10 @@
    The shared motion engine hides a docked tool with [hidden] and marks one
    pressed onto the paper with [data-state="contact"]. */
 
+/* Portalled out of the table, and boxless, so the host page's layout never sees
+   it: the flights inside are fixed to the viewport. */
+.kollaz-tool-portal { display: contents; pointer-events: none; }
+
 .kollaz-tool-flight[hidden] { display: none; }
 
 .kollaz-tool-flight {
@@ -1050,7 +1068,8 @@
 .kollaz-tool-flight .kollaz-scissors { --open: 10deg; }
 
 @media (prefers-reduced-motion: reduce) {
-  .kollaz *, .kollaz *::before, .kollaz *::after {
+  .kollaz *, .kollaz *::before, .kollaz *::after,
+  .kollaz-tool-portal *, .kollaz-tool-portal *::before, .kollaz-tool-portal *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

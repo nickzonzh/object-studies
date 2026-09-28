@@ -41,7 +41,6 @@ const eyes = new Set<EyeState>()
 let frame = 0
 let last = 0
 let pointer: { x: number; y: number } | null = null
-let listening = false
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver((entries) => {
@@ -109,23 +108,41 @@ function tick(time: number) {
   if (awake.some((s) => s.still < SLEEP_AFTER)) frame = requestAnimationFrame(tick)
 }
 
-function listen() {
-  if (listening) return
-  listening = true
-  window.addEventListener('scroll', () => wake(), { passive: true, capture: true })
-  window.addEventListener('resize', () => wake(), { passive: true })
-  window.addEventListener('pointermove', (event) => {
-    pointer = { x: event.clientX, y: event.clientY }
-    // Anything under the pointer may be moving an eye (a drag), so check them all.
-    wake()
-  }, { passive: true })
-  window.addEventListener(BUMP_EVENT, (event) => {
-    const strength = (event as CustomEvent<number>).detail ?? 1
-    for (const s of eyes) {
-      s.impulse = { x: (Math.random() - 0.5) * 9 * strength, y: -(2 + Math.random() * 5) * strength }
-    }
-    wake()
-  })
+const onScrollOrResize = () => wake()
+
+function onPointerMove(event: PointerEvent) {
+  pointer = { x: event.clientX, y: event.clientY }
+  // Anything under the pointer may be moving an eye (a drag), so check them all.
+  wake()
+}
+
+function onBump(event: Event) {
+  const strength = (event as CustomEvent<number>).detail ?? 1
+  for (const s of eyes) {
+    s.impulse = { x: (Math.random() - 0.5) * 9 * strength, y: -(2 + Math.random() * 5) * strength }
+  }
+  wake()
+}
+
+// The page is only listened to while at least one eye is mounted.
+function register(state: EyeState) {
+  eyes.add(state)
+  if (eyes.size > 1) return
+  window.addEventListener('scroll', onScrollOrResize, { passive: true, capture: true })
+  window.addEventListener('resize', onScrollOrResize, { passive: true })
+  window.addEventListener('pointermove', onPointerMove, { passive: true })
+  window.addEventListener(BUMP_EVENT, onBump)
+}
+
+function unregister(state: EyeState) {
+  eyes.delete(state)
+  if (eyes.size) return
+  window.removeEventListener('scroll', onScrollOrResize, { capture: true })
+  window.removeEventListener('resize', onScrollOrResize)
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener(BUMP_EVENT, onBump)
+  cancelAnimationFrame(frame)
+  frame = 0
 }
 
 export function GooglyEye({ size = 48, track = false, wobble = 1, className = '', style }: GooglyEyeProps) {
@@ -133,16 +150,15 @@ export function GooglyEye({ size = 48, track = false, wobble = 1, className = ''
   const pupilRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
-    listen()
     const state: EyeState = {
       eye: eyeRef.current!, pupilEl: pupilRef.current!, track, wobble,
       pupil: restingPupil(LIMIT), prev: null, impulse: { x: 0, y: 0 }, still: 0, visible: true, placed: '',
     }
-    eyes.add(state)
+    register(state)
     observer?.observe(state.eye)
     wake()
     return () => {
-      eyes.delete(state)
+      unregister(state)
       observer?.unobserve(state.eye)
     }
   }, [track, wobble])
