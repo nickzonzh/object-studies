@@ -28,10 +28,13 @@
   height: 100%;
   display: block;
   touch-action: pan-y;
+}
+
+.keramos-vase--draggable .keramos-vase__canvas {
   cursor: grab;
 }
 
-.keramos-vase__canvas:active {
+.keramos-vase--draggable .keramos-vase__canvas:active {
   cursor: grabbing;
 }
 

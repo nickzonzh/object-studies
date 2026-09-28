@@ -57,7 +57,14 @@ MIT. React 19 and a browser with WebGL2. No other runtime dependency beyond
 | `onReady` | `() => void` | | Called when a newly painted design is first on screen. |
 
 A piece sizes itself to its container's width and keeps its own proportions.
-To size one by height instead, give it `height` and `width: auto` in your CSS.
+To size one by height instead, set its width from the height and the piece's
+`--keramos-aspect` (width over height), so it still fits a narrow container:
+
+```css
+.bench .keramos-vase {
+  width: min(100%, calc(540px * var(--keramos-aspect)));
+}
+```
 
 ```tsx
 <div className="shelf">

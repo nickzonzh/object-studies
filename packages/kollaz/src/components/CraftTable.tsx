@@ -831,6 +831,10 @@ export function CraftTable() {
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      // Escape belongs to the table only while it is in use: focused, or the hand is over it.
+      // A mouse user's focus sits on the page, so hovering has to count too.
+      const root = rootRef.current
+      if (!root || !(root.contains(event.target as Node) || root.matches(':hover'))) return
       motionRef.current?.dockAll()
       setTool(null)
     }

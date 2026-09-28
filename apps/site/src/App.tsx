@@ -1,7 +1,7 @@
 import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, type FrameMat, type FrameVariant, frameVariants } from 'korniza'
-import { Vase, type ShapeId, type StyleId } from 'keramos'
+import { Vase, type GreekPaletteId, type IkarosPaletteId, type ShapeId, type StyleId } from 'keramos'
 import { CraftTable } from 'kollaz'
 import { type ReactNode, useState } from 'react'
 
@@ -40,7 +40,7 @@ export function App() {
           id="kimolia"
           number="01"
           name="Kimolia"
-          greek="κιμωλία — chalk"
+          greek="κιμωλία, chalk"
           summary="A slate chalkboard in an oak frame. Textured chalk that catches the grain, and a felt duster that lifts rather than deletes."
         >
           <Chalkboard persistence={{ key: 'object-studies:kimolia' }} />
@@ -50,7 +50,7 @@ export function App() {
           id="melani"
           number="02"
           name="Melani"
-          greek="μελάνι — ink"
+          greek="μελάνι, ink"
           summary="An aluminium-framed whiteboard. Four markers and an eraser wait in the tray; the ink pools, streaks and ghosts like the real thing."
         >
           <Whiteboard persistence={{ key: 'object-studies:melani' }} />
@@ -60,7 +60,7 @@ export function App() {
           id="korniza"
           number="03"
           name="Korniza"
-          greek="κορνίζα — frame"
+          greek="κορνίζα, frame"
           summary="Six dimensional frames for images or any React content, with an optional bevelled mat and glazing, lit by your pointer."
         >
           <KornizaGallery />
@@ -78,7 +78,7 @@ export function App() {
           id="keramos"
           number="04"
           name="Keramos"
-          greek="κέραμος — potter's clay"
+          greek="κέραμος, potter's clay"
           summary="Hand-painted Greek pottery, glazed and lit by your pointer. Every seed paints a different piece, stroke by stroke, in the Rhodian, black-figure or red-figure tradition. Drag a piece to turn it."
         >
           <KeramosBench />
@@ -88,7 +88,7 @@ export function App() {
           id="kollaz"
           number="05"
           name="Kollaz"
-          greek="κολάζ — collage"
+          greek="κολάζ, collage"
           summary="A craft table. Purple glue that dries clear, glitter that only sticks while it is wet, scissors that cut everything under the blades, tape, pom poms and googly eyes."
         >
           <CraftTable />
@@ -134,14 +134,15 @@ function Study({ id, number, name, greek, summary, children }: StudyProps) {
   )
 }
 
-type Piece = { shape: ShapeId; style: StyleId; palette: string; seed: number; label: string }
+// `angle` poses the still: a vessel turned a little to show its handles, a plate hung level.
+type Piece = { shape: ShapeId; style: StyleId; palette: IkarosPaletteId | GreekPaletteId; seed: number; angle: number; label: string }
 
 // One of each tradition to pick from; the chosen piece is shown live on the bench.
 const PIECES: Piece[] = [
-  { shape: 'rhodos', style: 'ikaros', palette: 'cobalt-gold', seed: 42, label: 'Rhodos bottle, cobalt and gold' },
-  { shape: 'plate', style: 'ikaros', palette: 'folk', seed: 4, label: 'Wall plate, folk' },
-  { shape: 'amphora', style: 'black-figure', palette: 'attic', seed: 3, label: 'Neck amphora, black-figure' },
-  { shape: 'lekythos', style: 'red-figure', palette: 'attic', seed: 6, label: 'Lekythos, red-figure' },
+  { shape: 'rhodos', style: 'ikaros', palette: 'cobalt-gold', seed: 42, angle: 0.2, label: 'Rhodos bottle, cobalt and gold' },
+  { shape: 'plate', style: 'ikaros', palette: 'folk', seed: 4, angle: 0, label: 'Wall plate, folk' },
+  { shape: 'amphora', style: 'black-figure', palette: 'attic', seed: 3, angle: 0.2, label: 'Neck amphora, black-figure' },
+  { shape: 'lekythos', style: 'red-figure', palette: 'attic', seed: 6, angle: -0.35, label: 'Lekythos, red-figure' },
 ]
 
 function KeramosBench() {
@@ -163,7 +164,7 @@ function KeramosBench() {
       <div className="site-keramos-picks" role="group" aria-label="Pieces">
         {PIECES.map((p, index) => (
           <button key={p.label} type="button" className="site-keramos-pick" aria-pressed={index === chosen} aria-label={p.label} onClick={() => choose(index)}>
-            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} draggable={false} angle={p.shape === 'lekythos' ? -0.35 : 0.2} />
+            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} draggable={false} angle={p.angle} />
           </button>
         ))}
       </div>
