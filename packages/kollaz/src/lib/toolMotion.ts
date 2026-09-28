@@ -49,15 +49,16 @@ export function leanToward(current: number, dx: number, dy: number, offset: numb
  * Binds the shared motion engine to the caddy. A tool's tip sits exactly on the
  * pointer (no follow lag, and the lean is eased before it gets here), pickups and
  * put-backs fly for 180ms, and a tool that is not in hand is picked up by the
- * first move that asks for it.
+ * first move that asks for it. The slots are under `root`; the flying copies are
+ * under `layer`, which is portalled out of the table.
  */
-export function createToolMotion(root: HTMLElement, anchors: Record<string, ToolAnchor>) {
+export function createToolMotion(root: HTMLElement, layer: HTMLElement, anchors: Record<string, ToolAnchor>) {
   const tools = Object.keys(anchors)
   const slot = (id: string) => root.querySelector<HTMLElement>(`[data-kollaz-slot="${id}"] > span`)!
   const motion = createMotion<string>({
     tools,
     elements: (id) => {
-      const flight = root.querySelector<HTMLElement>(`[data-kollaz-flight="${id}"]`)!
+      const flight = layer.querySelector<HTMLElement>(`[data-kollaz-flight="${id}"]`)!
       return {
         root: flight,
         rotation: flight.firstElementChild as HTMLElement,
