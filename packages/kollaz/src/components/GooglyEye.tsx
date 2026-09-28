@@ -51,8 +51,8 @@ const observer = typeof IntersectionObserver === 'undefined' ? null : new Inters
   wake()
 })
 
-function wake(onlyTracking = false) {
-  for (const state of eyes) if (!onlyTracking || state.track) state.still = 0
+function wake() {
+  for (const state of eyes) state.still = 0
   if (!frame) { last = 0; frame = requestAnimationFrame(tick) }
 }
 

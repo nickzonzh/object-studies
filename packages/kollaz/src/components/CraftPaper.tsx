@@ -44,9 +44,10 @@ export function CraftPaper({
 
   const tornKey = torn.join(',')
   const clips = useMemo(() => {
-    const { outer, inner } = tornOutline(box.width, box.height, seed, torn, roughness)
+    // Rebuilt from the key, so a fresh array naming the same edges doesn't re-tear the sheet.
+    const edges = (tornKey ? tornKey.split(',') : []) as Edge[]
+    const { outer, inner } = tornOutline(box.width, box.height, seed, edges, roughness)
     return { outer: toClipPath(outer, box.width, box.height), inner: toClipPath(inner, box.width, box.height) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [box.width, box.height, seed, tornKey, roughness])
 
   return (
