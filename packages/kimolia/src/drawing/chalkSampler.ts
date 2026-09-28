@@ -1,6 +1,11 @@
 import { seededRandom } from 'object-studies-core'
 import type { ChalkPoint, ChalkStamp } from './types.js'
 
+/** The stick's width follows the slate's size between these bounds. */
+export const CHALK_WIDTH = { min: 4.5, max: 7.5 }
+/** Distance between stamps, as a share of the stick's width. */
+export const CHALK_SPACING = 0.14
+
 export function pressureFor(pointerType: string, pressure: number) {
   return pointerType === 'pen' && Number.isFinite(pressure)
     ? Math.max(0, Math.min(1, pressure))
@@ -23,7 +28,7 @@ export function createChalkSampler(
   emit: (stamp: ChalkStamp) => void,
 ) {
   const next = seededRandom(seed)
-  const spacing = width * 0.14
+  const spacing = width * CHALK_SPACING
   // Per-stroke character, taken before any stamp consumes the sequence.
   const facet = ((34 + next() * 28) * Math.PI) / 180
   const squash = 0.66 + next() * 0.18

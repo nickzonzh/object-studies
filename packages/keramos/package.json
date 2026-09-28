@@ -1,0 +1,52 @@
+{
+  "name": "keramos",
+  "version": "0.0.0",
+  "description": "Hand-painted Greek pottery for React: glazed vessels and wall plates, painted stroke by stroke from a seed and rendered live in WebGL2.",
+  "license": "MIT",
+  "author": "Nick <nick@zonnioshunt.com.au>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickzonzh/object-studies.git",
+    "directory": "packages/keramos"
+  },
+  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/keramos#readme",
+  "bugs": "https://github.com/nickzonzh/object-studies/issues",
+  "keywords": [
+    "react",
+    "webgl",
+    "pottery",
+    "ceramics",
+    "skeuomorphic",
+    "component"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:package": "publint --strict && attw --pack --profile esm-only"
+  },
+  "dependencies": {
+    "object-studies-core": "^0.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

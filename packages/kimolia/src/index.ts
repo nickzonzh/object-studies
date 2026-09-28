@@ -3,8 +3,11 @@ export {
   type ChalkboardHandle,
   type ChalkboardProps,
 } from './components/Chalkboard/Chalkboard.js'
-export { defaultLabels, type ChalkboardLabels } from './labels.js'
-export { defaultChalkColors } from './drawing/chalkBrush.js'
+export {
+  defaultLabels,
+  type ChalkboardLabelOverrides,
+  type ChalkboardLabels,
+} from './labels.js'
 export { decodeStrokes } from './drawing/boardStorage.js'
 export type {
   ChalkColor,

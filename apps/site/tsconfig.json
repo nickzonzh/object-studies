@@ -7,7 +7,9 @@
       "object-studies-core": ["../../packages/core/src/index.ts"],
       "kimolia": ["../../packages/kimolia/src/index.ts"],
       "melani": ["../../packages/melani/src/index.ts"],
-      "korniza": ["../../packages/korniza/src/index.ts"]
+      "korniza": ["../../packages/korniza/src/index.ts"],
+      "keramos": ["../../packages/keramos/src/index.ts"],
+      "kollaz": ["../../packages/kollaz/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

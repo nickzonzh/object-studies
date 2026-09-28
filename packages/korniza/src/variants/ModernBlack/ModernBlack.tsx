@@ -1,8 +1,6 @@
 import { GalleryFrame, type VariantFrameProps } from '../../components/GalleryFrame.js'
-import { FrameBoards } from '../../components/layers.js'
-import '../../components/straight-grain.css'
-import './modern-black.css'
+import { modernBlackDecoration } from './decoration.js'
 
 export function ModernBlack(props: VariantFrameProps) {
-  return <GalleryFrame {...props} variant="modern-black" decoration={<FrameBoards />} />
+  return <GalleryFrame {...props} variant="modern-black" decoration={modernBlackDecoration} />
 }

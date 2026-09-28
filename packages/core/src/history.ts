@@ -9,9 +9,10 @@ export type HistoryState = {
 }
 
 export type GestureHistory<Stroke> = {
-  strokes: () => Stroke[]
+  /** The current drawing. Read-only: the history keeps changing it. */
+  strokes: () => readonly Stroke[]
   state: () => HistoryState
-  commit: (gesture: Stroke[]) => void
+  commit: (gesture: readonly Stroke[]) => void
   clear: () => void
   undo: () => void
   redo: () => void
@@ -36,10 +37,11 @@ export function createGestureHistory<Stroke>(
       canUndo: past.length > 0,
       canRedo: future.length > 0,
     }),
-    commit(gesture: Stroke[]) {
+    commit(gesture) {
       if (!gesture.length) return
-      past.push({ kind: 'draw', strokes: gesture })
-      strokes.push(...gesture)
+      const committed = [...gesture]
+      past.push({ kind: 'draw', strokes: committed })
+      strokes.push(...committed)
       future.length = 0
     },
     clear() {

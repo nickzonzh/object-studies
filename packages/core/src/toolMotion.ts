@@ -21,15 +21,22 @@ export type ToolMotionConfig<Id extends string> = {
   duration?: (id: Id, move: 'pickup' | 'dock') => number
 }
 
+/** `immediate` places the tool without animating. */
+export type ToolMotionOptions = { immediate?: boolean }
+
 export type ToolMotion<Id extends string> = {
   /** Lifts the tool out of its tray and waits there. */
-  ready: (id: Id, immediate?: boolean) => void
+  ready: (id: Id, options?: ToolMotionOptions) => void
   /** Animates a visible tool to a pose, as when a pointer enters the board. */
   arrive: (id: Id, pose: Pose) => void
   /** Follows a pose. `pressed` pins the position exactly under the pointer. */
-  move: (id: Id, pose: Pose, pressed?: boolean, immediate?: boolean) => void
-  dock: (id: Id, immediate?: boolean) => void
-  dockAll: (immediate?: boolean) => void
+  move: (
+    id: Id,
+    pose: Pose,
+    options?: ToolMotionOptions & { pressed?: boolean },
+  ) => void
+  dock: (id: Id, options?: ToolMotionOptions) => void
+  dockAll: (options?: ToolMotionOptions) => void
   destroy: () => void
 }
 
@@ -181,7 +188,7 @@ export function createToolMotion<Id extends string>(
   }
   const duration = (id: Id, move: 'pickup' | 'dock') =>
     config.duration?.(id, move) ?? (move === 'pickup' ? 160 : 190)
-  const dock = (id: Id, immediate = false) => {
+  const dock = (id: Id, { immediate = false }: ToolMotionOptions = {}) => {
     const flight = flights.get(id)!
     if (!flight.visible) return
     const pose = config.restPose(id, flight.elements)
@@ -206,7 +213,7 @@ export function createToolMotion<Id extends string>(
   reduced?.addEventListener('change', finishReduced)
 
   return {
-    ready(id, immediate = false) {
+    ready(id, { immediate = false } = {}) {
       const flight = flights.get(id)!
       const rest = config.restPose(id, flight.elements)
       const pose = config.readyPose?.(id, rest) ?? rest
@@ -231,6 +238,7 @@ export function createToolMotion<Id extends string>(
     },
     arrive(id, pose) {
       const flight = flights.get(id)!
+      flight.returning = false
       flight.contact = false
       state(flight, 'held')
       direct(flight, false)
@@ -240,8 +248,10 @@ export function createToolMotion<Id extends string>(
         place(flight, pose)
       } else animateTo(flight, pose, duration(id, 'pickup'), wake)
     },
-    move(id, pose, pressed = false, immediate = false) {
+    move(id, pose, { pressed = false, immediate = false } = {}) {
       const flight = flights.get(id)!
+      const returning = flight.returning
+      flight.returning = false
       flight.contact = pressed
       state(flight, pressed ? 'contact' : 'held')
       direct(flight, immediate || isReduced())
@@ -254,6 +264,10 @@ export function createToolMotion<Id extends string>(
         // Position is exact on contact; rotation keeps its material weight.
         place(flight, { ...pose, angle: flight.pose.angle })
         wake()
+      } else if (returning) {
+        // Caught mid put-back: retargeting the dock would hide the tool when it
+        // lands, so fly back out from wherever it has got to.
+        animateTo(flight, pose, duration(id, 'pickup'), wake)
       } else if (flight.animations.length) {
         // Retarget a pickup without restarting its clock as the pointer moves.
         place(flight, pose)
@@ -266,8 +280,8 @@ export function createToolMotion<Id extends string>(
       } else wake()
     },
     dock,
-    dockAll(immediate = false) {
-      for (const id of flights.keys()) dock(id, immediate)
+    dockAll(options) {
+      for (const id of flights.keys()) dock(id, options)
     },
     destroy() {
       disposed = true

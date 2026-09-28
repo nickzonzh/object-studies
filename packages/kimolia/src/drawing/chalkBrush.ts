@@ -1,11 +1,12 @@
 import { seededRandom } from 'object-studies-core'
 import type { ChalkColor, ChalkStamp } from './types.js'
 
+/** The stylesheet's defaults, for a page that has not loaded it. */
 export const defaultChalkColors: Record<ChalkColor, string> = {
-  white: '#f3eddc',
-  yellow: '#e8d991',
-  blue: '#a2c4d2',
-  pink: '#e0afb2',
+  white: '#f0ead8',
+  yellow: '#e2d288',
+  blue: '#9cbfcd',
+  pink: '#dfabaf',
 }
 
 export type ChalkBrushes = {

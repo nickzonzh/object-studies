@@ -109,3 +109,22 @@ test('images larger than the whole cache budget safely fall back to stroke repla
   assert.equal(allocated.length, 0)
   assert.equal(cache.restore(strokes), 0)
 })
+
+test('an image from another canvas size is never painted, and an empty canvas is not captured', () => {
+  const { main, cache } = board()
+  const a = stroke(1)
+  main.content = 'small'
+  cache.capture([a], true)
+  main.width = 1200
+  main.content = ''
+  assert.equal(cache.restore([a]), 0)
+  assert.equal(main.content, '')
+  main.content = 'large'
+  cache.capture([a])
+  main.content = ''
+  assert.equal(cache.restore([a]), 1)
+  assert.equal(main.content, 'large')
+  main.width = main.height = 0
+  cache.capture([a, stroke(2)])
+  assert.equal(cache.restore([a]), 0)
+})

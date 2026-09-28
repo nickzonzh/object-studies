@@ -13,7 +13,7 @@ import { UtilityButton } from './UtilityButton.js'
 import { useChalkboard } from '../../hooks/useChalkboard.js'
 import { applyMaterials } from '../../materials.js'
 import { copyTheme } from '../../theme.js'
-import { mergeLabels, type ChalkboardLabels } from '../../labels.js'
+import { mergeLabels, type ChalkboardLabelOverrides } from '../../labels.js'
 import type { DrawingStroke } from '../../drawing/types.js'
 import '../../styles/chalkboard.css'
 import '../../styles/timber.css'
@@ -33,7 +33,7 @@ export type ChalkboardHandle = {
 export type ChalkboardProps = {
   /** Controlled drawing. Pair with `onStrokesChange`. */
   strokes?: readonly DrawingStroke[]
-  /** Starting drawing for an uncontrolled board. */
+  /** Starting drawing for an uncontrolled board with nothing saved yet. */
   defaultStrokes?: readonly DrawingStroke[]
   onStrokesChange?: (strokes: readonly DrawingStroke[]) => void
   /** Off by default: opt in with a key to keep the drawing on the device. */
@@ -41,8 +41,8 @@ export type ChalkboardProps = {
   exportFileName?: string
   /** The built-in undo / redo / clear / save bar. */
   showControls?: boolean
-  labels?: Partial<ChalkboardLabels>
-  /** 0–1. How much old chalk haze the slate has kept. */
+  labels?: ChalkboardLabelOverrides
+  /** 0–1. How much old chalk haze the slate has kept. Overrides `--kimolia-wear`. */
   wear?: number
   /** Where the flying tools are portalled; a body-level element by default. */
   portalContainer?: HTMLElement | null
@@ -59,7 +59,7 @@ export function Chalkboard({
   exportFileName = 'kimolia-board.png',
   showControls = true,
   labels: labelOverrides,
-  wear = 0.35,
+  wear,
   portalContainer,
   className,
   style,
@@ -96,27 +96,22 @@ export function Chalkboard({
     onStrokesChange,
     persistence,
     exportFileName,
-    wear,
   })
 
   // The tool layer and its textures belong to the document, not to the render:
   // both are created here so the component renders identically on a server.
+  // The layer is always this board's own element, even inside a consumer's
+  // container: it carries the portal styles, and textures and theme are never
+  // written onto (or left behind on) somebody else's node.
   useEffect(() => {
     const root = boardRef.current!
     applyMaterials(root)
-    const mount = (node: HTMLElement) => {
-      applyMaterials(node)
-      copyTheme(root, node)
-      setPortal(node)
-    }
-    if (portalContainer) {
-      mount(portalContainer)
-      return
-    }
     const node = document.createElement('div')
     node.className = 'kimolia-tool-portal'
-    document.body.append(node)
-    mount(node)
+    ;(portalContainer ?? document.body).append(node)
+    applyMaterials(node)
+    copyTheme(root, node)
+    setPortal(node)
     return () => {
       node.remove()
       setPortal(null)
@@ -151,7 +146,11 @@ export function Chalkboard({
   return (
     <div
       className={className ? `kimolia ${className}` : 'kimolia'}
-      style={{ ...style, '--kimolia-wear': wear } as CSSProperties}
+      style={
+        wear === undefined
+          ? style
+          : ({ ...style, '--kimolia-wear': wear } as CSSProperties)
+      }
     >
       <div
         className="kimolia-board"
@@ -178,7 +177,7 @@ export function Chalkboard({
               className="kimolia-slate"
               ref={surfaceRef}
               tabIndex={0}
-              role="group"
+              role="application"
               aria-label={labels.surface}
               aria-busy={rendering}
               aria-describedby={instructionsId}

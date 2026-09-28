@@ -1,5 +1,5 @@
 import { createChalkBrushes } from './chalkBrush.js'
-import { createChalkSampler } from './chalkSampler.js'
+import { CHALK_WIDTH, createChalkSampler } from './chalkSampler.js'
 import { clipSegment } from './clip.js'
 import { createDusterSampler } from './dusterSampler.js'
 import { createDusterRenderer } from './dusterRenderer.js'
@@ -19,7 +19,7 @@ import {
 } from 'object-studies-core'
 
 export type DrawingSurfaceOptions = {
-  onChange: (state: HistoryState, strokes: DrawingStroke[]) => void
+  onChange: (state: HistoryState, strokes: readonly DrawingStroke[]) => void
   initial?: readonly DrawingStroke[]
   onBusy?: (busy: boolean) => void
   /**
@@ -40,12 +40,17 @@ export function createDrawingSurface(
   const duster = createDusterRenderer(canvas)
   let history = createGestureHistory(initial)
   const cache = createReplayCache<DrawingStroke>(canvas)
+  let waiting: (() => void)[] = []
   const replayTask = createCooperativeTask((busy) => {
     if (curtain) {
       curtain.hidden = !busy
       canvas.style.visibility = busy ? 'hidden' : ''
     }
     onBusy(busy)
+    if (busy) return
+    const done = waiting
+    waiting = []
+    for (const resolve of done) resolve()
   })
   // Whether the canvas holds a finished picture rather than a replay in progress.
   let complete = true
@@ -130,7 +135,10 @@ export function createDrawingSurface(
             ...common,
             tool: 'chalk',
             color: chosen,
-            width: Math.max(4.5, Math.min(7.5, width * 0.0075)),
+            width: Math.max(
+              CHALK_WIDTH.min,
+              Math.min(CHALK_WIDTH.max, width * 0.0075),
+            ),
           }
     gesture.push(active)
     sampler = makeSampler(active)
@@ -185,6 +193,14 @@ export function createDrawingSurface(
     state: () => history.state(),
     strokes: () => history.strokes(),
     isBusy: replayTask.isBusy,
+    /**
+     * Resolves when the current replay finishes or is cancelled. Another may
+     * already have started by then, so callers check `isBusy` again.
+     */
+    settled: () =>
+      replayTask.isBusy()
+        ? new Promise<void>((resolve) => waiting.push(resolve))
+        : Promise.resolve(),
     begin(
       chosen: DrawingTool,
       point: ChalkPoint,
