@@ -67,6 +67,16 @@ test('restored marks are a base drawing, with a fresh history and undoable Clear
   assert.equal(history.state().canUndo, false)
 })
 
+test('a committed gesture is copied, so the caller can reuse its array', () => {
+  const history = createGestureHistory<Mark>()
+  const gesture = [mark(1)]
+  history.commit(gesture)
+  gesture.push(mark(2))
+  history.undo()
+  history.redo()
+  assert.deepEqual(history.strokes(), [mark(1)])
+})
+
 const decode = (document: Record<string, unknown>): Mark[] => {
   if (!Array.isArray(document.marks)) throw new Error('Unsupported document')
   return document.marks.map((value: unknown) => {
@@ -179,4 +189,48 @@ test('storage failures stay non-fatal, and a full quota is not reported as block
     removeItem: () => {},
   }))
   assert.equal(broken.save([mark(1)]), 'unavailable')
+})
+
+test('another version loads only through migrate, and loading never rewrites it', () => {
+  const old = JSON.stringify({ version: 1, items: [mark(1)] })
+  const { entries, storage } = store(new Map([['study:test', old]]))
+  const seen: number[] = []
+  const board = createPersistence<Mark[]>({
+    key: 'study:test',
+    version: 2,
+    decode,
+    encode: (marks) => ({ marks }),
+    getStorage: () => storage,
+    migrate(document, fromVersion) {
+      seen.push(fromVersion)
+      return fromVersion === 1 ? { marks: document.items } : null
+    },
+  })
+  assert.deepEqual(board.load(), { value: [mark(1)], status: 'saved' })
+  assert.equal(entries.get('study:test'), old)
+  for (const raw of [
+    JSON.stringify({ version: 3, marks: [] }),
+    JSON.stringify({ version: '1', items: [] }),
+    JSON.stringify({ version: 1, items: 'none' }),
+  ]) {
+    entries.set('study:test', raw)
+    assert.deepEqual(board.load(), { value: null, status: 'invalid' })
+  }
+  assert.deepEqual(seen, [1, 3, 1])
+})
+
+test('save stamps its own version and refuses numbers JSON would turn into null', () => {
+  const { entries, storage } = store()
+  const board = createPersistence<Mark[]>({
+    key: 'study:test',
+    version: 1,
+    decode,
+    encode: (marks) => ({ version: 9, marks }),
+    getStorage: () => storage,
+  })
+  assert.equal(board.save([mark(1)]), 'saved')
+  assert.equal(JSON.parse(entries.get('study:test')!).version, 1)
+  assert.throws(() => board.save([{ id: 1, length: NaN }]), /NaN/)
+  assert.throws(() => board.save([{ id: 1, length: -Infinity }]), /Infinity/)
+  assert.deepEqual(board.load(), { value: [mark(1)], status: 'saved' })
 })

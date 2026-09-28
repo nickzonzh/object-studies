@@ -1,6 +1,6 @@
 import {
   createPersistence, isNumberWithin, isRecord,
-  type PersistenceStatus, type StorageLike,
+  type LoadStatus, type SaveStatus, type StorageLike,
 } from 'object-studies-core'
 import type { Point, Stroke } from './strokes.js'
 
@@ -11,8 +11,8 @@ const MAX_POINTS = 40_000
 const COORDINATE_LIMIT = 10_000
 
 export type BoardPersistence = {
-  load: () => { strokes: readonly Stroke[] | null; status: PersistenceStatus }
-  save: (strokes: readonly Stroke[]) => PersistenceStatus
+  load: () => { strokes: readonly Stroke[] | null; status: LoadStatus }
+  save: (strokes: readonly Stroke[]) => SaveStatus
 }
 
 // Saved drawings are untrusted input: reject the whole document rather than

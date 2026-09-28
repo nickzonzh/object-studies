@@ -19,7 +19,7 @@ import {
 } from 'object-studies-core'
 
 export type DrawingSurfaceOptions = {
-  onChange: (state: HistoryState, strokes: DrawingStroke[]) => void
+  onChange: (state: HistoryState, strokes: readonly DrawingStroke[]) => void
   initial?: readonly DrawingStroke[]
   onBusy?: (busy: boolean) => void
   /**

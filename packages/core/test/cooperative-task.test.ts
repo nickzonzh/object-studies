@@ -105,3 +105,18 @@ test('a replacement operation owns the renderer and cannot be completed by an ol
   )
   assert.equal(task.isBusy(), false)
 })
+
+test('a job that throws stops, stops reporting busy and surfaces the error', () => {
+  const { task, scheduled, busy } = fixture()
+  function* failing(after: number) {
+    for (let i = 0; i < after; i++) yield
+    throw new Error('broken stroke')
+  }
+  assert.throws(() => task.run(failing(0)), /broken stroke/)
+  assert.equal(task.isBusy(), false)
+  task.run(failing(100))
+  assert.equal(task.isBusy(), true)
+  assert.throws(() => scheduled[0].callback(), /broken stroke/)
+  assert.equal(task.isBusy(), false)
+  assert.deepEqual(busy, [true, false])
+})

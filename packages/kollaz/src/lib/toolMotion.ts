@@ -80,18 +80,18 @@ export function createToolMotion(root: HTMLElement, anchors: Record<string, Tool
           motion.arrive(id, pose)
           return
         }
-        motion.ready(id, true)
+        motion.ready(id, { immediate: true })
       }
       // Working poses are committed in the render frame alongside the ink, so place them now.
-      motion.move(id, pose, working, working)
+      motion.move(id, pose, { pressed: working, immediate: working })
     },
     dock(id: string, animate = true) {
       held.delete(id)
-      motion.dock(id, !animate)
+      motion.dock(id, { immediate: !animate })
     },
     dockAll(animate = true) {
       held.clear()
-      motion.dockAll(!animate)
+      motion.dockAll({ immediate: !animate })
     },
     destroy() {
       held.clear()

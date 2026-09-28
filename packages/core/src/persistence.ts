@@ -1,23 +1,28 @@
 import { isRecord } from './validate.js'
 
-export type PersistenceStatus =
-  | 'idle'
-  | 'saving'
-  | 'saved'
-  | 'unavailable'
-  | 'invalid'
-  | 'full'
+/** `idle`: nothing is stored yet. `saved`: the stored document was restored. */
+export type LoadStatus = 'idle' | 'saved' | 'unavailable' | 'invalid'
+export type SaveStatus = 'saved' | 'unavailable' | 'full'
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 export type PersistenceOptions<T> = {
   key: string
-  /** Stamped onto every document; other versions are rejected on load. */
+  /** Stamped onto every document; other versions go through `migrate`. */
   version: number
   /** Throws for anything untrustworthy. Never returns partially valid data. */
   decode: (document: Record<string, unknown>) => T
-  /** Returns the document body; the version is added by the store. */
+  /** Returns the document body; the store's `version` overrides any of its own. */
   encode: (value: T) => Record<string, unknown>
+  /**
+   * Upgrades a document stamped with another version into the current shape,
+   * which is then decoded as usual. Return null (or throw) to reject it as
+   * invalid. Without it, every other version is invalid.
+   */
+  migrate?: (
+    document: Record<string, unknown>,
+    fromVersion: number,
+  ) => Record<string, unknown> | null
   /**
    * Defaults to `localStorage` where it exists. Returning null (or throwing)
    * reports `unavailable` instead of failing — SSR and blocked storage alike.
@@ -30,8 +35,9 @@ export type PersistenceOptions<T> = {
 }
 
 export type Persistence<T> = {
-  load: () => { value: T | null; status: PersistenceStatus }
-  save: (value: T) => PersistenceStatus
+  load: () => { value: T | null; status: LoadStatus }
+  /** Throws for NaN or Infinity, which JSON would silently store as null. */
+  save: (value: T) => SaveStatus
   remove: () => void
 }
 
@@ -47,6 +53,14 @@ const isQuotaExceeded = (error: unknown) => {
   )
 }
 
+// JSON writes NaN and Infinity as null, which decode would then reject, losing
+// the whole document on the next load. That is a bug in the caller's data.
+const finiteOnly = (name: string, value: unknown) => {
+  if (typeof value === 'number' && !Number.isFinite(value))
+    throw new Error(`Cannot save ${value} at "${name}": JSON stores it as null`)
+  return value
+}
+
 /**
  * Versioned, size-limited persistence for a single document. Stored data is
  * untrusted: a document that does not decode cleanly is reported as invalid
@@ -58,6 +72,7 @@ export function createPersistence<T>({
   version,
   decode,
   encode,
+  migrate,
   getStorage = () => (typeof localStorage === 'undefined' ? null : localStorage),
   maxCharacters = 2_000_000,
   withinLimits,
@@ -83,16 +98,22 @@ export function createPersistence<T>({
       try {
         if (raw.length > maxCharacters) throw new Error('Document is too large')
         const data: unknown = JSON.parse(raw)
-        if (!isRecord(data) || data.version !== version)
-          throw new Error('Unsupported document version')
-        return { value: decode(data), status: 'saved' }
+        if (!isRecord(data)) throw new Error('Unsupported document')
+        if (data.version === version)
+          return { value: decode(data), status: 'saved' }
+        const migrated =
+          migrate && typeof data.version === 'number'
+            ? migrate(data, data.version)
+            : null
+        if (!migrated) throw new Error('Unsupported document version')
+        return { value: decode(migrated), status: 'saved' }
       } catch {
         return { value: null, status: 'invalid' }
       }
     },
     save(value) {
       if (withinLimits && !withinLimits(value)) return 'full'
-      const raw = JSON.stringify({ version, ...encode(value) })
+      const raw = JSON.stringify({ ...encode(value), version }, finiteOnly)
       if (raw.length > maxCharacters) return 'full'
       try {
         const store = storage()
