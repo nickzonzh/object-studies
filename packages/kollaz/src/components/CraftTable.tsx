@@ -58,13 +58,16 @@ type Piece = {
 type Cut = { shape: Shape; path: Path2D }
 /** A pipe cleaner: a bent chenille stem, painted once and moved as a whole. */
 type Pipe = { id: number; points: Point[]; box: Box; art: HTMLCanvasElement; dx: number; dy: number; color: number; glued: boolean; falling: boolean }
-/** A texta line, drawn into the paper like a stamp print. */
-type Mark = { points: Point[]; epoch: number; seq: number }
+/**
+ * A texta line, drawn into the paper like a stamp print. Ink items keep the stacking
+ * `order` they were made at, so a piece laid over them later hides them.
+ */
+type Mark = { points: Point[]; epoch: number; seq: number; order: number }
 /**
  * Tape lives in the same layer as ink, in the order things happened. Loose glitter and
  * sequins it was laid over are pressed under it, and show faintly through the crepe.
  */
-type LaidTape = TapeStrip & { epoch: number; seq: number; under: { flakes: Flake[]; sequins: Flake[] } }
+type LaidTape = TapeStrip & { epoch: number; seq: number; order: number; under: { flakes: Flake[]; sequins: Flake[] } }
 const padBox = (shape: Shape): Box => {
   const b = bounds(shape)
   return { x: b.x - 2, y: b.y - 2, width: b.width + 4, height: b.height + 4 }
@@ -88,7 +91,7 @@ function makeStroke(points: GluePoint[]): GlueStroke {
   for (let i = 1; i < points.length; i++) path.lineTo(points[i].x, points[i].y)
   return { points, path, seed: strokeSeed++, epoch: 0, order: 0 }
 }
-type Print = { x: number; y: number; angle: number; level: number; seed: number; epoch: number; seq?: number }
+type Print = { x: number; y: number; angle: number; level: number; seed: number; epoch: number; seq?: number; order?: number }
 
 const EYE_SIZES = [44, 36, 50, 40]
 
@@ -143,6 +146,24 @@ const toolHint = (tool: Tool, ink: number) => {
  * of solid areas, and often pick up a faint arc from the edge of the rubber itself.
  */
 function printStamp(ctx: CanvasRenderingContext2D, k: number, print: Print) {
+  let cached = impressions.get(print)
+  if (!cached || cached.k !== k) {
+    cached = { k, canvas: stampImpression(k, print) }
+    impressions.set(print, cached)
+  }
+  const c = cached.canvas.width / 2
+  ctx.save()
+  ctx.translate(print.x * k, print.y * k)
+  ctx.rotate(print.angle)
+  ctx.globalAlpha = 0.94
+  ctx.drawImage(cached.canvas, -c, -c)
+  ctx.restore()
+}
+
+/** Each print's impression, built once per canvas scale: building one walks every pixel. */
+const impressions = new WeakMap<Print, { k: number; canvas: HTMLCanvasElement }>()
+
+function stampImpression(k: number, print: Print) {
   const size = Math.ceil(STAMP_RADIUS * 2.2 * k) + 4
   const canvas = document.createElement('canvas')
   canvas.width = size
@@ -183,12 +204,7 @@ function printStamp(ctx: CanvasRenderingContext2D, k: number, print: Print) {
     }
   }
   g.putImageData(image, 0, 0)
-  ctx.save()
-  ctx.translate(print.x * k, print.y * k)
-  ctx.rotate(print.angle)
-  ctx.globalAlpha = 0.94
-  ctx.drawImage(canvas, -c, -c)
-  ctx.restore()
+  return canvas
 }
 
 // Flakes pressed under tape no longer catch the moving light; they keep one resting look.
@@ -213,12 +229,12 @@ function replayMark(ctx: CanvasRenderingContext2D, k: number, mark: Mark) {
   for (let i = 1; i < pts.length; i++) paintMarkerSegment(ctx, k, pts[i - 1], pts[i])
 }
 
-/** Punch a cut out of a canvas layer. */
-function eraseCut(ctx: CanvasRenderingContext2D, k: number, cut: Cut) {
+/** Punch an outline out of a canvas layer: a cut, or a piece laid over the ink. */
+function erase(ctx: CanvasRenderingContext2D, k: number, path: Path2D) {
   ctx.save()
   ctx.setTransform(k, 0, 0, k, 0, 0)
   ctx.globalCompositeOperation = 'destination-out'
-  ctx.fill(cut.path)
+  ctx.fill(path)
   ctx.restore()
 }
 
@@ -352,12 +368,20 @@ export function CraftTable() {
     lastActive: 0,
   })
 
+  // The render loop sleeps while nothing on the table is changing. Anything that
+  // changes it calls redraw(), which marks it for drawing and wakes the loop.
+  const wakeRef = useRef(() => {})
+  const redraw = useCallback(() => {
+    sim.current.dirty = true
+    wakeRef.current()
+  }, [])
+
   useEffect(() => { toolRef.current = tool }, [tool])
   // Slits and live cuts only show on paper, so keep the sheet's outline handy for clipping.
   useEffect(() => {
     sim.current.sheetPath = shapePath2D(sheet.shape.outer)
-    sim.current.dirty = true
-  }, [sheet.shape])
+    redraw()
+  }, [sheet.shape, redraw])
 
   // The mat's position is cached and only re-measured after a scroll, resize or tilt,
   // so pointer moves never force a layout.
@@ -392,18 +416,24 @@ export function CraftTable() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     // Replay prints and cuts in order, so a cut only removes the ink that was there before it.
     // One layer, one timeline: prints, texta and tape in the order they were made,
-    // with each cut applied just before the first thing made after it.
+    // with each cut applied just before the first thing made after it. Pieces lying on
+    // the table work the same way: the ink sits above them in the page, so each piece
+    // punches out the ink made before it was laid. (Tape is translucent: it hides nothing.)
     const items = [
-      ...s.prints.map((print, i) => ({ seq: print.seq ?? i, epoch: print.epoch, draw: () => printStamp(ctx, k, print) })),
-      ...s.marks.map((mark) => ({ seq: mark.seq, epoch: mark.epoch, draw: () => replayMark(ctx, k, mark) })),
-      ...s.tapes.map((tape) => ({ seq: tape.seq, epoch: tape.epoch, draw: () => paintLaidTape(ctx, k, tape) })),
+      ...s.prints.map((print, i) => ({ seq: print.seq ?? i, epoch: print.epoch, order: print.order ?? 0, draw: () => printStamp(ctx, k, print) })),
+      ...s.marks.map((mark) => ({ seq: mark.seq, epoch: mark.epoch, order: mark.order, draw: () => replayMark(ctx, k, mark) })),
+      ...s.tapes.map((tape) => ({ seq: tape.seq, epoch: tape.epoch, order: tape.order, draw: () => paintLaidTape(ctx, k, tape) })),
     ].sort((a, b) => a.seq - b.seq)
+    const pieces = s.covers.filter((c) => c.id > 0).sort((a, b) => a.order - b.order)
     let erased = 0
+    let covered = 0
     for (const item of items) {
-      while (erased < item.epoch && erased < s.cuts.length) eraseCut(ctx, k, s.cuts[erased++])
+      while (erased < item.epoch && erased < s.cuts.length) erase(ctx, k, s.cuts[erased++].path)
+      while (covered < pieces.length && pieces[covered].order <= item.order) erase(ctx, k, shapePath2D(pieces[covered++].shape))
       item.draw()
     }
-    while (erased < s.cuts.length) eraseCut(ctx, k, s.cuts[erased++])
+    while (erased < s.cuts.length) erase(ctx, k, s.cuts[erased++].path)
+    while (covered < pieces.length) erase(ctx, k, shapePath2D(pieces[covered++].shape))
   }, [])
 
   /**
@@ -427,19 +457,37 @@ export function CraftTable() {
     return clip
   }, [])
 
-  /** Record where a piece now lies, on top of everything laid before it. */
+  /**
+   * After a piece is laid, lifted or moved: glitter, sequins and ink lying under a piece
+   * laid on top of them are hidden, and whatever a lifted piece was covering shows again.
+   * Pom poms, googly eyes and pipe cleaners are chunky enough to stay on top.
+   */
+  const restack = useCallback(() => {
+    const s = sim.current
+    const pieces = s.covers.filter((c) => c.id > 0).map((c) => ({ order: c.order, inside: hitMask(shapePath2D(c.shape), bounds(c.shape)) }))
+    for (const list of [s.flakes, s.sequins]) {
+      for (const f of list) f.hidden = pieces.some((p) => p.order > f.order && p.inside(f.x, f.y))
+    }
+    s.baseStale = true
+    redrawPrints()
+  }, [redrawPrints])
+
+  /** Record where a piece now lies, on top of everything laid before it. Returns its footprint. */
   const coverWith = (piece: Piece, dx: number, dy: number) => {
     const s = sim.current
     const shape = translateShape(piece.shape.outer, dx, dy)
     s.covers = [...s.covers.filter((c) => c.id !== piece.id), { id: piece.id, order: ++s.order, shape }]
     s.clipCache.clear()
-    s.dirty = true
+    restack()
+    redraw()
+    return shape
   }
   const uncover = (ids: number[]) => {
     const s = sim.current
     s.covers = s.covers.filter((c) => !ids.includes(c.id))
     s.clipCache.clear()
-    s.dirty = true
+    restack()
+    redraw()
   }
 
   /** Glue under something laid over it can no longer grab anything. */
@@ -522,8 +570,8 @@ export function CraftTable() {
     setHasLoose(true)
     s.nextPom = 1
     setNextPom(1)
-    s.dirty = true
-  }, [])
+    redraw()
+  }, [redraw])
 
   // Size canvases to the surface and keep them sharp.
   useEffect(() => {
@@ -542,24 +590,39 @@ export function CraftTable() {
       // canvases themselves give the mat: without the stylesheet that would grow forever.
       drawMat(matRef.current!, rect.width)
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      for (const canvas of [fxRef.current!, inkRef.current!, baseRef.current!]) {
+      const ink = inkRef.current!
+      // While a window is being dragged the ink is only stretched; it is replayed sharp
+      // once the size settles, since every stamp print is rebuilt at a new scale.
+      const was = ink.width ? document.createElement('canvas') : null
+      if (was) {
+        was.width = ink.width
+        was.height = ink.height
+        was.getContext('2d')!.drawImage(ink, 0, 0)
+      }
+      for (const canvas of [fxRef.current!, ink, baseRef.current!]) {
         canvas.width = Math.round(rect.width * dpr)
         canvas.height = Math.round(((rect.width * TABLE_HEIGHT) / TABLE_WIDTH) * dpr)
       }
-      redrawPrints()
+      window.clearTimeout(sharpen)
+      if (was) {
+        ink.getContext('2d')!.drawImage(was, 0, 0, ink.width, ink.height)
+        sharpen = window.setTimeout(redrawPrints, 150)
+      } else redrawPrints()
       sim.current.baseStale = true
-      sim.current.dirty = true
+      redraw()
     }
+    let sharpen = 0
     resize()
     const observer = new ResizeObserver(resize)
     observer.observe(surface)
-    return () => { observer.disconnect(); motion.destroy() }
-  }, [seedSample, redrawPrints])
+    return () => { observer.disconnect(); motion.destroy(); window.clearTimeout(sharpen) }
+  }, [seedSample, redrawPrints, redraw])
 
   // The render loop. Resting glitter lives in a cached layer that is only extended
   // as flakes land; each frame redraws glue, the cached layer, the handful of flakes
-  // catching the light, sequins and pom poms. Idle shimmer runs at 30 fps and the
-  // loop stops drawing entirely while the mat is scrolled out of view.
+  // catching the light, sequins and pom poms. Idle shimmer runs at 30 fps, and once
+  // nothing is changing (or the mat is scrolled out of view) the loop stops until
+  // redraw() wakes it.
   useEffect(() => {
     const canvas = fxRef.current!
     const ctx = canvas.getContext('2d')!
@@ -573,20 +636,27 @@ export function CraftTable() {
     const observer = new IntersectionObserver(([entry]) => {
       sim.current.visible = entry.isIntersecting
       if (entry.isIntersecting) sim.current.lastActive = performance.now()
-      sim.current.dirty = true
+      redraw()
     })
     observer.observe(surfaceRef.current!)
 
     const land = (pending: Flake[], into: Flake[], now: number) => {
       const still: Flake[] = []
       for (const f of pending) {
-        if (f.landAt <= now) { settleFlake(f, sim.current.field); into.push(f) } else still.push(f)
+        if (f.landAt <= now) { settleFlake(f, sim.current.field); f.order = sim.current.order; into.push(f) } else still.push(f)
       }
       return still
     }
 
-    const render = (now: number) => {
+    const wake = () => {
+      if (frame) return
+      last = performance.now()
       frame = requestAnimationFrame(render)
+    }
+    wakeRef.current = wake
+
+    const render = (now: number) => {
+      frame = 0
       const s = sim.current
       const dt = Math.min((now - last) / 1000, 1 / 30)
       last = now
@@ -627,7 +697,12 @@ export function CraftTable() {
         s.dirty = true
       }
       const tilting = s.tipUntil > now
-      if (tilting !== wasTilting) { s.baseStale = true; rectRef.current = null }
+      if (tilting !== wasTilting) {
+        s.baseStale = true
+        rectRef.current = null
+        // loose glitter has slid about: recheck what lies under pieces
+        if (!tilting) restack()
+      }
       wasTilting = tilting
       if (tilting) {
         s.flakes = tipStep(s.flakes, dt, TABLE_HEIGHT, s.rng)
@@ -638,10 +713,13 @@ export function CraftTable() {
         s.poms = stepPompoms(s.poms, dt, { width: TABLE_WIDTH, height: TABLE_HEIGHT }, tilting ? 1700 : 0)
         s.dirty = true
       }
-      if (!s.visible) return
-
       const wet = s.glue.some((g) => now - g.points[g.points.length - 1].t < GLUE_DRY_MS)
       const twinkle = !reduced && !s.light && now - s.lastActive < SHIMMER_MS && (s.flakes.length > 0 || s.sequins.length > 0)
+      // Keep ticking only while something is changing.
+      const busy = s.dirty || s.pouring || s.pending.length > 0 || s.pendingSequins.length > 0 || tilting
+        || isRolling(s.poms) || pendingToolRef.current !== null || (s.visible && (wet || twinkle))
+      if (busy) frame = requestAnimationFrame(render)
+      if (!s.visible) return
       if (!s.dirty && !wet && !twinkle) return
       // Drying glue and idle shimmer are slow changes. 30 fps is plenty.
       if (!s.dirty && now - lastDraw < 33) return
@@ -742,9 +820,13 @@ export function CraftTable() {
         ctx.restore()
       }
     }
-    frame = requestAnimationFrame(render)
-    return () => { cancelAnimationFrame(frame); observer.disconnect() }
-  }, [clipFor])
+    wake()
+    return () => {
+      cancelAnimationFrame(frame)
+      wakeRef.current = () => {}
+      observer.disconnect()
+    }
+  }, [clipFor, redraw, restack])
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -786,8 +868,10 @@ export function CraftTable() {
     }
     previousPointerRef.current = { x: clientX, y: clientY }
     const pose: Pose = { x: clientX, y: clientY, angle: angleRef.current, scale: toolScale() * (working ? 0.97 : 1) }
-    if (working) pendingToolRef.current = [id, pose, true]
-    else {
+    if (working) {
+      pendingToolRef.current = [id, pose, true]
+      wakeRef.current()
+    } else {
       pendingToolRef.current = null
       motionRef.current?.move(id, pose, false, pickup)
     }
@@ -834,12 +918,13 @@ export function CraftTable() {
     if (!t) {
       bumpGooglyEyes(1.2)
       nudgePompoms(s.poms, s.rng, 1.4)
+      redraw()
       return
     }
     event.currentTarget.setPointerCapture(event.pointerId)
     updateTool(event.clientX, event.clientY, true)
     if (t === 'marker') {
-      const mark: Mark = { points: [p], epoch: s.cuts.length, seq: ++s.seq }
+      const mark: Mark = { points: [p], epoch: s.cuts.length, seq: ++s.seq, order: s.order }
       s.marks.push(mark)
       s.marking = mark
       paintMarkerSegment(inkRef.current!.getContext('2d')!, inkScale(), p, p)
@@ -848,11 +933,11 @@ export function CraftTable() {
       showTapePreview(p, p)
     } else if (t === 'pipes') {
       s.piping = [p]
-      s.dirty = true
+      redraw()
     } else if (t === 'scissors') {
       s.cutting = [p]
       s.snipTravel = 0
-      s.dirty = true
+      redraw()
     } else if (t === 'glue') {
       const now = event.timeStamp
       s.drawing = true
@@ -861,7 +946,7 @@ export function CraftTable() {
       stroke.order = ++s.order
       s.glue.push(stroke)
       paintGlue(s.field, p.x, p.y, p.x, p.y, GLUE_WIDTH / 2, now)
-      s.dirty = true
+      redraw()
     } else if (t === 'eyes') {
       const size = EYE_SIZES[s.eyeCount++ % EYE_SIZES.length]
       const id = ++s.eyeId
@@ -874,10 +959,10 @@ export function CraftTable() {
       while (next === s.nextPom) next = Math.floor(s.rng() * POM_COLORS.length)
       s.nextPom = next
       setNextPom(next)
-      s.dirty = true
+      redraw()
     } else if (t === 'stamp') {
       if (s.ink <= 0) { say('The stamp is dry. Press it on the ink pad.'); return }
-      const print: Print = { x: p.x, y: p.y, angle: (s.rng() - 0.5) * 0.2, level: s.ink, seed: Math.floor(s.rng() * 1e6), epoch: s.cuts.length, seq: ++s.seq }
+      const print: Print = { x: p.x, y: p.y, angle: (s.rng() - 0.5) * 0.2, level: s.ink, seed: Math.floor(s.rng() * 1e6), epoch: s.cuts.length, seq: ++s.seq, order: s.order }
       s.prints.push(print)
       printStamp(inkRef.current!.getContext('2d')!, inkScale(), print)
       s.ink = inkAfterStamp(s.ink)
@@ -904,7 +989,7 @@ export function CraftTable() {
       const last = s.piping[s.piping.length - 1]
       if (Math.hypot(p.x - last.x, p.y - last.y) >= 2 && pathLength(s.piping) < PIPE_LENGTH) {
         s.piping.push(p)
-        s.dirty = true
+        redraw()
       }
     }
     if (s.cutting) {
@@ -917,7 +1002,7 @@ export function CraftTable() {
     const seconds = Math.max(0.004, (event.timeStamp - s.pointer.t) / 1000)
     s.pointer = { x: p.x, y: p.y, speed: s.pointer.speed * 0.5 + (moved / seconds / POUR_TUNED_HZ) * 60 * 0.5, t: event.timeStamp }
     s.light = p
-    s.dirty = true
+    redraw()
     // The room light follows the pointer as a composited transform. No repaint, no style recalc.
     const rect = matRect()
     const glow = glowRef.current
@@ -956,7 +1041,7 @@ export function CraftTable() {
     if (s.piping) {
       finishPipe(s.piping, event.timeStamp)
       s.piping = null
-      s.dirty = true
+      redraw()
     }
     if (s.cutting) {
       const path = s.cutting
@@ -989,7 +1074,7 @@ export function CraftTable() {
       slit.moveTo(result.path[0].x, result.path[0].y)
       for (const p of result.path) slit.lineTo(p.x, p.y)
       s.slits.push(slit)
-      s.dirty = true
+      redraw()
       return
     }
     if (result.kind !== 'piece') return
@@ -1021,8 +1106,8 @@ export function CraftTable() {
     unglue(inside, box)
     s.cuts.push(hole)
     s.clipCache.clear()
-    eraseCut(inkCanvas.getContext('2d')!, k, hole)
-    s.dirty = true
+    erase(inkCanvas.getContext('2d')!, k, hole.path)
+    redraw()
 
     const id = ++s.pieceId
     const carried = eyes.filter((e) => inside(e.x, e.y))
@@ -1107,8 +1192,16 @@ export function CraftTable() {
     target.classList.add('is-dragging')
     const start = toLogical(event.clientX, event.clientY)
     let at = { dx: piece.dx, dy: piece.dy }
+    // A tap leaves the piece where it lies; once it moves it is lifted, and whatever it
+    // was covering shows again.
+    let lifted = false
     const move = (e: PointerEvent) => {
       const p = toLogical(e.clientX, e.clientY)
+      if (!lifted) {
+        if (Math.hypot(p.x - start.x, p.y - start.y) < 3) return
+        lifted = true
+        uncover([id])
+      }
       at = { dx: piece.dx + p.x - start.x, dy: piece.dy + p.y - start.y }
       target.style.left = `${((piece.box.x + at.dx) / TABLE_WIDTH) * 100}%`
       target.style.top = `${((piece.box.y + at.dy) / TABLE_HEIGHT) * 100}%`
@@ -1118,8 +1211,12 @@ export function CraftTable() {
       target.removeEventListener('pointermove', move)
       target.removeEventListener('pointerup', up)
       target.removeEventListener('pointercancel', up)
+      if (!lifted) return
       const glued = pieceSticks(piece, at.dx, at.dy, e.timeStamp)
-      coverWith(piece, at.dx, at.dy)
+      // Laid down, it covers what is under it, and the glue it lies on can't catch anything else.
+      const footprint = coverWith(piece, at.dx, at.dy)
+      const box = bounds(footprint)
+      unglue(hitMask(shapePath2D(footprint), box), box)
       setPieces((list) => list.map((p) => (p.id === id ? { ...p, ...at, glued } : p)))
       if (glued) say('Stuck down. The glue under it was still purple.')
     }
@@ -1171,9 +1268,10 @@ export function CraftTable() {
     const footprint = fromPoints(tapeFootprint(strip))
     const footprintBox = bounds(footprint)
     const under = hitMask(shapePath2D(footprint), footprintBox)
-    const covered = (f: Flake) => under(f.x, f.y)
+    // Glitter already hidden under a piece stays with the piece, not the tape.
+    const covered = (f: Flake) => !f.hidden && under(f.x, f.y)
     const laid: LaidTape = {
-      ...strip, epoch: s.cuts.length, seq: ++s.seq,
+      ...strip, epoch: s.cuts.length, seq: ++s.seq, order: s.order,
       under: { flakes: s.flakes.filter(covered), sequins: s.sequins.filter(covered) },
     }
     if (laid.under.flakes.length) {
@@ -1184,7 +1282,7 @@ export function CraftTable() {
     unglue(under, footprintBox)
     s.covers = [...s.covers, { id: -strip.id, order: ++s.order, shape: footprint }]
     s.clipCache.clear()
-    s.dirty = true
+    redraw()
     s.tapes.push(laid)
     paintLaidTape(inkRef.current!.getContext('2d')!, inkScale(), laid)
     if (pinnedPieces.length) setPieces((list) => list.map((p) => (pinnedPieces.includes(p.id) ? { ...p, glued: true } : p)))
@@ -1254,6 +1352,7 @@ export function CraftTable() {
   const tipOff = (event: ReactMouseEvent<HTMLButtonElement>) => {
     const s = sim.current
     s.tipUntil = event.timeStamp + 1300
+    redraw()
     setTipping(true)
     bumpGooglyEyes(2)
     window.setTimeout(() => setTipping(false), 900)
@@ -1288,7 +1387,7 @@ export function CraftTable() {
     setPieces([])
     setPipes([])
     clearGlue(s.field)
-    s.dirty = true
+    redraw()
     setEyes([])
     setHasLoose(false)
     setSheet((current) => ({ color, seed: current.seed + 1, shape: freshSheet(current.seed + 1) }))
@@ -1335,6 +1434,8 @@ export function CraftTable() {
       onPointerMove={(event) => {
         const s = sim.current
         s.lastActive = event.timeStamp
+        // moving over the table restarts the idle shimmer
+        wakeRef.current()
         if (event.isPrimary && !s.drawing && !s.pouring) updateTool(event.clientX, event.clientY, false)
       }}
       onPointerLeave={() => {

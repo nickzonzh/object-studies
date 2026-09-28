@@ -64,6 +64,10 @@ export type Flake = {
   stuck: boolean
   vx: number
   vy: number
+  /** Stacking order when it landed: a piece laid over it later hides it. */
+  order: number
+  /** Lying under a piece laid on top of it since, so not drawn. */
+  hidden: boolean
 }
 
 /** Pour flakes around a point. Each flake gets a random facet normal so it glints on its own. */
@@ -87,6 +91,8 @@ export function pourFlakes(
       stuck: false,
       vx: 0,
       vy: 0,
+      order: 0,
+      hidden: false,
     })
   }
   return flakes

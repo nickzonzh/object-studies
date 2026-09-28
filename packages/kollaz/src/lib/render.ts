@@ -47,7 +47,7 @@ export function paintFlakes(ctx: CanvasRenderingContext2D, flakes: Flake[], from
   const { paths, used } = emptyBuckets()
   for (let i = from; i < flakes.length; i++) {
     const f = flakes[i]
-    if (!include(f)) continue
+    if (f.hidden || !include(f)) continue
     const b = Math.floor(baseShade(f) * SHADES)
     addFlake(paths[f.color][b], f)
     used[f.color][b] = true
@@ -64,6 +64,7 @@ export function paintGlints(ctx: CanvasRenderingContext2D, flakes: Flake[], ligh
   const lz2 = light.z * light.z
   for (let i = 0; i < flakes.length; i++) {
     const f = flakes[i]
+    if (f.hidden) continue
     const dx = light.x - f.x
     const dy = light.y - f.y
     const l = Math.sqrt(dx * dx + dy * dy + lz2)
@@ -98,6 +99,7 @@ function facingCos(x: number, y: number, nx: number, ny: number, nz: number, lig
  */
 export function paintSequins(ctx: CanvasRenderingContext2D, sequins: Flake[], light: Light, sparkles: Sparkle[]) {
   for (const q of sequins) {
+    if (q.hidden) continue
     const d = facingCos(q.x, q.y, q.nx, q.ny, q.nz, light)
     const spec = d > 0 ? Math.pow(d, 18) : 0
     const r = q.size / 2
