@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { SHAPES, STYLES, Vase, type ShapeId, type StyleId } from '../src/index.js'
+import { SHAPES, STYLES, Vase, type PaletteId, type ShapeId, type StyleId } from '../src/index.js'
 
 // `angle` is how a piece stands on the shelf: handles in profile, turned a little
 // toward the viewer, and facing outward at the ends of a shelf.
-type Piece = { shape: ShapeId; style: StyleId; palette: string; seed: number; angle?: number }
+type Piece = { shape: ShapeId; style: StyleId; palette: PaletteId; seed: number; angle?: number }
 
 const HANDLE_LEFT = -0.35
 const HANDLE_RIGHT = Math.PI + 0.35
@@ -38,7 +38,7 @@ function Debug() {
   return (
     <main style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(items.length, 4)}, 1fr)`, gap: 8, padding: 8, alignItems: 'end' }}>
       {items.map(([shape, style, palette, seed, angle], i) => (
-        <Vase key={i} shape={shape as ShapeId} vaseStyle={style as StyleId} palette={palette} seed={Number(seed ?? 7)} angle={Number(angle ?? 0)} turntable={false} />
+        <Vase key={i} shape={shape as ShapeId} vaseStyle={style as StyleId} palette={palette as PaletteId} seed={Number(seed ?? 7)} angle={Number(angle ?? 0)} turntable={false} />
       ))}
     </main>
   )
@@ -144,6 +144,7 @@ function Showroom() {
       <section className="bench" id="bench" aria-label="Potter's bench">
         <div className="bench-stage">
           <Vase
+            mode="live"
             shape={piece.shape}
             vaseStyle={piece.style}
             palette={piece.palette}

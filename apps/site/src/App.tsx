@@ -162,7 +162,7 @@ function KeramosBench() {
   return (
     <div className="site-keramos">
       <div className="site-keramos-bench">
-        <Vase shape={piece.shape} vaseStyle={piece.style} palette={piece.palette} seed={seed} className="site-keramos-live" />
+        <Vase mode="live" shape={piece.shape} vaseStyle={piece.style} palette={piece.palette} seed={seed} className="site-keramos-live" />
         <button type="button" className="site-button" onClick={() => setSeed((s) => (s * 7919 + 13) % 99991)}>
           Paint another
         </button>

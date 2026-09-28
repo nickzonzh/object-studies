@@ -224,6 +224,21 @@ export const SHAPES: Record<ShapeId, Shape> = {
   },
 }
 
+/** A shape as the package describes it publicly; its geometry stays inside. */
+export type ShapeInfo = {
+  readonly id: ShapeId
+  readonly label: string
+  readonly note: string
+  readonly kind: 'vessel' | 'plate'
+}
+
+/** Published copies, so nothing outside can reach the geometry the painter reads. */
+export const SHAPE_INFO: Readonly<Record<ShapeId, ShapeInfo>> = Object.freeze(
+  Object.fromEntries(
+    Object.values(SHAPES).map(({ id, label, note, kind }) => [id, Object.freeze({ id, label, note, kind })]),
+  ) as Record<ShapeId, ShapeInfo>,
+)
+
 export const PROFILE_SAMPLES = 1024
 
 /** Monotone cubic (Fritsch–Carlson) interpolation keeps the wall free of wobbles. */

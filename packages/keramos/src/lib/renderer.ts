@@ -60,6 +60,10 @@ export type Scene = {
   finish: Finish
 }
 
+const MIN_DETAIL = 0.3
+// Detail 2 already paints 6144-texel maps; much beyond that outgrows what browsers and GPUs will allocate.
+const MAX_DETAIL = 2
+
 /**
  * Texture detail for a piece shown `cssHeight` CSS px tall: 1.8 texels per
  * device pixel, for the supersampled render (it reproduces the hand-tuned 1.34
@@ -68,7 +72,13 @@ export type Scene = {
  */
 export function detailFor(shape: Shape, cssHeight: number, dpr: number) {
   const unitPx = (cssHeight * Math.min(dpr || 1, 2)) / frameFor(shape).height
-  return Math.max(0.3, Math.min(1.5, (1.8 * unitPx) / unitTexels(shape)))
+  return Math.max(MIN_DETAIL, Math.min(1.5, (1.8 * unitPx) / unitTexels(shape)))
+}
+
+/** The `detail` prop made safe to paint at, or undefined (follow the displayed size) for zero, negative or NaN. */
+export function clampDetail(detail: number | undefined) {
+  if (detail === undefined || !(detail > 0)) return undefined
+  return Math.max(MIN_DETAIL, Math.min(MAX_DETAIL, detail))
 }
 
 /** Pixel budgets for supersampling: the live piece, a still while it moves, a still at rest. */
@@ -96,7 +106,7 @@ export class VaseRenderer {
   private shaders: WebGLShader[] = []
   /** Set once the program has finished compiling and linked cleanly. */
   private linked = false
-  private parallel: KHR_parallel_shader_compile | null
+  private parallel: KHR_parallel_shader_compile | null = null
   private uniforms = new Map<string, WebGLUniformLocation | null>()
   private scenes = new Set<Scene>()
   private restoreListeners = new Set<() => void>()
@@ -119,7 +129,6 @@ export class VaseRenderer {
     })
     if (!gl) throw new Error('WebGL2 is not available')
     this.gl = gl
-    this.parallel = gl.getExtension('KHR_parallel_shader_compile')
     canvas.addEventListener('webglcontextlost', this.onLost)
     canvas.addEventListener('webglcontextrestored', this.onRestored)
     this.init()
@@ -155,6 +164,8 @@ export class VaseRenderer {
    */
   private init() {
     const gl = this.gl
+    // A restored context starts with no extensions enabled, so this is asked again every time.
+    this.parallel = gl.getExtension('KHR_parallel_shader_compile')
     const program = gl.createProgram()!
     this.shaders = [compile(gl, gl.VERTEX_SHADER, VERT), compile(gl, gl.FRAGMENT_SHADER, FRAG)]
     for (const shader of this.shaders) gl.attachShader(program, shader)
@@ -174,10 +185,14 @@ export class VaseRenderer {
 
   /** Whether the shader can draw yet. Throws if it failed to compile or link. */
   ready() {
-    if (this.linked) return true
     const gl = this.gl
+    // A lost context answers every query with null, which would read as a failed build. The
+    // browser reports the loss only a little later, so this can come before `lost` is set.
+    if (gl.isContextLost()) return false
+    if (this.linked) return true
     if (this.parallel && !gl.getProgramParameter(this.program, this.parallel.COMPLETION_STATUS_KHR)) return false
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+      if (gl.isContextLost()) return false
       const logs = [...this.shaders.map((shader) => gl.getShaderInfoLog(shader)), gl.getProgramInfoLog(this.program)]
       throw new Error(`Shader failed to build: ${logs.filter(Boolean).join(' ')}`)
     }
@@ -363,6 +378,13 @@ export class VaseRenderer {
     return true
   }
 
+  /**
+   * Lets go of everything on the GPU. Browsers only allow a handful of live
+   * contexts and drop the oldest (often the shared stills renderer) past that,
+   * so the context itself is released once its canvas has left the page. A
+   * canvas still on the page (hidden by <Activity>, say) keeps it: a new
+   * renderer on that canvas gets the same context back and could not use a lost one.
+   */
   dispose() {
     for (const scene of [...this.scenes]) this.deleteScene(scene)
     this.gl.deleteProgram(this.program)
@@ -370,6 +392,7 @@ export class VaseRenderer {
     this.canvas.removeEventListener('webglcontextlost', this.onLost)
     this.canvas.removeEventListener('webglcontextrestored', this.onRestored)
     this.restoreListeners.clear()
+    if (!this.canvas.isConnected) this.gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }
 

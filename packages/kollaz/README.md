@@ -52,10 +52,29 @@ scissor geometry.
 - **Googly eyes** whose pupils rattle under gravity.
 - **Tip off loose bits.** The mat tilts and anything not glued slides off.
 
-`CraftTable` takes no props: it is a whole table with a sample already on it.
-Tools are picked up with the pointer or the keyboard, but working on the mat
-needs a pointer (mouse, pen or touch). On touch, a tool goes back to the caddy
-after every stroke.
+`CraftTable` is a whole table with a sample already on it. Tools are picked up
+with the pointer or the keyboard, but working on the mat needs a pointer (mouse,
+pen or touch). On touch, a tool goes back to the caddy after every stroke.
+
+| Prop | Type | Default | |
+| --- | --- | --- | --- |
+| `labels` | `Partial<CraftTableLabels>` | `defaultLabels` | Every user-visible string: accessible names, the hints under the table and the live-region announcements. |
+| `portalContainer` | `HTMLElement \| null` | `document.body` | Where the tools in hand are rendered. See below. |
+| `className`, `style` | | | Applied to the component root. |
+
+`CraftTableProps` and `CraftTableLabels` are exported as types, alongside
+`defaultLabels` and `PAPERS`.
+
+### Tools in hand
+
+A tool that has been picked up follows the pointer in viewport coordinates, so
+it is portalled out of the component into its own element at the end of
+`document.body`. That keeps it under the pointer inside a transformed, filtered
+or clipping ancestor such as an animated dialog. If the table sits in something
+that renders above the page, such as a `<dialog>` opened with `showModal()`,
+pass that element as `portalContainer`: the tools are rendered in an element of
+their own inside it, and it is not otherwise touched. The portal is created
+after mount, so the server render has no tools in hand.
 
 ## Drop-ins
 
@@ -113,8 +132,27 @@ the flakes catching the light. The idle shimmer settles ten seconds after the
 last pointer movement over the table, so a table nobody is using costs next to
 nothing. Nothing draws while the table is scrolled out of view.
 
-On the server the table renders its caddy and sheet; the canvases fill in once
-it mounts in the browser.
+On the server the table renders its caddy and sheet; the canvases and the
+tools' portal fill in once it mounts in the browser.
+
+The table keeps at most 20,000 flakes of glitter. Past that, the oldest loose
+glitter is swept off a thousand flakes at a time, and once only glued glitter is
+left, new glitter no longer lands.
+
+## Accessibility
+
+- Every tool is a real `button` with `aria-pressed`, and the mat is a named
+  group whose description says how to use it.
+- The hint under the table follows the tool in hand, and it is a polite live
+  region: sticking something down, taping it, tipping off and starting a new
+  sheet are announced there too.
+- Tip off loose bits stays focusable when there is nothing to tip: it is marked
+  `aria-disabled` rather than disabled, so it keeps focus under the keyboard.
+- **Working on the mat requires a pointing device.** There is no keyboard mode
+  for gluing, cutting or stamping.
+- A new sheet clears the table and cannot be undone.
+- `prefers-reduced-motion: reduce` stops the caddy and tool animations, and the
+  rule is scoped to the component and its tools in hand.
 
 ## Known limits
 
@@ -133,6 +171,6 @@ npm run build -w kollaz
 
 Tests cover torn edges, cuts (loops, sloppy loops, self-crossing loops,
 edge-to-edge splits, slits, misses), tape, pipe cleaners, pupil physics, glue
-tackiness and drying, glitter sticking and tipping, glints, sequin film, pom
+tackiness and drying, glitter sticking, tipping and the glitter cap, glints, sequin film, pom
 pom rolling and gluing, stamp ink, and the tool rest pose and lean. Real touch
 hardware and the feel of the physics still need a hands-on check.
