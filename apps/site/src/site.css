@@ -21,9 +21,14 @@ a {
   text-decoration-thickness: 1px;
 }
 
-a:focus-visible {
+a:focus-visible,
+.site-button:focus-visible,
+.site-keramos-pick:focus-visible {
   outline: 2px solid #3f5a46;
   outline-offset: 3px;
+}
+
+a:focus-visible {
   border-radius: 2px;
 }
 
@@ -215,12 +220,6 @@ a:focus-visible {
   border-color: rgb(44 43 39 / 0.55);
 }
 
-.site-button:focus-visible,
-.site-keramos-pick:focus-visible {
-  outline: 2px solid #3f5a46;
-  outline-offset: 3px;
-}
-
 /* Keramos: one live piece to study, and a still of each tradition to choose from. */
 .site-keramos {
   display: grid;
@@ -236,10 +235,9 @@ a:focus-visible {
   gap: 20px;
 }
 
+/* Sized by height, but narrowed to fit its column without losing its proportions. */
 .site-keramos-live {
-  width: auto;
-  height: min(64vh, 540px);
-  max-width: 100%;
+  width: min(100%, calc(min(64vh, 540px) * var(--keramos-aspect)));
 }
 
 .site-keramos-picks {
@@ -280,9 +278,7 @@ a:focus-visible {
   .site-keramos-pick .keramos-vase {
     height: clamp(64px, 18vw, 112px);
   }
-}
 
-@media (max-width: 860px) {
   .site-study {
     grid-template-columns: 1fr;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { SHAPES, type ShapeId } from '../lib/shapes.js'
 import {
   DEFAULT_LIGHT,
@@ -150,6 +150,10 @@ export function Vase({
     // a wall plate stays put until someone spins it
     Object.assign(state.current, { turntable: turntable && !isPlate, spin, maxFps })
   })
+  // A new shape starts at its own angle: turn left over from a vessel would tilt a plate's face.
+  useEffect(() => {
+    Object.assign(state.current, { rotation: angle, velocity: 0, dirty: true })
+  }, [shape, angle])
   const { aspect } = frameFor(SHAPES[shape])
   const detailValue = detail ?? (autoDetail?.shape === shape ? autoDetail.value : 0)
   const design = `${mode}|${shape}|${vaseStyle}|${palette}|${seed}|${generation}`
@@ -455,8 +459,8 @@ export function Vase({
   return (
     <div
       ref={wrapRef}
-      className={`keramos-vase${painting ? ' keramos-vase--painting' : ''}${awake ? ' keramos-vase--awake' : ''}${className ? ` ${className}` : ''}`}
-      style={{ aspectRatio: `${aspect}` }}
+      className={`keramos-vase${draggable ? ' keramos-vase--draggable' : ''}${painting ? ' keramos-vase--painting' : ''}${awake ? ' keramos-vase--awake' : ''}${className ? ` ${className}` : ''}`}
+      style={{ aspectRatio: `${aspect}`, '--keramos-aspect': aspect } as CSSProperties}
       role="img"
       aria-label={label ?? `${SHAPES[shape].label}, ${vaseStyle.replace('-', ' ')} style`}
       tabIndex={draggable ? 0 : undefined}
