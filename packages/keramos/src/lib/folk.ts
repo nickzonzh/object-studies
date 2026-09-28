@@ -13,6 +13,7 @@ import {
   Rng,
   TAU,
   along,
+  lengths,
   catmull,
   circle,
   cubic,
@@ -174,6 +175,62 @@ function carnation(c: C, f: Frame, h: number) {
   shape(f, tongue, FOLK.red, INK * 0.7)
   const cal: Pt[] = catmull([[-h * 0.1, 0], [-h * 0.16, h * 0.18], [-h * 0.2, h * 0.34], [0, h * 0.28], [h * 0.2, h * 0.34], [h * 0.16, h * 0.18], [h * 0.1, 0]], 4)
   shape(f, cal, FOLK.green, INK * 0.8)
+}
+
+/**
+ * Big red carnation, face on, as the plates show it: a ring of long toothed
+ * petals over a shorter inner ring, round a blue heart. Radius in mm.
+ */
+function carnationHead(c: C, f: Frame, r: number) {
+  const { rng } = c
+  // blue sepals often peek out from behind one side of the head
+  if (rng.chance(0.45)) {
+    const a = rng.range(0, TAU)
+    for (const s of [-0.45, 0, 0.45]) {
+      const g = f.child(0, 0, a + s * rng.vary(1, 0.2))
+      shape(g, catmull([[-r * 0.16, 0], [-r * 0.2, r * 0.7], [0, r * rng.range(1.12, 1.25)], [r * 0.2, r * 0.7], [r * 0.16, 0]], 4), FOLK.blue, INK * 0.7)
+    }
+  }
+  const n = rng.int(8, 10)
+  const rot = rng.range(0, TAU)
+  for (const [ring, len] of [[0, 1], [0.5, 0.64]] as const) {
+    for (let i = 0; i < n; i++) {
+      const a = rot + ((i + ring) / n) * TAU - Math.PI / 2
+      const l = r * len * rng.vary(1, 0.07)
+      // broad enough that neighbours overlap into one solid red disc
+      const w = ((TAU * l * 0.65) / n) * 1.3
+      const petal: Pt[] = [
+        ...catmull([[-w * 0.18, r * 0.1], [-w * 0.5, l * 0.5], [-w * 0.5, l * 0.84]], 4),
+        [-w * 0.36, l * 0.97],
+        [-w * 0.2, l * 0.9],
+        [-w * 0.08, l * 1.01],
+        [w * 0.06, l * 0.92],
+        [w * 0.2, l * 1.0],
+        [w * 0.34, l * 0.9],
+        [w * 0.46, l * 0.95],
+        ...catmull([[w * 0.5, l * 0.84], [w * 0.5, l * 0.5], [w * 0.18, r * 0.1]], 4),
+      ]
+      const g = f.child(0, 0, a)
+      shape(g, jitterPts(petal, rng, r * 0.02), ring ? FOLK.redDeep : rng.chance(0.8) ? FOLK.red : FOLK.redDeep, INK * 0.75)
+      g.line('paint', [[0, l * 0.35], [rng.range(-0.15, 0.15) * w, l * 0.8]], shade(FOLK.redDeep, -0.3), 0.55, { alpha: 0.45 })
+    }
+  }
+  shape(f, circle(0, 0, r * 0.24, 18, rng, 0.08), rng.chance(0.75) ? FOLK.blue : FOLK.redDeep, INK * 0.8)
+  dot(f, 0, 0, r * 0.08, FOLK.ink)
+}
+
+/** Blue flower of five pointed petals round a red eye, the small flower of the plates. */
+function blueFlower(c: C, f: Frame, r: number) {
+  const { rng } = c
+  const n = 5
+  const rot = rng.range(0, TAU)
+  for (let i = 0; i < n; i++) {
+    const a = rot + (i / n) * TAU * rng.vary(1, 0.04)
+    const l = r * rng.vary(1, 0.12)
+    const petal = catmull([[-r * 0.1, r * 0.1], [-r * 0.36, l * 0.55], [-r * 0.12, l * 0.94], [0, l], [r * 0.24, l * 0.86], [r * 0.32, l * 0.45], [r * 0.1, r * 0.1]], 3)
+    shape(f.child(0, 0, a), petal, rng.chance(0.8) ? FOLK.blue : FOLK.blueDeep, INK * 0.6)
+  }
+  dot(f, 0, 0, r * 0.24, FOLK.red, true)
 }
 
 /** Red tulip, side view. */
@@ -685,6 +742,152 @@ function fillers(c: C, density = 1) {
   return items.map((item) => ({ ...item, tries: Math.round(item.tries * density) }))
 }
 
+/**
+ * A plate's well, filled the way the Ikaros painters fill it: big red
+ * carnations spread through the space, each on a long leafy stem, more stems
+ * curling through what is left, then small flowers and red dots in every gap.
+ * Stems grow a step at a time and turn aside when they meet the figure or
+ * another motif, so they curl round whatever is already painted.
+ * Works in millimetres from the plate's centre.
+ */
+function fillWell(c: C, field: Field, radiusMm: number) {
+  const { p, rng, U, k } = c
+  const f = p.flat(0, 0, 0, U)
+  const step = 3.6 * k
+  const clear = 2.8 * k
+  const take = (x: number, y: number, r: number) => field.take(null, x * U, y * U, r * U)
+  const room = (x: number, y: number, r: number, own: Pt[] = []) =>
+    Math.hypot(x, y) + r < radiusMm &&
+    field.free(null, x * U, y * U, r * U, 0) &&
+    own.slice(0, -3).every(([ox, oy]) => Math.hypot(x - ox, y - oy) > r + clear)
+
+  const grow = (start: Pt, dir: number, steps: number) => {
+    const bend = curvature(rng)
+    const turn = rng.chance(0.5) ? 1 : -1
+    const path: Pt[] = [start]
+    for (let i = 0; i < steps; i++) {
+      dir += bend(i / steps) * 0.22
+      const [x, y] = path[path.length - 1]
+      let moved = false
+      for (const t of [0, 1, -1, 2, -2, 3, -3]) {
+        const d = dir + t * turn * 0.4
+        const nx = x + Math.cos(d) * step
+        const ny = y + Math.sin(d) * step
+        if (room(nx, ny, clear, path)) {
+          path.push([nx, ny])
+          dir = d
+          moved = true
+          break
+        }
+      }
+      if (!moved) break
+    }
+    return path
+  }
+
+  /** The stem and its leaves, reaching forward; leaves start `bare` mm along, clear of a flower at the root. */
+  const stemWithLeaves = (path: Pt[], bare = 0) => {
+    for (const [x, y] of path) take(x, y, 2.4 * k)
+    const line = catmull(path, 6)
+    const acc = lengths(line)
+    const L = acc[acc.length - 1]
+    shape(f, ribbon(line, (t) => (2.3 - t * 0.9) * k), FOLK.green, INK * 0.6)
+    let side = rng.chance(0.5) ? 1 : -1
+    for (let s = Math.max(bare, step * 0.8); s < L - step * 0.5; s += step * rng.range(1.5, 2.2)) {
+      const { p: q, d } = along(line, s / L)
+      const ang = Math.atan2(d[1], d[0]) - Math.PI / 2
+      for (const sd of rng.chance(0.35) ? [-1, 1] : [side]) {
+        const len = rng.range(9.5, 13) * k
+        const g = f.child(q[0], q[1], ang + sd * rng.range(0.55, 0.9))
+        leaf(c, g, len, len * 0.32, -sd * 0.4, rng.chance(0.25) ? FOLK.greenLight : FOLK.green)
+        // keep just the leaf's own space, so dots can still fill in beside it
+        for (const t of [0.35, 0.72]) {
+          const [lx, ly] = g.phys([0, len * t])
+          field.take(null, lx, ly, len * 0.2 * U)
+        }
+      }
+      side = -side
+    }
+    return line
+  }
+
+  // big carnations first, spread through the well with room between for stems
+  const big = 9.5 * k
+  const heads: Pt[] = []
+  for (let t = 0; t < 300; t++) {
+    const a = rng.range(0, TAU)
+    const d = Math.sqrt(rng.next()) * (radiusMm - big * 0.9)
+    const x = Math.cos(a) * d
+    const y = Math.sin(a) * d
+    if (!field.free(null, x * U, y * U, big * U, clear * 4.2 * U)) continue
+    heads.push([x, y])
+    take(x, y, big)
+  }
+  // each on its own stem, painted before the flower so the head sits on top
+  for (const [x, y] of heads) {
+    let path: Pt[] = []
+    for (let tries = 0; tries < 4 && path.length < 4; tries++) {
+      const a = rng.range(0, TAU)
+      const start: Pt = [x + Math.cos(a) * (big + clear + 0.5), y + Math.sin(a) * (big + clear + 0.5)]
+      if (room(start[0], start[1], clear)) path = grow(start, a, rng.int(10, 26))
+    }
+    const up = path.length >= 4 ? Math.atan2(y - path[0][1], x - path[0][0]) - Math.PI / 2 : rng.range(0, TAU)
+    if (path.length >= 4) stemWithLeaves([[x, y], ...path], big * 1.1)
+    carnationHead(c, f.child(x, y, up), big * rng.vary(1, 0.06))
+  }
+
+  // free stems through what is left, each ending in a flower if there is room
+  for (let v = 0; v < 60; v++) {
+    const a0 = rng.range(0, TAU)
+    const d0 = radiusMm * rng.range(0.4, 0.95)
+    const start: Pt = [Math.cos(a0) * d0, Math.sin(a0) * d0]
+    const dir = a0 + Math.PI + rng.range(-1.2, 1.2)
+    const steps = rng.int(10, 28)
+    if (!room(start[0], start[1], clear * 1.4)) continue
+    const path = grow(start, dir, steps)
+    if (path.length < 4) continue
+    const line = catmull(path, 6)
+    const tip = along(line, 1)
+    const tipAng = Math.atan2(tip.d[1], tip.d[0]) - Math.PI / 2
+    const small = 5.5 * k
+    const hx = tip.p[0] + tip.d[0] * small * 0.85
+    const hy = tip.p[1] + tip.d[1] * small * 0.85
+    const flower = room(hx, hy, small * 0.8, path.slice(0, -2))
+    if (flower) take(hx, hy, small)
+    stemWithLeaves(path)
+    const g = f.child(hx, hy, tipAng)
+    if (!flower) leaf(c, f.child(tip.p[0], tip.p[1], tipAng), 8 * k, 2.6 * k, 0.2)
+    else if (rng.chance(0.55)) blueFlower(c, g, small)
+    else if (rng.chance(0.6)) carnation(c, g.child(0, -small * 0.8), small * 1.7)
+    else redFlower(c, g, small * 0.9)
+  }
+
+  scatter(c, field, { kind: 'disc', radius: radiusMm * U }, [
+    { r: 6, tries: 300, draw: (g: Frame, r: number) => (rng.chance(0.3) ? redFlower(c, g, r * 0.85) : carnation(c, g.child(0, -r * 0.8, rng.range(-0.6, 0.6)), r * 1.7)) },
+    { r: 4.5, tries: 500, draw: (g: Frame, r: number) => blueFlower(c, g, r * 0.95) },
+    { r: 3.4, tries: 150, draw: (g: Frame, r: number) => blueFlower(c, g, r) },
+    { r: 4, tries: 400, draw: (g: Frame, r: number) => {
+      const a = rng.range(0, TAU)
+      leaf(c, g.child(0, 0, a - 0.4), r * 1.9, r * 0.6, 0.3)
+      leaf(c, g.child(0, 0, a + 0.4), r * 1.9, r * 0.6, -0.3)
+    } },
+    { r: 1.9, tries: 2500, draw: (g: Frame, r: number) => dot(g, 0, 0, r * rng.range(0.85, 1.05), FOLK.red, rng.chance(0.2)) },
+    { r: 1.4, tries: 1500, draw: (g: Frame, r: number) => dot(g, 0, 0, r * 0.95, FOLK.red) },
+  ])
+}
+
+/** How hard a stem bends along its length, and which way: smooth, and sometimes changing direction. */
+function curvature(rng: Rng) {
+  const base = rng.range(-1, 1)
+  const knots = [0, 1, 2, 3].map(() => base + rng.range(-0.8, 0.8))
+  return (t: number) => {
+    const x = Math.min(0.999, t) * 3
+    const i = Math.floor(x)
+    return knots[i] + (knots[i + 1] - knots[i]) * (x - i)
+  }
+}
+
+
 // --------------------------------------------------------------------- main
 
 export function paintFolk(p: Painter, shape: Shape, seed: number) {
@@ -789,10 +992,12 @@ function paintPlate(c: C, shape: Shape) {
   const flip = rng.chance(0.5)
   // centre the figure: the deer spans roughly x -46..38, y 2..64 in its own millimetres
   const f = p.flat(kind === 'deer' ? (flip ? -4 : 4) * s * U : 0, kind === 'deer' ? -32 * s * U : -0.075, 0, U * s, flip)
-  if (kind === 'deer') deer(c, f)
-  else ship(c, f)
+  const figure = { ...c, rng: rng.fork() }
   field.reserve(f, kind === 'deer' ? DEER_SPACE : SHIP_SPACE)
-  scatter(c, field, { kind: 'disc', radius: well.to - 0.006 }, fillers(c, 2))
+  fillWell(c, field, (well.to - 0.006) / U)
+  // the figure goes on last, so leaves tucked in round it pass behind
+  if (kind === 'deer') deer(figure, f)
+  else ship(figure, f)
   p.unclip()
   p.ring('paint', well.to, FOLK.ink, INK * 1.6 * U, rng)
   p.ring('paint', well.to - 0.006, FOLK.ink, INK * 0.9 * U, rng)
