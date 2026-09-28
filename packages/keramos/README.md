@@ -81,10 +81,15 @@ To size one by height instead, give it `height` and `width: auto` in your CSS.
   The shader compiles off the main thread where the browser supports it
   (`KHR_parallel_shader_compile`); a piece appears once its first frame is drawn.
 
-Painting runs on the main thread and takes roughly 0.1 to 1 second per piece,
-depending on its size, so pieces paint one at a time as they approach the
-viewport. If the browser drops the GPU context, the pieces repaint when it comes
-back. Without WebGL2 a piece shows a short message instead.
+Painting takes roughly 0.1 to 1 second per piece, depending on its size, so
+pieces paint one at a time as they approach the viewport. It runs in a Web
+Worker on OffscreenCanvas, inlined in the package so no bundler setup is needed,
+and the page stays responsive while it works. Where there is no Worker or
+OffscreenCanvas, where a content security policy blocks `blob:` workers, or where
+the worker cannot blur (Safari's OffscreenCanvas ignores `ctx.filter`) while the
+page can, painting falls back to the main thread and logs a warning. If the
+browser drops the GPU context, the pieces repaint when it comes back. Without
+WebGL2 a piece shows a short message instead.
 
 On the server a piece renders as a sized, labelled placeholder.
 
