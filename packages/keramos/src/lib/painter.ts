@@ -360,6 +360,31 @@ export type SurfaceMaterial = {
   pigmentNoise: number
 }
 
+/** Layers to paint into, at one size. */
+type Surface = {
+  width: number
+  height: number
+  layers: Record<LayerName, HTMLCanvasElement>
+  ctx: Record<LayerName, CanvasRenderingContext2D>
+}
+
+function makeSurface(width: number, height: number): Surface {
+  const layers = { paint: makeCanvas(width, height), gold: makeCanvas(width, height), over: makeCanvas(width, height) }
+  return {
+    width,
+    height,
+    layers,
+    ctx: {
+      paint: layers.paint.getContext('2d', CPU)!,
+      gold: layers.gold.getContext('2d', CPU)!,
+      over: layers.over.getContext('2d', CPU)!,
+    },
+  }
+}
+
+/** Texture rows per unit of height (a vessel) or of diameter (a plate) at detail 1. */
+export const unitTexels = (shape: Shape) => (shape.kind === 'plate' ? 2560 : 1536)
+
 export class Painter {
   readonly r: Float32Array
   readonly color: HTMLCanvasElement
@@ -377,28 +402,30 @@ export class Painter {
 
   readonly shape: Shape
 
+  /**
+   * A small copy of every mark, always painted at the same size. Painters read
+   * it to find bare glaze, so what they decide never depends on the texture's
+   * detail: the same seed paints the same piece at any size.
+   */
+  readonly sketch: Surface
+  private readonly main: Surface
+
   constructor(shape: Shape, detail = 1) {
     this.shape = shape
     const snap = (v: number) => Math.max(512, Math.round(v / 256) * 256)
     this.detail = detail
     this.width = snap((shape.kind === 'plate' ? 2560 : 3072) * detail)
-    this.height = snap((shape.kind === 'plate' ? 2560 : 1536) * detail)
+    this.height = snap(unitTexels(shape) * detail)
     const width = this.width
     const height = this.height
     this.mode = shape.kind === 'plate' ? 'disc' : 'wall'
     this.r = sampleProfile(shape.points).r
     this.color = makeCanvas(width, height)
     this.base = this.color.getContext('2d', CPU)!
-    this.layers = {
-      paint: makeCanvas(width, height),
-      gold: makeCanvas(width, height),
-      over: makeCanvas(width, height),
-    }
-    this.ctx = {
-      paint: this.layers.paint.getContext('2d', CPU)!,
-      gold: this.layers.gold.getContext('2d', CPU)!,
-      over: this.layers.over.getContext('2d', CPU)!,
-    }
+    this.main = makeSurface(width, height)
+    this.layers = this.main.layers
+    this.ctx = this.main.ctx
+    this.sketch = makeSurface(512, this.mode === 'disc' ? 512 : 256)
   }
 
   /** Radius of the circle a height sits on. On a plate the 'height' is the distance from the centre. */
@@ -411,11 +438,6 @@ export class Painter {
     return TAU * this.R(y)
   }
 
-  /** Texture row for a wall height. */
-  v(y: number) {
-    return (1 - y) * this.height
-  }
-
   frame(theta: number, x = 0, y = 0, rot = 0, scale = 1, flip = false) {
     return new Frame(this, theta, [1, 0, 0, 1, 0, 0]).child(x, y, rot, scale, flip)
   }
@@ -425,20 +447,20 @@ export class Painter {
     return new Frame(this, null, [1, 0, 0, 1, 0, 0]).child(x, y, rot, scale, flip)
   }
 
-  private toTex(theta: number | null, [x, y]: Pt): Pt {
+  private toTex(theta: number | null, [x, y]: Pt, s: Surface = this.main): Pt {
     if (this.mode === 'disc') {
       // plate face spans [-0.5, 0.5]
-      if (theta === null) return [(0.5 + x) * this.width, (0.5 - y) * this.height]
+      if (theta === null) return [(0.5 + x) * s.width, (0.5 - y) * s.height]
       const r = Math.max(0, y)
       const ang = theta + x / this.R(r)
-      return [(0.5 + r * Math.cos(ang)) * this.width, (0.5 - r * Math.sin(ang)) * this.height]
+      return [(0.5 + r * Math.cos(ang)) * s.width, (0.5 - r * Math.sin(ang)) * s.height]
     }
     const yy = Math.min(1, Math.max(0, y))
     const ang = (theta ?? 0) + x / this.R(yy)
-    return [(ang / TAU) * this.width, (1 - y) * this.height]
+    return [(ang / TAU) * s.width, (1 - y) * s.height]
   }
 
-  private copies(pts: Pt[]) {
+  private copies(pts: Pt[], s: Surface) {
     if (this.mode === 'disc') return [0]
     let min = Infinity
     let max = -Infinity
@@ -447,9 +469,9 @@ export class Painter {
       if (p[0] > max) max = p[0]
     }
     const shifts: number[] = []
-    const kMin = Math.floor(min / this.width)
-    const kMax = Math.floor(max / this.width)
-    for (let k = kMin; k <= kMax; k++) shifts.push(-k * this.width)
+    const kMin = Math.floor(min / s.width)
+    const kMax = Math.floor(max / s.width)
+    for (let k = kMin; k <= kMax; k++) shifts.push(-k * s.width)
     return shifts
   }
 
@@ -491,10 +513,14 @@ export class Painter {
       if (!opts.erase) this.note(phys, 0)
       return
     }
-    const ctx = this.ctx[layer]
-    const tex = phys.map((p) => this.toTex(theta, p))
     const cy = phys.reduce((a, p) => a + p[1], 0) / phys.length
-    for (const shift of this.copies(tex)) {
+    for (const s of [this.main, this.sketch]) this.fillOn(s, layer, theta, phys, cy, color, opts)
+  }
+
+  private fillOn(s: Surface, layer: LayerName, theta: number | null, phys: Pt[], cy: number, color: string, opts: FillOpts) {
+    const ctx = s.ctx[layer]
+    const tex = phys.map((p) => this.toTex(theta, p, s))
+    for (const shift of this.copies(tex, s)) {
       ctx.save()
       ctx.beginPath()
       tex.forEach(([u, v], i) => (i ? ctx.lineTo(u + shift, v) : ctx.moveTo(u + shift, v)))
@@ -504,7 +530,8 @@ export class Painter {
       if (opts.erase) ctx.globalCompositeOperation = 'destination-out'
       ctx.fill(opts.evenOdd ? 'evenodd' : 'nonzero')
       ctx.restore()
-      if ((opts.pool || opts.grain) && !opts.erase) {
+      // pooling and grain stay inside the wash, so the sketch can skip them
+      if (s === this.main && (opts.pool || opts.grain) && !opts.erase) {
         ctx.save()
         ctx.beginPath()
         tex.forEach(([u, v], i) => (i ? ctx.lineTo(u + shift, v) : ctx.moveTo(u + shift, v)))
@@ -524,7 +551,7 @@ export class Painter {
           alpha: opts.edgeAlpha ?? 0.5,
           closed: true,
           join: 'round',
-        })
+        }, s)
       }
     }
   }
@@ -601,11 +628,12 @@ export class Painter {
       if (!opts.erase) this.note(phys, width / 2)
       return
     }
-    const ctx = this.ctx[layer]
-    const tex = phys.map((p) => this.toTex(theta, p))
     const cy = phys.reduce((a, p) => a + p[1], 0) / phys.length
-    for (const shift of this.copies(tex)) {
-      this.strokeTex(ctx, tex.map(([u, v]) => [u + shift, v] as Pt), cy, color, width, opts)
+    for (const s of [this.main, this.sketch]) {
+      const tex = phys.map((p) => this.toTex(theta, p, s))
+      for (const shift of this.copies(tex, s)) {
+        this.strokeTex(s.ctx[layer], tex.map(([u, v]) => [u + shift, v] as Pt), cy, color, width, opts, s)
+      }
     }
   }
 
@@ -613,9 +641,9 @@ export class Painter {
    * Stroke in texture space with the wall's local anisotropy, so a line has
    * the same physical thickness in every direction.
    */
-  private strokeTex(ctx: CanvasRenderingContext2D, tex: Pt[], y: number, color: string, width: number, opts: LineOpts) {
-    const sx = this.mode === 'disc' ? this.width : this.width / (TAU * this.R(Math.min(1, Math.max(0, y))))
-    const sy = this.height
+  private strokeTex(ctx: CanvasRenderingContext2D, tex: Pt[], y: number, color: string, width: number, opts: LineOpts, s: Surface = this.main) {
+    const sx = this.mode === 'disc' ? s.width : s.width / (TAU * this.R(Math.min(1, Math.max(0, y))))
+    const sy = s.height
     ctx.save()
     ctx.scale(sx, sy)
     ctx.beginPath()
@@ -634,55 +662,61 @@ export class Painter {
 
   /** Keep painting inside a horizontal zone until `unclip`. */
   clip(from: number, to: number) {
-    for (const k of Object.keys(this.ctx) as LayerName[]) {
-      const ctx = this.ctx[k]
-      ctx.save()
-      ctx.beginPath()
-      this.zonePath(ctx, from, to)
-      ctx.clip('evenodd')
+    for (const s of [this.main, this.sketch]) {
+      for (const ctx of Object.values(s.ctx)) {
+        ctx.save()
+        ctx.beginPath()
+        this.zonePath(ctx, from, to, s)
+        ctx.clip('evenodd')
+      }
     }
   }
 
   /** Band between two heights (wall) or an annulus between two radii (plate). */
-  private zonePath(ctx: CanvasRenderingContext2D, from: number, to: number) {
+  private zonePath(ctx: CanvasRenderingContext2D, from: number, to: number, s: Surface) {
     if (this.mode === 'disc') {
-      const cx = this.width / 2
-      const cy = this.height / 2
-      ctx.arc(cx, cy, to * this.width, 0, TAU)
+      const cx = s.width / 2
+      const cy = s.height / 2
+      ctx.arc(cx, cy, to * s.width, 0, TAU)
       if (from > 0) {
-        ctx.moveTo(cx + from * this.width, cy)
-        ctx.arc(cx, cy, from * this.width, 0, TAU, true)
+        ctx.moveTo(cx + from * s.width, cy)
+        ctx.arc(cx, cy, from * s.width, 0, TAU, true)
       }
     } else {
-      ctx.rect(0, this.v(to), this.width, this.v(from) - this.v(to))
+      ctx.rect(0, (1 - to) * s.height, s.width, (to - from) * s.height)
     }
   }
 
   unclip() {
-    for (const k of Object.keys(this.ctx) as LayerName[]) this.ctx[k].restore()
+    for (const s of [this.main, this.sketch]) for (const ctx of Object.values(s.ctx)) ctx.restore()
   }
 
   /** Full-circumference band between two heights, straight onto a layer. */
   band(layer: LayerName | 'base', from: number, to: number, color: string, alpha = 1) {
-    const ctx = layer === 'base' ? this.base : this.ctx[layer]
-    ctx.save()
-    ctx.globalAlpha = alpha
-    ctx.fillStyle = color
-    ctx.beginPath()
-    this.zonePath(ctx, from, to)
-    ctx.fill('evenodd')
-    ctx.restore()
+    const targets: [CanvasRenderingContext2D, Surface][] =
+      layer === 'base' ? [[this.base, this.main]] : [[this.main.ctx[layer], this.main], [this.sketch.ctx[layer], this.sketch]]
+    for (const [ctx, s] of targets) {
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = color
+      ctx.beginPath()
+      this.zonePath(ctx, from, to, s)
+      ctx.fill('evenodd')
+      ctx.restore()
+    }
   }
 
   /** Scrape a whole zone back to the ground. */
   eraseZone(layer: LayerName, from: number, to: number) {
-    const ctx = this.ctx[layer]
-    ctx.save()
-    ctx.globalCompositeOperation = 'destination-out'
-    ctx.beginPath()
-    this.zonePath(ctx, from, to)
-    ctx.fill('evenodd')
-    ctx.restore()
+    for (const s of [this.main, this.sketch]) {
+      const ctx = s.ctx[layer]
+      ctx.save()
+      ctx.globalCompositeOperation = 'destination-out'
+      ctx.beginPath()
+      this.zonePath(ctx, from, to, s)
+      ctx.fill('evenodd')
+      ctx.restore()
+    }
   }
 
   /** A painted ring line, wavering slightly as a hand-held brush does. */
@@ -799,6 +833,7 @@ export class Painter {
       this.layers[k].height = 1
     }
     tmp.width = tmp.height = 1
+    for (const layer of Object.values(this.sketch.layers)) layer.width = layer.height = 1
     matCanvas.width = matCanvas.height = 1
     return { color: this.color, mat: relief }
   }

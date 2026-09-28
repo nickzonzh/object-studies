@@ -1,4 +1,5 @@
 import { FRAG, VERT } from './shader.js'
+import { unitTexels } from './painter.js'
 import { type Shape, sampleProfile, shapeExtent, shapeTop, PROFILE_SAMPLES } from './shapes.js'
 
 export type Finish = {
@@ -43,11 +44,6 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string) {
   const s = gl.createShader(type)!
   gl.shaderSource(s, src)
   gl.compileShader(s)
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(s)
-    gl.deleteShader(s)
-    throw new Error(`Shader compile failed: ${log}`)
-  }
   return s
 }
 
@@ -59,6 +55,16 @@ export type Scene = {
   matTex: WebGLTexture
   texSize: [number, number]
   finish: Finish
+}
+
+/**
+ * Texture detail for a piece shown `cssHeight` CSS px tall: about two texels per
+ * device pixel, matching the supersampled render, so a small shelf piece or a
+ * phone never paints a texture far larger than it can show.
+ */
+export function detailFor(shape: Shape, cssHeight: number, dpr: number) {
+  const unitPx = (cssHeight * Math.min(dpr || 1, 2)) / frameFor(shape).height
+  return Math.max(0.3, Math.min(1.5, (2 * unitPx) / unitTexels(shape)))
 }
 
 /** Pixel budgets for supersampling: the live piece, a still while it moves, a still at rest. */
@@ -82,9 +88,20 @@ export const DEFAULT_LIGHT = { az: -0.55, el: 0.5 }
  */
 export class VaseRenderer {
   private gl: WebGL2RenderingContext
-  private program: WebGLProgram
+  private program!: WebGLProgram
+  private shaders: WebGLShader[] = []
+  /** Set once the program has finished compiling and linked cleanly. */
+  private linked = false
+  private parallel: KHR_parallel_shader_compile | null
   private uniforms = new Map<string, WebGLUniformLocation | null>()
   private scenes = new Set<Scene>()
+  private restoreListeners = new Set<() => void>()
+  /**
+   * True between the browser dropping the GPU context (memory pressure, a
+   * backgrounded mobile tab, a driver reset) and handing it back. Every texture
+   * is gone by then, so scenes must be painted again once it is restored.
+   */
+  lost = false
 
   readonly canvas: HTMLCanvasElement
 
@@ -98,21 +115,68 @@ export class VaseRenderer {
     })
     if (!gl) throw new Error('WebGL2 is not available')
     this.gl = gl
+    this.parallel = gl.getExtension('KHR_parallel_shader_compile')
+    canvas.addEventListener('webglcontextlost', this.onLost)
+    canvas.addEventListener('webglcontextrestored', this.onRestored)
+    this.init()
+  }
+
+  private onLost = (event: Event) => {
+    // Without preventDefault the browser never offers the context back.
+    event.preventDefault()
+    this.lost = true
+    this.scenes.clear()
+    this.uniforms.clear()
+  }
+
+  private onRestored = () => {
+    this.init()
+    this.lost = false
+    for (const listener of this.restoreListeners) listener()
+  }
+
+  /** Called after a lost context comes back, when every scene needs painting again. */
+  onRestore(listener: () => void) {
+    this.restoreListeners.add(listener)
+    return () => {
+      this.restoreListeners.delete(listener)
+    }
+  }
+
+  /**
+   * Starts compiling the shader. The ray-marcher is large enough that a
+   * blocking compile freezes the page for seconds on some drivers (Direct3D on
+   * Windows), so its status is not asked for until `ready()`, which lets the
+   * browser compile it off the main thread where it can.
+   */
+  private init() {
+    const gl = this.gl
     const program = gl.createProgram()!
-    gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERT))
-    gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAG))
+    this.shaders = [compile(gl, gl.VERTEX_SHADER, VERT), compile(gl, gl.FRAGMENT_SHADER, FRAG)]
+    for (const shader of this.shaders) gl.attachShader(program, shader)
     gl.bindAttribLocation(program, 0, 'aPos')
     gl.linkProgram(program)
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      throw new Error(`Program link failed: ${gl.getProgramInfoLog(program)}`)
-    }
     this.program = program
+    this.linked = false
 
     const buf = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
+  }
+
+  /** Whether the shader can draw yet. Throws if it failed to compile or link. */
+  ready() {
+    if (this.linked) return true
+    const gl = this.gl
+    if (this.parallel && !gl.getProgramParameter(this.program, this.parallel.COMPLETION_STATUS_KHR)) return false
+    if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+      const logs = [...this.shaders.map((shader) => gl.getShaderInfoLog(shader)), gl.getProgramInfoLog(this.program)]
+      throw new Error(`Shader failed to build: ${logs.filter(Boolean).join(' ')}`)
+    }
+    this.linked = true
+    return true
   }
 
   private u(name: string) {
@@ -194,7 +258,9 @@ export class VaseRenderer {
     }
   }
 
+  /** Draws the scene, or returns false while the shader is still compiling. */
   render(scene: Scene, view: View) {
+    if (this.lost || !this.ready()) return false
     const gl = this.gl
     const shape = scene.shape
     const f = scene.finish
@@ -288,11 +354,16 @@ export class VaseRenderer {
     gl.uniform1f(this.u('uRelief'), f.relief)
 
     gl.drawArrays(gl.TRIANGLES, 0, 3)
+    return true
   }
 
   dispose() {
     for (const scene of [...this.scenes]) this.deleteScene(scene)
     this.gl.deleteProgram(this.program)
+    for (const shader of this.shaders) this.gl.deleteShader(shader)
+    this.canvas.removeEventListener('webglcontextlost', this.onLost)
+    this.canvas.removeEventListener('webglcontextrestored', this.onRestored)
+    this.restoreListeners.clear()
   }
 }
 
@@ -308,19 +379,22 @@ export function sharedRenderer() {
 
 /**
  * Draw a scene with the shared renderer, supersampled within a pixel budget,
- * and filter it down into a 2D canvas.
+ * and filter it down into a 2D canvas. Returns false if nothing could be drawn yet.
  */
 export function renderInto(scene: Scene, view: View, target: HTMLCanvasElement, budget = STILL_REST_BUDGET) {
   const r = sharedRenderer()
+  // keep the last frame on screen until a lost context is repainted or the shader is ready
+  if (r.lost || !r.ready()) return false
   const ss = supersample(target.width, target.height, budget)
   r.setSize(Math.round(target.width * ss), Math.round(target.height * ss))
   r.render(scene, view)
   const ctx = target.getContext('2d')
-  if (!ctx) return
+  if (!ctx) return false
   ctx.clearRect(0, 0, target.width, target.height)
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(r.canvas, 0, 0, r.canvas.width, r.canvas.height, 0, 0, target.width, target.height)
+  return true
 }
 
 /**

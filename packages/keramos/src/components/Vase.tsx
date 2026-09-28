@@ -4,6 +4,7 @@ import {
   DEFAULT_LIGHT,
   type Scene,
   VaseRenderer,
+  detailFor,
   frameFor,
   STILL_MOVING_BUDGET,
   STILL_REST_BUDGET,
@@ -34,7 +35,10 @@ export type VaseProps = {
   angle?: number
   /** Let people drag to turn the piece. */
   draggable?: boolean
-  /** Texture detail: 1 is standard, higher for a piece shown large, lower for small shelf pieces. */
+  /**
+   * Texture detail: 1 is standard. Leave it out and it follows the size the
+   * piece is shown at, so small pieces paint faster and use less GPU memory.
+   */
   detail?: number
   /** Idle turntable speed multiplier. */
   spin?: number
@@ -50,21 +54,29 @@ const FRICTION = 3.2
 
 // Painting a surface takes a few hundred milliseconds on the main thread, so
 // pieces on the same page take turns instead of freezing it all at once.
-const paintQueue: (() => void)[] = []
-let painting = false
-function schedulePaint(job: () => void) {
+type PaintJob = { run: () => void; cancelled: boolean }
+const paintQueue: PaintJob[] = []
+let draining = false
+function schedulePaint(run: () => void) {
+  const job: PaintJob = { run, cancelled: false }
   paintQueue.push(job)
-  if (!painting) drain()
+  if (!draining) drain()
+  return () => {
+    job.cancelled = true
+  }
 }
 function drain() {
-  const job = paintQueue.shift()
+  // A cancelled job (the design changed, the piece left the page) gives up its turn at once.
+  let job = paintQueue.shift()
+  while (job?.cancelled) job = paintQueue.shift()
   if (!job) {
-    painting = false
+    draining = false
     return
   }
-  painting = true
+  draining = true
+  const next = job
   window.setTimeout(() => {
-    job()
+    if (!next.cancelled) next.run()
     drain()
   }, 24)
 }
@@ -80,7 +92,7 @@ export function Vase({
   draggable = true,
   spin = 1,
   maxFps = 60,
-  detail = 1,
+  detail,
   className,
   label,
   onReady,
@@ -88,11 +100,19 @@ export function Vase({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const ownRenderer = useRef<VaseRenderer | null>(null)
+  const stopListening = useRef<(() => void) | null>(null)
   const sceneRef = useRef<Scene | null>(null)
+  const paintedRef = useRef<string | null>(null)
   const loopRef = useRef<{ wake: () => void; draw: () => void } | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
-  const [painting, setPainting] = useState(true)
+  const [paintedKey, setPaintedKey] = useState<string | null>(null)
   const [awake, setAwake] = useState(false)
+  /** Within reach of the viewport, so worth painting. */
+  const [near, setNear] = useState(false)
+  /** Detail the displayed size calls for, per shape; none until the piece has been measured. */
+  const [autoDetail, setAutoDetail] = useState<{ shape: ShapeId; value: number } | null>(null)
+  /** Bumped when a lost GPU context comes back and the piece must be painted again. */
+  const [generation, setGeneration] = useState(0)
   const isPlate = SHAPES[shape].kind === 'plate'
   const state = useRef({
     rotation: angle,
@@ -113,46 +133,41 @@ export function Vase({
     spin,
     maxFps,
   })
-  // a wall plate stays put until someone spins it
-  state.current.turntable = turntable && !isPlate
-  state.current.spin = spin
-  state.current.maxFps = maxFps
-  const def = SHAPES[shape]
-  const { aspect } = frameFor(def)
-
-  // The renderer: a live piece owns a GPU context; a still piece borrows the shared one.
-  const renderer = () => (mode === 'live' ? ownRenderer.current : sharedRenderer())
-
+  // What the loop and the painter read, without restarting either.
+  const latest = useRef({ onReady })
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    try {
-      if (mode === 'live') ownRenderer.current = new VaseRenderer(canvas)
-      else sharedRenderer()
-    } catch (err) {
-      console.error('[keramos]', err)
-      setFailed(err instanceof Error ? err.message : 'WebGL unavailable')
-      return
-    }
+    latest.current = { onReady }
+    // a wall plate stays put until someone spins it
+    Object.assign(state.current, { turntable: turntable && !isPlate, spin, maxFps })
+  })
+  const { aspect } = frameFor(SHAPES[shape])
+  const detailValue = detail ?? (autoDetail?.shape === shape ? autoDetail.value : 0)
+  const key = `${mode}|${shape}|${vaseStyle}|${palette}|${seed}|${detailValue}|${generation}`
+  const painting = !failed && paintedKey !== key
+
+  // The renderer is created on first paint; this only lets go of it.
+  useEffect(() => {
     return () => {
-      if (sceneRef.current) renderer()?.deleteScene(sceneRef.current)
+      if (sceneRef.current) (mode === 'live' ? ownRenderer.current : sharedRenderer())?.deleteScene(sceneRef.current)
       sceneRef.current = null
+      paintedRef.current = null
+      stopListening.current?.()
+      stopListening.current = null
       ownRenderer.current?.dispose()
       ownRenderer.current = null
     }
   }, [mode])
 
-  // paint the surface whenever the design changes
+  // Paint the surface whenever the design changes, once the piece is near the viewport.
   useEffect(() => {
-    if (failed) return
-    setPainting(true)
-    let cancelled = false
-    schedulePaint(() => {
-      const r = renderer()
-      if (cancelled || !r) return
+    if (failed || !near || !detailValue || paintedRef.current === key) return
+    return schedulePaint(() => {
       try {
+        const r = acquireRenderer()
+        if (r.lost) return
         const t0 = performance.now()
-        const s = paintVessel(def, vaseStyle, palette, seed, detail)
+        const def = SHAPES[shape]
+        const s = paintVessel(def, vaseStyle, palette, seed, detailValue)
         const next = r.createScene(def, s.color, s.mat, s.finish)
         s.color.width = s.color.height = 1
         s.mat.width = s.mat.height = 1
@@ -164,15 +179,33 @@ export function Vase({
         setFailed(err instanceof Error ? err.message : String(err))
         return
       }
+      paintedRef.current = key
       state.current.dirty = true
       loopRef.current?.draw()
-      setPainting(false)
-      onReady?.()
+      setPaintedKey(key)
+      latest.current.onReady?.()
     })
-    return () => {
-      cancelled = true
+
+    function acquireRenderer() {
+      const repaint = () => {
+        sceneRef.current = null
+        paintedRef.current = null
+        setGeneration((g) => g + 1)
+      }
+      if (mode === 'live') {
+        if (!ownRenderer.current) {
+          ownRenderer.current = new VaseRenderer(canvasRef.current!)
+          stopListening.current = ownRenderer.current.onRestore(repaint)
+          const wrap = wrapRef.current!.getBoundingClientRect()
+          ownRenderer.current.resize(wrap.width, wrap.height, window.devicePixelRatio || 1)
+        }
+        return ownRenderer.current
+      }
+      const shared = sharedRenderer()
+      if (!stopListening.current) stopListening.current = shared.onRestore(repaint)
+      return shared
     }
-  }, [shape, vaseStyle, palette, seed, detail, failed])
+  }, [key, failed, near, mode, shape, vaseStyle, palette, seed, detailValue])
 
   // sizing and the frame loop
   useEffect(() => {
@@ -186,21 +219,35 @@ export function Vase({
     mq.addEventListener('change', onMq)
 
     // Stills render at full supersampling when they come to rest, and a
-    // little lighter while they move.
+    // little lighter while they move. Returns false while the shader is still
+    // compiling, so the frame is tried again.
     const draw = (atRest = true) => {
       const scene = sceneRef.current
-      if (!scene) return
+      if (!scene) return true
       const view = { rotation: st.rotation, lightAz: st.lightAz, lightEl: st.lightEl }
-      if (mode === 'live') ownRenderer.current?.render(scene, view)
-      else renderInto(scene, view, canvas, atRest ? STILL_REST_BUDGET : STILL_MOVING_BUDGET)
-      st.dirty = false
+      try {
+        const drawn =
+          mode === 'live'
+            ? (ownRenderer.current?.render(scene, view) ?? false)
+            : renderInto(scene, view, canvas, atRest ? STILL_REST_BUDGET : STILL_MOVING_BUDGET)
+        st.dirty = !drawn
+        return drawn
+      } catch (err) {
+        console.error('[keramos]', err)
+        setFailed(err instanceof Error ? err.message : String(err))
+        return true
+      }
     }
 
     const ro = new ResizeObserver(() => {
       const rect = wrap.getBoundingClientRect()
-      const scale = Math.min(window.devicePixelRatio || 1, 2)
-      if (mode === 'live') ownRenderer.current?.resize(rect.width, rect.height, window.devicePixelRatio || 1)
+      const dpr = window.devicePixelRatio || 1
+      // Grows only, in tenths, so a window being dragged wider repaints a few times, not every frame.
+      const wanted = Math.ceil(detailFor(SHAPES[shape], rect.height, dpr) * 10) / 10
+      setAutoDetail((d) => ({ shape, value: d?.shape === shape ? Math.max(d.value, wanted) : wanted }))
+      if (mode === 'live') ownRenderer.current?.resize(rect.width, rect.height, dpr)
       else {
+        const scale = Math.min(dpr, 2)
         const w = Math.max(1, Math.round(rect.width * scale))
         const h = Math.max(1, Math.round(rect.height * scale))
         if (canvas.width !== w || canvas.height !== h) {
@@ -209,7 +256,7 @@ export function Vase({
         }
       }
       st.dirty = true
-      if (!running) draw()
+      if (!running && !draw()) wake()
     })
     ro.observe(wrap)
     const io = new IntersectionObserver((entries) => {
@@ -217,6 +264,14 @@ export function Vase({
       if (st.visible) wake()
     })
     io.observe(wrap)
+    // Paint a little ahead of scrolling, so pieces are ready as they arrive.
+    const approach = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setNear(true)
+      },
+      { rootMargin: '50% 0px' },
+    )
+    approach.observe(wrap)
 
     let raf = 0
     let running = false
@@ -235,9 +290,8 @@ export function Vase({
         return
       }
       // a still piece stops its loop once it has come to rest in the room light
-      if (mode === 'still' && settled()) {
-        // one last, fully supersampled frame in the room light
-        draw(true)
+      // one last, fully supersampled frame in the room light
+      if (mode === 'still' && settled() && draw(true)) {
         running = false
         setAwake(false)
         return
@@ -282,7 +336,13 @@ export function Vase({
       if (mode === 'still') setAwake(true)
       raf = requestAnimationFrame(tick)
     }
-    loopRef.current = { wake, draw: () => (running ? (st.dirty = true) : draw()) }
+    loopRef.current = {
+      wake,
+      draw: () => {
+        if (running) st.dirty = true
+        else if (!draw()) wake()
+      },
+    }
     if (mode === 'live') wake()
 
     return () => {
@@ -290,10 +350,11 @@ export function Vase({
       running = false
       ro.disconnect()
       io.disconnect()
+      approach.disconnect()
       mq.removeEventListener('change', onMq)
       loopRef.current = null
     }
-  }, [mode])
+  }, [mode, shape])
 
   // The pointer is a lamp. A live piece always sees it, softening with
   // distance; a still piece only follows it while engaged.
