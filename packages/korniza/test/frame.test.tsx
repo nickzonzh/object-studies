@@ -43,6 +43,12 @@ describe('public contract', () => {
     expect(html).toMatch(/class="korniza"(?![^>]*aspect-ratio)/)
   })
 
+  it('gives a matted frame the ratio in its window, so the mat never crops the art', () => {
+    const html = renderToString(<Frame variant="modern-black" aspectRatio="3 / 2" mat />)
+    expect(html).toMatch(/class="korniza-frame__opening korniza-mat">/)
+    expect(html).toMatch(/class="korniza-frame__window" style="aspect-ratio:3 \/ 2"/)
+  })
+
   it('merges mat overrides and consumer style on the themeable wrapper', () => {
     const html = renderToString(<Frame variant="carved-oak" mat={{ width: '18px', color: '#f4efe4' }} style={{ maxWidth: 420 }} />)
     expect(html).toContain('max-width:420px')
