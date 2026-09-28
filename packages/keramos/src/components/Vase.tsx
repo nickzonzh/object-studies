@@ -12,7 +12,8 @@ import {
   renderInto,
   sharedRenderer,
 } from '../lib/renderer.js'
-import { paintVessel, type StyleId } from '../lib/styles.js'
+import { paintSurface } from '../lib/paint.js'
+import type { StyleId } from '../lib/styles.js'
 import '../styles.css'
 
 export type VaseProps = {
@@ -54,12 +55,13 @@ const CANVAS_FILL = { position: 'absolute', inset: 0, width: '100%', height: '10
 const SPIN = 0.16 // rad/s
 const FRICTION = 3.2
 
-// Painting a surface takes a few hundred milliseconds on the main thread, so
-// pieces on the same page take turns instead of freezing it all at once.
-type PaintJob = { run: () => void; cancelled: boolean }
+// Painting a surface takes a few hundred milliseconds, so pieces on the same
+// page take turns: one paint at a time, whether it runs in the paint worker or
+// (where there is none) on the main thread, which must not freeze all at once.
+type PaintJob = { run: (cancelled: () => boolean) => Promise<void>; cancelled: boolean }
 const paintQueue: PaintJob[] = []
 let draining = false
-function schedulePaint(run: () => void) {
+function schedulePaint(run: PaintJob['run']) {
   const job: PaintJob = { run, cancelled: false }
   paintQueue.push(job)
   if (!draining) drain()
@@ -77,8 +79,8 @@ function drain() {
   }
   draining = true
   const next = job
-  window.setTimeout(() => {
-    if (!next.cancelled) next.run()
+  window.setTimeout(async () => {
+    if (!next.cancelled) await next.run(() => next.cancelled)
     drain()
   }, 24)
 }
@@ -165,16 +167,20 @@ export function Vase({
   // Paint the surface whenever the design changes, once the piece is near the viewport.
   useEffect(() => {
     if (failed || !near || !detailValue || paintedRef.current === key) return
-    return schedulePaint(() => {
+    return schedulePaint(async (cancelled) => {
       try {
         const r = acquireRenderer()
         if (r.lost) return
         const t0 = performance.now()
+        const s = await paintSurface({ shape, style: vaseStyle, palette, seed, detail: detailValue })
+        // the design changed, the piece left the page or the GPU went away while it was being painted
+        if (cancelled() || r.lost) {
+          s.release()
+          return
+        }
         const def = SHAPES[shape]
-        const s = paintVessel(def, vaseStyle, palette, seed, detailValue)
         const next = r.createScene(def, s.color, s.mat, s.finish)
-        s.color.width = s.color.height = 1
-        s.mat.width = s.mat.height = 1
+        s.release()
         if (sceneRef.current) r.deleteScene(sceneRef.current)
         sceneRef.current = next
         console.debug(`[keramos] painted ${shape} in ${Math.round(performance.now() - t0)}ms`)

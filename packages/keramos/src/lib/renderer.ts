@@ -2,6 +2,9 @@ import { FRAG, VERT } from './shader.js'
 import { unitTexels } from './painter.js'
 import { type Shape, sampleProfile, shapeExtent, shapeTop, PROFILE_SAMPLES } from './shapes.js'
 
+/** A painted map, from the main thread (a canvas) or from the paint worker (a bitmap). */
+export type TextureSource = HTMLCanvasElement | OffscreenCanvas | ImageBitmap
+
 export type Finish = {
   interior: [number, number, number]
   interiorGloss: number
@@ -187,7 +190,7 @@ export class VaseRenderer {
     return this.uniforms.get(name)!
   }
 
-  createScene(shape: Shape, color: HTMLCanvasElement | OffscreenCanvas, mat: HTMLCanvasElement | OffscreenCanvas, finish: Finish): Scene {
+  createScene(shape: Shape, color: TextureSource, mat: TextureSource, finish: Finish): Scene {
     const gl = this.gl
     const profileTex = gl.createTexture()!
     const { r, dr } = sampleProfile(shape.points)
@@ -225,8 +228,8 @@ export class VaseRenderer {
     const scene: Scene = {
       shape,
       profileTex,
-      colorTex: upload(color as TexImageSource, true),
-      matTex: upload(mat as TexImageSource, false),
+      colorTex: upload(color, true),
+      matTex: upload(mat, false),
       texSize: [color.width, color.height],
       finish,
     }

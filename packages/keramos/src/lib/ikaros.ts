@@ -21,6 +21,7 @@ import {
   jitterPts,
   shade,
   fit,
+  createContext,
   type Extent,
 } from './painter.js'
 import type { Zone } from './shapes.js'
@@ -979,10 +980,7 @@ class Probe {
     // Read the fixed-size sketch, never the texture, so gaps are found the same at any detail.
     this.w = p.sketch.width
     this.h = p.sketch.height
-    const probe = document.createElement('canvas')
-    probe.width = this.w
-    probe.height = this.h
-    const pc = probe.getContext('2d', { willReadFrequently: true })!
+    const pc = createContext(this.w, this.h)
     pc.drawImage(p.sketch.layers.paint, 0, 0)
     pc.drawImage(p.sketch.layers.over, 0, 0)
     pc.drawImage(p.sketch.layers.gold, 0, 0)

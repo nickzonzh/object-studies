@@ -1,16 +1,13 @@
 import assert from 'node:assert/strict'
 import { createCanvas } from '@napi-rs/canvas'
-import { afterAll, beforeAll, test } from 'vitest'
-import { Painter } from '../src/lib/painter.js'
+import { beforeAll, test } from 'vitest'
+import { type Canvas2D, Painter, setCanvasFactory } from '../src/lib/painter.js'
 import { SHAPES, type ShapeId } from '../src/lib/shapes.js'
 import { paintVessel, type StyleId } from '../src/lib/styles.js'
 
-// The painter draws on DOM canvases; a Skia canvas stands in for them in Node.
+// The painter draws on browser canvases; a Skia canvas stands in for them in Node.
 beforeAll(() => {
-  globalThis.document = { createElement: () => createCanvas(1, 1) } as unknown as Document
-})
-afterAll(() => {
-  delete (globalThis as { document?: Document }).document
+  setCanvasFactory((w, h) => createCanvas(w, h).getContext('2d') as unknown as Canvas2D)
 })
 
 /** Paint a piece and keep the fixed-size sketch every placement decision is read from. */

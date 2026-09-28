@@ -339,11 +339,41 @@ export type LineOpts = {
  */
 const CPU: CanvasRenderingContext2DSettings = { willReadFrequently: true }
 
-function makeCanvas(w: number, h: number) {
-  const c = document.createElement('canvas')
-  c.width = w
-  c.height = h
-  return c
+export type PaintCanvas = HTMLCanvasElement | OffscreenCanvas
+export type Canvas2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+
+/**
+ * Every canvas the painters use comes from here, so the same code paints in
+ * a Web Worker (OffscreenCanvas), on the main thread (a DOM canvas) and in
+ * Node tests (which swap in their own canvas).
+ */
+let canvasFactory = (w: number, h: number): Canvas2D | null => {
+  if (typeof document !== 'undefined') {
+    const c = document.createElement('canvas')
+    c.width = w
+    c.height = h
+    return c.getContext('2d', CPU)
+  }
+  return new OffscreenCanvas(w, h).getContext('2d', CPU)
+}
+
+export function setCanvasFactory(factory: (w: number, h: number) => Canvas2D | null) {
+  canvasFactory = factory
+}
+
+/** A fresh 2D canvas of the given size, set up for the many small draws and reads painting makes. */
+export function createContext(w: number, h: number): Canvas2D {
+  const ctx = canvasFactory(w, h)
+  if (!ctx) throw new Error('keramos needs a 2D canvas to paint on')
+  return ctx
+}
+
+/** Whether ctx.filter blurs here. Some browsers ignore it, at least on an OffscreenCanvas. */
+export function canvasBlurs() {
+  const ctx = createContext(9, 1)
+  ctx.filter = 'blur(2px)'
+  ctx.fillRect(4, 0, 1, 1)
+  return ctx.getImageData(1, 0, 1, 1).data[3] > 0
 }
 
 export type SurfaceMaterial = {
@@ -364,22 +394,13 @@ export type SurfaceMaterial = {
 type Surface = {
   width: number
   height: number
-  layers: Record<LayerName, HTMLCanvasElement>
-  ctx: Record<LayerName, CanvasRenderingContext2D>
+  layers: Record<LayerName, PaintCanvas>
+  ctx: Record<LayerName, Canvas2D>
 }
 
 function makeSurface(width: number, height: number): Surface {
-  const layers = { paint: makeCanvas(width, height), gold: makeCanvas(width, height), over: makeCanvas(width, height) }
-  return {
-    width,
-    height,
-    layers,
-    ctx: {
-      paint: layers.paint.getContext('2d', CPU)!,
-      gold: layers.gold.getContext('2d', CPU)!,
-      over: layers.over.getContext('2d', CPU)!,
-    },
-  }
+  const ctx = { paint: createContext(width, height), gold: createContext(width, height), over: createContext(width, height) }
+  return { width, height, ctx, layers: { paint: ctx.paint.canvas, gold: ctx.gold.canvas, over: ctx.over.canvas } }
 }
 
 /** Texture rows per unit of height (a vessel) or of diameter (a plate) at detail 1. */
@@ -387,10 +408,10 @@ export const unitTexels = (shape: Shape) => (shape.kind === 'plate' ? 2560 : 153
 
 export class Painter {
   readonly r: Float32Array
-  readonly color: HTMLCanvasElement
-  readonly layers: Record<LayerName, HTMLCanvasElement>
-  readonly ctx: Record<LayerName, CanvasRenderingContext2D>
-  readonly base: CanvasRenderingContext2D
+  readonly color: PaintCanvas
+  readonly layers: Record<LayerName, PaintCanvas>
+  readonly ctx: Record<LayerName, Canvas2D>
+  readonly base: Canvas2D
 
   /** 'wall' paints the unrolled side of a vessel; 'disc' paints the face of a plate. */
   readonly mode: 'wall' | 'disc'
@@ -420,8 +441,8 @@ export class Painter {
     const height = this.height
     this.mode = shape.kind === 'plate' ? 'disc' : 'wall'
     this.r = sampleProfile(shape.points).r
-    this.color = makeCanvas(width, height)
-    this.base = this.color.getContext('2d', CPU)!
+    this.base = createContext(width, height)
+    this.color = this.base.canvas
     this.main = makeSurface(width, height)
     this.layers = this.main.layers
     this.ctx = this.main.ctx
@@ -558,7 +579,7 @@ export class Painter {
 
   /** Streaks laid across a shape (already clipped), following the brush direction. */
   private grainStrokes(
-    ctx: CanvasRenderingContext2D,
+    ctx: Canvas2D,
     theta: number | null,
     phys: Pt[],
     shift: number,
@@ -641,7 +662,7 @@ export class Painter {
    * Stroke in texture space with the wall's local anisotropy, so a line has
    * the same physical thickness in every direction.
    */
-  private strokeTex(ctx: CanvasRenderingContext2D, tex: Pt[], y: number, color: string, width: number, opts: LineOpts, s: Surface = this.main) {
+  private strokeTex(ctx: Canvas2D, tex: Pt[], y: number, color: string, width: number, opts: LineOpts, s: Surface = this.main) {
     const sx = this.mode === 'disc' ? s.width : s.width / (TAU * this.R(Math.min(1, Math.max(0, y))))
     const sy = s.height
     ctx.save()
@@ -673,7 +694,7 @@ export class Painter {
   }
 
   /** Band between two heights (wall) or an annulus between two radii (plate). */
-  private zonePath(ctx: CanvasRenderingContext2D, from: number, to: number, s: Surface) {
+  private zonePath(ctx: Canvas2D, from: number, to: number, s: Surface) {
     if (this.mode === 'disc') {
       const cx = s.width / 2
       const cy = s.height / 2
@@ -693,7 +714,7 @@ export class Painter {
 
   /** Full-circumference band between two heights, straight onto a layer. */
   band(layer: LayerName | 'base', from: number, to: number, color: string, alpha = 1) {
-    const targets: [CanvasRenderingContext2D, Surface][] =
+    const targets: [Canvas2D, Surface][] =
       layer === 'base' ? [[this.base, this.main]] : [[this.main.ctx[layer], this.main], [this.sketch.ctx[layer], this.sketch]]
     for (const [ctx, s] of targets) {
       ctx.save()
@@ -737,8 +758,8 @@ export class Painter {
     const ctx = this.base
     ctx.fillStyle = color
     ctx.fillRect(0, 0, this.width, this.height)
-    const small = makeCanvas(96, 48)
-    const sctx = small.getContext('2d', CPU)!
+    const sctx = createContext(96, 48)
+    const small = sctx.canvas
     const img = sctx.createImageData(96, 48)
     let seed = 1234567
     const rand = () => {
@@ -768,14 +789,14 @@ export class Painter {
   /** Composite layers into the albedo map and derive the material map. */
   finish(mat: SurfaceMaterial) {
     const { width: w, height: h } = this
-    const matCanvas = makeCanvas(w, h)
-    const m = matCanvas.getContext('2d', CPU)!
+    const m = createContext(w, h)
+    const matCanvas = m.canvas
     m.fillStyle = `rgb(0, ${Math.round(mat.groundGloss * 255)}, 0)`
     m.fillRect(0, 0, w, h)
 
-    const tmp = makeCanvas(w, h)
-    const t = tmp.getContext('2d', CPU)!
-    const stamp = (src: HTMLCanvasElement, rgb: string) => {
+    const t = createContext(w, h)
+    const tmp = t.canvas
+    const stamp = (src: PaintCanvas, rgb: string) => {
       t.globalCompositeOperation = 'copy'
       t.drawImage(src, 0, 0)
       t.globalCompositeOperation = 'source-in'
@@ -789,8 +810,8 @@ export class Painter {
 
     // uneven pigment: a brush never lays down a perfectly flat wash
     if (mat.pigmentNoise > 0) {
-      const n = makeCanvas(256, 128)
-      const nc = n.getContext('2d', CPU)!
+      const nc = createContext(256, 128)
+      const n = nc.canvas
       const img = nc.createImageData(256, 128)
       let seed = 987654
       for (let i = 0; i < img.data.length; i += 4) {
@@ -822,8 +843,8 @@ export class Painter {
     c.drawImage(this.layers.gold, 0, 0)
 
     // soften relief so the bump reads as raised enamel, not jaggies
-    const relief = makeCanvas(w, h)
-    const r = relief.getContext('2d', CPU)!
+    const r = createContext(w, h)
+    const relief = r.canvas
     r.filter = `blur(${1.2 * this.detail}px)`
     r.drawImage(matCanvas, 0, 0)
 
