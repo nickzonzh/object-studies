@@ -1,32 +1,16 @@
-import { useId } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useBoard } from '../hooks/useBoard.js'
-import { DEFAULT_MARKERS, ERASER_ID, TOOL_VARIABLES } from '../lib/tools.js'
-import type { WhiteboardLabels, WhiteboardProps } from '../types.js'
+import { defaultLabels } from '../labels.js'
+import { defaultMarkers, ERASER_ID, TOOL_VARIABLES } from '../lib/tools.js'
+import type { WhiteboardProps } from '../types.js'
 import { EraserArt, MarkerArt } from './ToolArt.js'
 import '../styles.css'
-
-const DEFAULT_LABELS: WhiteboardLabels = {
-  board: 'Whiteboard',
-  surface: 'Drawing surface',
-  instructions:
-    'Choose a marker or the eraser from the tray, then draw on the board. Drawing needs a mouse, pen or touch.',
-  tools: 'Whiteboard tools',
-  eraser: 'Eraser',
-  actions: 'Board actions',
-  undo: 'Undo',
-  redo: 'Redo',
-  clear: 'Clear',
-  save: 'Save PNG',
-  undone: 'Undid the last mark.',
-  redone: 'Redid the last mark.',
-  cleared: 'Board cleared.',
-  saveFailed: 'This board could not be saved on this device. Use Save PNG to keep a copy.',
-}
 
 const CORNERS = ['nw', 'ne', 'se', 'sw'] as const
 
 export function Whiteboard({
-  markers = DEFAULT_MARKERS,
+  markers = defaultMarkers,
   defaultStrokes,
   strokes,
   onStrokesChange,
@@ -35,20 +19,39 @@ export function Whiteboard({
   showControls = true,
   labels,
   brand = 'MELANI',
+  portalContainer,
   className,
   style,
   ref,
 }: WhiteboardProps) {
-  const text = { ...DEFAULT_LABELS, ...labels }
+  const text = { ...defaultLabels, ...labels }
   const instructionsId = useId()
+  const [portal, setPortal] = useState<HTMLElement | null>(null)
   const {
-    rootRef, objectRef, surfaceRef, lightRef, sheenRef, canvasRef, objectProps, surfaceProps, slotProps,
+    rootRef, objectRef, surfaceRef, lightRef, sheenRef, canvasRef, layerRef, objectProps, surfaceProps, slotProps,
     activeTool, announcement, canUndo, canRedo, hasMarks, undo, redo, clear, save,
   } = useBoard({
     markers, defaultStrokes, strokes, onStrokesChange, persistence,
-    exportFileName, labels: text, ref,
+    exportFileName, labels: text, overlay: portal, ref,
   })
   const tools = [...markers.map((marker) => marker.id), ERASER_ID]
+
+  // Tools in the air are posed in viewport coordinates, so they fly outside any
+  // transformed or clipping ancestor. The node is made after mount, which keeps
+  // the server render and the first client render identical, and it is always
+  // the component's own: a consumer's container is never restyled.
+  useEffect(() => {
+    const node = document.createElement('div')
+    node.className = 'melani-tool-portal'
+    // The printed brand keeps the board's typeface in the air.
+    node.style.fontFamily = getComputedStyle(rootRef.current!).fontFamily
+    ;(portalContainer ?? document.body).append(node)
+    setPortal(node)
+    return () => {
+      node.remove()
+      setPortal(null)
+    }
+  }, [portalContainer, rootRef])
 
   return (
     <div
@@ -79,7 +82,7 @@ export function Whiteboard({
             {brand ? <span className="melani-watermark" aria-hidden="true">{brand}</span> : null}
           </div>
         </div>
-        <div className="melani-tray" role="group" aria-label={text.tools}>
+        <div className="melani-tray" role="group" aria-label={text.toolGroup}>
           <div className="melani-tray-well">
             {markers.map((marker) => (
               <button
@@ -110,11 +113,14 @@ export function Whiteboard({
       </div>
 
       {showControls ? (
-        <div className="melani-controls" role="group" aria-label={text.actions}>
-          <button type="button" onClick={undo} disabled={!canUndo}>{text.undo}</button>
-          <button type="button" onClick={redo} disabled={!canRedo}>{text.redo}</button>
+        <div className="melani-controls" role="group" aria-label={text.controlGroup}>
+          {/* aria-disabled rather than disabled: a button that disables itself
+              under the keyboard would drop focus to the page. The actions
+              themselves do nothing when there is nothing to do. */}
+          <button type="button" onClick={undo} aria-disabled={!canUndo}>{text.undo}</button>
+          <button type="button" onClick={redo} aria-disabled={!canRedo}>{text.redo}</button>
           <span className="melani-controls-divider" aria-hidden="true" />
-          <button type="button" onClick={clear} disabled={!hasMarks}>{text.clear}</button>
+          <button type="button" onClick={clear} aria-disabled={!hasMarks}>{text.clear}</button>
           <button type="button" onClick={save}>{text.save}</button>
         </div>
       ) : null}
@@ -122,15 +128,20 @@ export function Whiteboard({
       <p className="melani-offscreen" id={instructionsId}>{text.instructions}</p>
       <p className="melani-offscreen" role="status">{announcement}</p>
 
-      {tools.map((id) => (
-        <div key={id} className="melani-flight" data-melani-flight={id} aria-hidden="true" hidden>
-          <span className="melani-flight-body">
-            {id === ERASER_ID
-              ? <EraserArt brand={brand} />
-              : <MarkerArt marker={markers.find((marker) => marker.id === id)!} brand={brand} />}
-          </span>
-        </div>
-      ))}
+      {portal ? createPortal(
+        <div ref={layerRef} className="melani-tool-layer" style={TOOL_VARIABLES}>
+          {tools.map((id) => (
+            <div key={id} className="melani-flight" data-melani-flight={id} aria-hidden="true" hidden>
+              <span className="melani-flight-body">
+                {id === ERASER_ID
+                  ? <EraserArt brand={brand} />
+                  : <MarkerArt marker={markers.find((marker) => marker.id === id)!} brand={brand} />}
+              </span>
+            </div>
+          ))}
+        </div>,
+        portal,
+      ) : null}
     </div>
   )
 }

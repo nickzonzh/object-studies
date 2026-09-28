@@ -2,10 +2,9 @@ import assert from 'node:assert/strict'
 import { test } from 'vitest'
 import type { StorageLike } from 'object-studies-core'
 import { createBoardPersistence } from '../src/lib/persistence.ts'
-import type { Stroke } from '../src/lib/strokes.ts'
+import { boardPoint, type Stroke } from '../src/lib/strokes.ts'
 
 const KEY = 'melani:whiteboard:v2'
-const LEGACY = 'melani:whiteboard:v1'
 
 const store = (initial: Record<string, string> = {}) => {
   const data = new Map(Object.entries(initial))
@@ -64,24 +63,18 @@ test('a corrupted board is reported, not restored and not overwritten', () => {
   }
 })
 
-test('a version 1 board is imported once and left where it was', () => {
-  const legacy = [stroke('legacy')]
-  const storage = store({ [LEGACY]: JSON.stringify(legacy) })
+// The board restores whenever a saved document exists, so a cleared board
+// must come back as a document with no strokes, not as nothing saved.
+test('a cleared board is restored as cleared', () => {
+  const storage = store()
   const persistence = createBoardPersistence(KEY, () => storage)
-  const loaded = persistence.load()
-  assert.deepEqual(loaded.strokes, legacy)
-  assert.equal(loaded.status, 'saved')
-  assert.ok(storage.data.has(LEGACY), 'The original document is not deleted')
-  // Once version 2 exists it takes over; the legacy board is no longer consulted.
-  persistence.save([stroke('current')])
-  assert.deepEqual(persistence.load().strokes, [stroke('current')])
+  assert.equal(persistence.save([]), 'saved')
+  assert.deepEqual(persistence.load(), { strokes: [], status: 'saved' })
 })
 
-test('an unreadable version 1 board does not resurrect itself', () => {
-  const storage = store({ [LEGACY]: '{"strokes":"gone"}' })
-  const loaded = createBoardPersistence(KEY, () => storage).load()
-  assert.equal(loaded.strokes, null)
-  assert.equal(loaded.status, 'invalid')
+test('a key that merely ends like an old one reads nothing else', () => {
+  const storage = store({ 'notes:v1': JSON.stringify([stroke('other')]) })
+  assert.deepEqual(createBoardPersistence('notes:v2', () => storage).load(), { strokes: null, status: 'idle' })
 })
 
 test('an empty store simply reports nothing to restore', () => {
@@ -94,6 +87,18 @@ test('storage that is missing or refuses to answer is survivable', () => {
   const blocked = createBoardPersistence(KEY, () => null)
   assert.deepEqual(blocked.load(), { strokes: null, status: 'unavailable' })
   assert.equal(blocked.save([stroke()]), 'unavailable')
+})
+
+// Storage caps a document by characters as well as by points. Samples are
+// rounded so the point limit, not the character cap, is what a drawing meets.
+test('a drawing at the point limit still fits in storage', () => {
+  const storage = store()
+  const strokes = Array.from({ length: 400 }, (_, s): Stroke => ({
+    id: `${1727500000000 + s}-k3j9x2m1q8`, tool: 'marker', color: '#1b2022', width: 7.43,
+    points: Array.from({ length: 100 }, (_, i) =>
+      boardPoint(11.1111 + i * 3.9, 13.3333 + s * 0.6, 413.37, 0.123456)),
+  }))
+  assert.equal(createBoardPersistence(KEY, () => storage).save(strokes), 'saved')
 })
 
 test('a board too large to store is reported as full', () => {
