@@ -1,0 +1,5 @@
+export { Vase, type VaseProps } from './components/Vase.js'
+export { SHAPES, type Shape, type ShapeId } from './lib/shapes.js'
+export { STYLES, type StyleDef, type StyleId } from './lib/styles.js'
+export type { IkarosPaletteId } from './lib/ikaros.js'
+export type { GreekPaletteId } from './lib/greek.js'

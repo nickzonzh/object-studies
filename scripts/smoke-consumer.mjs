@@ -1,8 +1,8 @@
 // End-to-end check of what npm users actually receive: pack every package,
 // install the tarballs into a throwaway project, then
-//   1. server-render all three components from the installed packages,
+//   1. server-render every component from the installed packages,
 //   2. type-check a consumer under `moduleResolution: nodenext`,
-//   3. bundle a browser consumer (JS + the three stylesheets) with Vite.
+//   3. bundle a browser consumer (JS + every stylesheet) with Vite.
 // Run after `npm run build`. Exits non-zero on the first failure.
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const packages = ['core', 'korniza', 'kimolia', 'melani']
+const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz']
 const rootManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const dev = rootManifest.devDependencies
 const dir = mkdtempSync(join(tmpdir(), 'object-studies-consumer-'))
@@ -54,12 +54,17 @@ import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, frameVariants } from 'korniza'
 import { Frame as ModernBlack } from 'korniza/modern-black'
+import { Vase } from 'keramos'
+import { CraftTable, CraftPaper, GooglyEye } from 'kollaz'
 
 const checks = [
   ['melani', renderToString(h(Whiteboard, { persistence: { key: 'smoke' } }))],
   ['kimolia', renderToString(h(Chalkboard, { persistence: { key: 'smoke' } }))],
   ...frameVariants.map(({ variant }) => ['korniza', renderToString(h(Frame, { variant, mat: true, glazing: true }, h(FrameImage, { src: 'a.jpg', alt: 'A' })))]),
   ['korniza', renderToString(h(ModernBlack, null, 'content'))],
+  ['keramos', renderToString(h(Vase, { shape: 'amphora', vaseStyle: 'black-figure', seed: 3 }))],
+  ['kollaz', renderToString(h(CraftTable))],
+  ['kollaz', renderToString(h(CraftPaper, { torn: ['top'] }, h(GooglyEye, { size: 40 })))],
 ]
 for (const [name, html] of checks) {
   if (!html.includes('class="' + name) && !html.includes(' ' + name + ' ') && !html.includes('"' + name + ' ')) throw new Error(name + ' SSR output is missing its root class')
@@ -81,6 +86,13 @@ import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
 import 'korniza/dark-walnut.css'
+import { Vase, SHAPES, type ShapeId, type VaseProps } from 'keramos'
+import { CraftTable, CraftPaper, GooglyEye, type Edge } from 'kollaz'
+import 'keramos/style.css'
+import 'kollaz/style.css'
+
+const pieceMode: VaseProps['mode'] = 'still'
+const torn: Edge[] = ['top', 'left']
 
 export function Consumer({ variant }: { variant: FrameVariant }) {
   const whiteboard = useRef<WhiteboardHandle>(null)
@@ -95,6 +107,9 @@ export function Consumer({ variant }: { variant: FrameVariant }) {
         <FrameImage src="a.jpg" alt="A" />
       </Frame>
       <WalnutFrame aspectRatio="3 / 2">text</WalnutFrame>
+      {(Object.keys(SHAPES) as ShapeId[]).map((shape) => <Vase key={shape} shape={shape} mode={pieceMode} />)}
+      <CraftTable />
+      <CraftPaper torn={torn}><GooglyEye track /></CraftPaper>
     </>
   )
 }
@@ -123,12 +138,17 @@ import { Whiteboard } from 'melani'
 import { Chalkboard } from 'kimolia'
 import { Frame } from 'korniza'
 import { Frame as OakFrame } from 'korniza/carved-oak'
+import { Vase } from 'keramos'
+import { CraftTable } from 'kollaz'
 import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
 import 'korniza/carved-oak.css'
+import 'keramos/style.css'
+import 'kollaz/style.css'
 createRoot(document.getElementById('root')).render([
   h(Whiteboard, { key: 'a' }), h(Chalkboard, { key: 'k' }), h(Frame, { key: 'f', variant: 'carved-oak' }), h(OakFrame, { key: 'o' }),
+  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }),
 ])
 `,
   )
