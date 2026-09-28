@@ -15,6 +15,8 @@ const GLINT_CUTOFF = Math.pow(0.08, 1 / GLINT_SHININESS)
 
 const baseShade = (f: Flake) => 0.08 + 0.46 * f.nz * f.nz
 
+// No closePath: fill() closes each subpath anyway, and on a Path2D holding
+// thousands of flakes Chrome's closePath costs more with every call (quadratic).
 function addFlake(path: Path2D, f: Flake) {
   const h = f.size / 2
   const ux = Math.cos(f.angle) * h
@@ -23,7 +25,6 @@ function addFlake(path: Path2D, f: Flake) {
   path.lineTo(f.x + ux + uy, f.y + uy - ux)
   path.lineTo(f.x - ux + uy, f.y - uy - ux)
   path.lineTo(f.x - ux - uy, f.y - uy + ux)
-  path.closePath()
 }
 
 function fillBuckets(ctx: CanvasRenderingContext2D, buckets: Path2D[][], used: boolean[][]) {
