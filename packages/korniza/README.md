@@ -39,7 +39,7 @@ The stylesheet is a single file and must be imported once, anywhere in your app.
 | Prop | Default | Meaning |
 | --- | --- | --- |
 | `variant` | required | One of the six kebab-case identifiers above. An unknown value throws, naming the value and the valid set |
-| `aspectRatio` | `"4 / 5"` | CSS aspect ratio of the **opening**, excluding the mouldings. `"auto"` lets normal-flow content set the height |
+| `aspectRatio` | `"4 / 5"` | CSS aspect ratio of the **content**, excluding the mouldings: the opening, or with a mat, the window cut into the mat. `"auto"` lets the content set the height, and a `FrameImage` then shows at its natural ratio |
 | `children` | none | Your unmodified React content |
 | `mat` | `false` | A bevelled mat board between the moulding and the content. `true`, or `{ width, color }` with any CSS length/colour |
 | `glazing` | `false` | A faint glass sheen in front of the opening, following the same light |
@@ -65,7 +65,7 @@ Exported types: `FrameProps`, `FrameVariant`, `FrameMat`.
 </Frame>
 ```
 
-The mat fills the opening and the artwork window is cut into it, so `aspectRatio` keeps describing the same rectangle whether or not a mat is present. The board width, its 45° bevel and the shadow the frame lip casts onto it all scale with the frame, like the mouldings. Both props are off by default.
+The artwork window is cut into the mat and keeps the `aspectRatio` you give it, so a mat never crops the content: the frame grows by the width of the board, as it would at a framer's. The board width, its 45° bevel and the shadow the frame lip casts onto it all scale with the frame, like the mouldings. Both props are off by default.
 
 ## Per-variant imports
 
@@ -114,7 +114,7 @@ Every class the package ships is namespaced: the wrapper is `.korniza`, everythi
 
 Frames fill their parent's width; constrain them with ordinary CSS. The wrapper is a size container, so moulding thickness responds to the frame's own width rather than the viewport. The supported practical minimum outer width is 220px; allow about 10px outside it for protruding ornament and more for the cast shadow.
 
-Content sits in the recessed opening with `overflow: auto`, so oversized custom content scrolls instead of pushing the mouldings apart. Children are never cloned or restyled: give a card its own padding, colours and sizing. Decorative layers ignore pointer events, so focus, selection, scrolling and media controls all keep working.
+Content sits in the recessed opening with `overflow: auto`, so oversized custom content scrolls instead of pushing the mouldings apart. Changing `variant`, `mat` or `glazing` restyles the frame in place and never remounts your content, so a playing video or a half-filled form survives it. A frame inside another frame's content is not supported: the outer frame's material styles reach the inner one. Children are never cloned or restyled: give a card its own padding, colours and sizing. Decorative layers ignore pointer events, so focus, selection, scrolling and media controls all keep working.
 
 **Containing-block caveat.** `.korniza` declares `container-type: inline-size`, which implies `contain: layout style inline-size`. The wrapper therefore becomes the containing block for `position: fixed` and `position: absolute` descendants and establishes a new stacking context. Content inside a frame that relies on `position: fixed` — a modal, a dropdown, a tooltip rendered in place — is positioned relative to the frame and clipped by the opening. Render those into a portal outside the frame. There is no opt-out that preserves container-relative moulding scale.
 
@@ -128,7 +128,7 @@ Every decorative layer is `aria-hidden` and `pointer-events: none`, and the fram
 
 ## Server rendering
 
-No `window`, `document`, `localStorage`, `matchMedia` or `devicePixelRatio` is touched at module scope or during render; the media queries live in an effect. `renderToString` is covered by the test suite for all six variants, including the mat and glazing layers. The ESM entry carries a `"use client"` banner for React Server Component hosts.
+No `window`, `document`, `localStorage`, `matchMedia` or `devicePixelRatio` is touched at module scope or during render; the media queries live in an effect, and where `matchMedia` is missing (jsdom, for example) the light simply stays at rest. `renderToString` is covered by the test suite for all six variants, including the mat and glazing layers. The ESM entry carries a `"use client"` banner for React Server Component hosts.
 
 ## Browser support
 

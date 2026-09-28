@@ -8,7 +8,10 @@ export type FrameMat = boolean | { width?: string; color?: string }
 
 export type GalleryFrameProps = ComponentPropsWithRef<'div'> & {
   variant: FrameVariant
-  /** Aspect ratio of the content opening, excluding the frame. */
+  /**
+   * Aspect ratio of the content, excluding the frame: the opening, or with a
+   * mat, the window cut into it. A mat widens the frame rather than cropping.
+   */
   aspectRatio?: CSSProperties['aspectRatio']
   interactiveLight?: boolean
   /** Bevelled mat board between the moulding and the content. */
@@ -27,18 +30,25 @@ const slices = ['tl', 'top', 'tr', 'left', 'right', 'bl', 'bottom', 'br'] as con
 /** Eight decorative slices and one unmodified, semantic DOM content slot. */
 export function GalleryFrame({ variant, aspectRatio = '4 / 5', interactiveLight = true, mat = false, glazing = false, children, decoration, className = '', style, onPointerMove, onPointerLeave, onPointerCancel, ...props }: GalleryFrameProps) {
   const { ref: frameRef, move, reset } = usePointerLight(interactiveLight, variant)
+  // Only the mat values actually given, so an omitted one keeps the consumer's own variable.
   const wrapperStyle = typeof mat === 'object'
-    ? { ...style, '--korniza-mat-width': mat.width, '--korniza-mat-color': mat.color } as CSSProperties
+    ? {
+        ...style,
+        ...(mat.width === undefined ? {} : { '--korniza-mat-width': mat.width }),
+        ...(mat.color === undefined ? {} : { '--korniza-mat-color': mat.color }),
+      } as CSSProperties
     : style
+  const matted = mat !== false
   return (
     <div {...props} className={`korniza ${className}`.trimEnd()} style={wrapperStyle}
       onPointerMove={event => { onPointerMove?.(event); move(event) }}
       onPointerLeave={event => { reset(); onPointerLeave?.(event) }}
       onPointerCancel={event => { reset(); onPointerCancel?.(event) }}>
-    <div ref={frameRef} className="korniza-frame" data-variant={variant}>
+    <div ref={frameRef} className={aspectRatio === 'auto' ? 'korniza-frame korniza-frame--natural' : 'korniza-frame'} data-variant={variant}>
       {slices.map(slice => <span key={slice} aria-hidden="true" className={`korniza-frame__slice korniza-frame__${slice}`} />)}
-      <div className={mat === false ? 'korniza-frame__opening' : 'korniza-frame__opening korniza-mat'} style={{ aspectRatio }}>
-        {mat === false ? children : <div className="korniza-frame__window">{children}</div>}
+      {/* The window is always rendered, so toggling the mat never remounts the children. */}
+      <div className={matted ? 'korniza-frame__opening korniza-mat' : 'korniza-frame__opening'} style={matted ? undefined : { aspectRatio }}>
+        <div className="korniza-frame__window" style={matted ? { aspectRatio } : undefined}>{children}</div>
       </div>
       {decoration}
       {glazing && <span aria-hidden="true" className="korniza-glazing korniza-lit" />}

@@ -16,7 +16,7 @@
   --light-x: var(--korniza-light-x, 26%);
   --light-y: var(--korniza-light-y, 16%);
 }
-.korniza, .korniza-frame, .korniza-frame__opening, .korniza-frame__window,
+.korniza, .korniza-frame, .korniza-frame__opening,
 .korniza-frame__slice { box-sizing: border-box; }
 
 .korniza-frame {
@@ -85,9 +85,15 @@
     inset -3px -4px 6px #10140e35;
 }
 .korniza-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+/* With aspectRatio="auto" the image is what gives the opening its height. */
+.korniza-frame--natural .korniza-image { position: static; height: auto; }
 
-/* A mat board fills the opening; the artwork window is cut into it. The lip of
-   the frame casts down and slightly right onto the board, matching the shell. */
+/* Without a mat the window is no box at all: the children sit in the opening. */
+.korniza-frame__window { display: contents; }
+
+/* A mat board surrounds the artwork window, so the frame grows by the board
+   rather than cropping the art. The lip of the frame casts down and slightly
+   right onto the board, matching the shell. */
 .korniza-mat {
   padding: var(--mat-width);
   overflow: hidden;
@@ -96,8 +102,10 @@
   background-size: 116px 116px;
   box-shadow: inset 2px 4px 7px -1px #2b241a4d, inset -1px -2px 6px -2px #2b241a1f;
 }
-.korniza-frame__window {
-  position: relative; height: 100%; min-width: 0;
+/* Content-box, so aspectRatio describes the art inside the bevel. */
+.korniza-mat > .korniza-frame__window {
+  display: block; box-sizing: content-box;
+  position: relative; min-width: 0;
   overflow: auto; overscroll-behavior: contain;
   /* A mitred border is a true 45° bevel: four trapezoids of the board's pale
      core. The lower and right planes face the key light, the upper and left
