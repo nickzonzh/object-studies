@@ -1,0 +1,1056 @@
+/*
+ * Kollaz — a tactile craft table.
+ *
+ * Every rule is scoped to kollaz classes; nothing here styles the page. The
+ * table, the torn paper and the googly eyes each work on their own.
+ */
+
+.kollaz,
+.kollaz-googly-eye,
+.kollaz-paper {
+  --ink-soft: #696b69;
+  --glue-purple: #7a4cc6;
+  --contact: drop-shadow(0 1px .65px rgba(29, 30, 29, .38)) drop-shadow(1px 2px 1.5px rgba(29, 30, 29, .16));
+}
+
+/* Zero specificity, so every component rule below still wins. */
+:where(.kollaz, .kollaz-googly-eye, .kollaz-paper) :where(*, *::before, *::after) { box-sizing: border-box; }
+
+:where(.kollaz) :where(button, canvas) { -webkit-tap-highlight-color: transparent; }
+:where(.kollaz) :where(button) { font: inherit; color: inherit; }
+:where(.kollaz) :where(button:focus-visible) { outline: 2px solid #2f3434; outline-offset: 3px; }
+
+/* ---------- Table and mat ---------- */
+
+.kollaz {
+  --light-x: 45%;
+  --light-y: 30%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.kollaz-mat {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 640;
+  border-radius: clamp(7px, 1vw, 12px);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  background: #2d6a55;
+  /* box-shadow, never filter: a filter here would re-run over the whole mat every time the canvas repaints. */
+  box-shadow: 0 1px 1px rgba(20, 30, 24, 0.4), 0 3px 4px rgba(20, 30, 24, 0.12), 0 22px 30px rgba(30, 36, 32, 0.14);
+  contain: layout paint;
+  transform-origin: 50% 0%;
+  transition: transform 420ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.kollaz-mat--holding { cursor: none; }
+.kollaz-mat--tipping { transform: perspective(1400px) rotateX(9deg) translateY(-4px); }
+
+.kollaz-mat__canvas, .kollaz-mat__ink, .kollaz-mat__fx { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.kollaz-mat__ink, .kollaz-mat__fx { pointer-events: none; }
+
+/* The room light that follows the pointer. It is moved with a transform, so tracking it
+   costs a composite, not a repaint. */
+.kollaz-mat__glow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015) 40%, transparent 70%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+  will-change: transform;
+}
+.kollaz-mat:hover .kollaz-mat__glow { opacity: 1; }
+
+/* The moulded edge of the mat. */
+.kollaz-mat__edge {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(10, 30, 20, 0.2),
+    inset 0 0 40px rgba(10, 30, 20, 0.14);
+}
+
+.kollaz-mat__sheet {
+  position: absolute !important;
+  /* Its own layer, so the stacked shadows are rasterised once, not on every canvas frame. */
+  will-change: transform;
+  filter:
+    drop-shadow(0 .5px .5px rgba(8, 26, 18, 0.45))
+    drop-shadow(1px 3px 3px rgba(8, 26, 18, 0.2))
+    drop-shadow(2px 8px 12px rgba(8, 26, 18, 0.12));
+}
+
+.kollaz-mat__eyes { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.kollaz-mat__eye {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+.kollaz-mat__eye.is-lifted {
+  cursor: grabbing;
+  transform: translate(-50%, calc(-50% - 3px)) scale(1.04);
+  filter: drop-shadow(3px 8px 5px rgba(0, 0, 0, 0.22));
+}
+
+.kollaz-table-hint {
+  margin: 12px 0 0;
+  min-height: 1.4em;
+  color: rgba(55, 57, 54, 0.56);
+  font-size: 11.5px;
+  line-height: 1.4;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* ---------- Craft paper ---------- */
+
+.kollaz-paper { position: relative; isolation: isolate; }
+.kollaz-paper__core, .kollaz-paper__face { position: absolute; inset: 0; }
+
+/* The pale, fibrous core that shows along a real tear. */
+.kollaz-paper__core {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6 .5' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.33 0 0 0 0 0.3 0 0 0 1.1 -0.55'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23f)'/%3E%3C/svg%3E"),
+    color-mix(in srgb, var(--paper) 20%, #faf6ee);
+}
+
+.kollaz-paper__face {
+  /* Fibre tooth, then gentle unevenness across the sheet from gradients that cannot tile. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.26 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23f)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 60% 45% at 28% 22%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 78% 70%, rgba(0, 0, 0, 0.05), transparent 70%),
+    radial-gradient(ellipse 35% 25% at 62% 30%, rgba(255, 255, 255, 0.035), transparent 70%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05)),
+    var(--paper);
+}
+
+/* ---------- Googly eyes ----------
+   Built like the real thing: a clear plastic dome with a flat flange, bonded over a
+   white card. The pupil is a loose matte disc that rattles between them and casts a
+   small shadow onto the card. */
+
+.kollaz-googly-eye {
+  --size: 48px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  /* Cast shadow of the whole eye onto the page, light from the upper left. */
+  box-shadow:
+    0 calc(var(--size) * .012) calc(var(--size) * .02) rgba(0, 0, 0, .35),
+    calc(var(--size) * .03) calc(var(--size) * .06) calc(var(--size) * .08) rgba(0, 0, 0, .18),
+    calc(var(--size) * .05) calc(var(--size) * .12) calc(var(--size) * .16) rgba(0, 0, 0, .1);
+}
+
+/* The clear flange: a thin glassy ring where the dome meets the card. */
+.kollaz-googly-eye__flange {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 84%, rgba(255, 255, 255, .5) 88%, rgba(210, 214, 212, .55) 96%, rgba(120, 124, 122, .45) 100%);
+}
+
+.kollaz-googly-eye__card {
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.43 0 0 0 0 0.4 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23f)'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 42% 36%, #ffffff 0%, #f7f6f2 55%, #e9e7e1 100%);
+  box-shadow: inset 0 0 calc(var(--size) * .04) rgba(0, 0, 0, .12);
+}
+
+.kollaz-googly-eye__pupil {
+  position: absolute;
+  left: 24%;
+  top: 24%;
+  width: 52%;
+  height: 52%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #1b1b1d 0%, #0d0d0f 75%, #1e1e21 100%);
+  box-shadow:
+    calc(var(--size) * .02) calc(var(--size) * .035) calc(var(--size) * .04) rgba(40, 36, 30, .32),
+    inset 0 0 0 calc(var(--size) * .006) rgba(255, 255, 255, .06);
+  will-change: transform;
+}
+
+/* The dome's gloss stays put while the pupil rattles beneath: a crisp window-shaped
+   highlight, a soft secondary bounce low right, and a bright rim where the curve is steep. */
+.kollaz-googly-eye__dome {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 22% 13% at 33% 24%, rgba(255, 255, 255, .95) 0 40%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(ellipse 9% 6% at 47% 19%, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0) 100%),
+    radial-gradient(ellipse 10% 4% at 70% 82%, rgba(255, 255, 255, .3), rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, .22) 80%, rgba(255, 255, 255, 0) 86%);
+  pointer-events: none;
+}
+
+.kollaz-static-eye {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 44% 38%, #fff, #f3f3f1 55%, #d6d6d1);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08);
+}
+.kollaz-static-eye::before {
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 38%;
+  width: 56%;
+  height: 56%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #242427, #0c0c0e 72%);
+}
+.kollaz-static-eye::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 14%;
+  width: 28%;
+  height: 16%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* ---------- Caddy ---------- */
+
+/* A moulded plastic caddy with a well shaped for each tool. */
+.kollaz-caddy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 9px 12px;
+  border-radius: 16px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .62), transparent 16%, transparent 84%, rgba(30, 31, 30, .08)),
+    linear-gradient(180deg, #f7f6f2 0%, #ebe9e4 48%, #dcdad3 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    inset 0 -2px 2px rgba(35, 36, 35, .12),
+    0 1px 1px rgba(36, 37, 35, .25),
+    0 8px 14px rgba(36, 37, 35, .12);
+}
+
+.kollaz-caddy__row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+.kollaz-well {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 50px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(66, 68, 66, .16), rgba(255, 255, 255, .28));
+  box-shadow:
+    inset 0 2px 3px rgba(30, 31, 30, .2),
+    inset 0 -1px 0 rgba(255, 255, 255, .7),
+    0 1px 0 rgba(255, 255, 255, .8);
+}
+.kollaz-well--long { width: 150px; border-radius: 14px; }
+.kollaz-well--tube { width: 96px; border-radius: 14px; }
+.kollaz-well--round { width: 58px; height: 58px; border-radius: 50%; }
+.kollaz-well--stamp { width: 68px; height: 68px; }
+.kollaz-well--pad { width: 88px; border-radius: 12px; }
+
+.kollaz-well > span {
+  filter: var(--contact);
+  transition: transform 150ms ease, opacity 150ms ease, filter 150ms ease;
+}
+/* The pot stays in the caddy and tips toward you while you take eyes from it. */
+.kollaz-well.is-picked > span { transform: rotate(-12deg); }
+
+@media (hover: hover) and (pointer: fine) {
+  .kollaz-well:hover > span { transform: translateY(-2px); }
+  .kollaz-well.is-picked:hover > span { transform: translateY(-2px) rotate(-12deg); }
+}
+
+/* ---------- Utility bar (as in Aspro) ---------- */
+
+.kollaz-utility-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 40px;
+  margin-top: 16px;
+  padding: 4px 4px 4px 14px;
+  border: 1px solid rgba(55, 57, 54, .12);
+  border-radius: 999px;
+  background: rgba(246, 245, 242, .62);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .7), 0 7px 18px rgba(37, 38, 36, .055);
+  backdrop-filter: blur(12px);
+}
+
+.kollaz-utility-label {
+  margin-right: 6px;
+  color: #6b6d6a;
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.kollaz-paper-stack { display: flex; align-items: center; gap: 5px; padding-right: 6px; }
+.kollaz-paper-chip {
+  width: 20px;
+  height: 25px;
+  padding: 0;
+  border: 0;
+  border-radius: 1.5px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, .14), rgba(0, 0, 0, .06)),
+    var(--paper);
+  transform: rotate(var(--tilt));
+  box-shadow: 0 .5px .5px rgba(0, 0, 0, .3), 1px 2px 3px rgba(0, 0, 0, .14);
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .kollaz-paper-chip:hover { transform: rotate(0deg) translateY(-2px); }
+}
+
+.kollaz-utility-divider { width: 1px; height: 18px; margin: 0 3px; background: rgba(55, 57, 54, .13); }
+
+.kollaz-utility-button {
+  min-height: 32px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #4e504e;
+  font-size: 12px;
+  font-weight: 620;
+  cursor: pointer;
+}
+.kollaz-utility-button:disabled { opacity: .32; cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  .kollaz-utility-button:not(:disabled):hover { background: rgba(255, 255, 255, .72); color: #242624; }
+}
+
+/* ---------- Glue stick ---------- */
+
+.kollaz-glue-stick { position: relative; display: flex; align-items: center; height: 28px; }
+
+.kollaz-glue-stick__cap {
+  position: relative;
+  width: 36px;
+  height: 28px;
+  border-radius: 9px 3px 3px 9px;
+  border: 1px solid rgba(46, 22, 86, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, .12) 18%, transparent 40%),
+    linear-gradient(180deg, #a986ea 0%, #7a4cc6 46%, #5a34a0 78%, #432576 100%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .35), inset 0 -2px 2px rgba(0, 0, 0, .14);
+}
+/* Grip ribs where the cap meets the tube. */
+.kollaz-glue-stick__cap::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 2px;
+  bottom: 2px;
+  width: 7px;
+  background: repeating-linear-gradient(90deg, rgba(40, 16, 80, .22) 0 1px, rgba(255, 255, 255, .1) 1px 2px, transparent 2px 3px);
+}
+
+.kollaz-glue-stick__nub {
+  width: 11px;
+  height: 20px;
+  border-radius: 8px 2px 2px 8px;
+  background:
+    radial-gradient(ellipse 60% 30% at 45% 28%, rgba(255, 255, 255, .7), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .12) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #d7bdfb 0%, #a577ee 55%, #7c4bd0 100%);
+  clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%, 0 38%);
+  box-shadow: inset -1px 0 1px rgba(60, 20, 120, .25);
+}
+.kollaz-glue-stick__lip {
+  width: 4px;
+  height: 25px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, #ffffff, #dedbe6 50%, #a9a4b6);
+  box-shadow: inset -1px 0 rgba(0, 0, 0, .12);
+}
+
+.kollaz-glue-stick__body {
+  position: relative;
+  width: 76px;
+  height: 25px;
+  border-top: 1px solid rgba(55, 50, 70, .2);
+  border-bottom: 1px solid rgba(55, 50, 70, .26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .92) 0%, rgba(255, 255, 255, .44) 15%, transparent 38%),
+    linear-gradient(180deg, #f3f1f6 0%, #d3cfdd 42%, #f4f2f7 72%, #b3aec0 100%);
+}
+.kollaz-glue-stick__brand {
+  position: absolute;
+  left: 13px;
+  top: 7.5px;
+  color: rgba(58, 36, 102, .5);
+  font-size: 7px;
+  font-weight: 840;
+  letter-spacing: .16em;
+  line-height: 1;
+}
+.kollaz-glue-stick__weight {
+  position: absolute;
+  right: 20px;
+  top: 9px;
+  color: rgba(58, 36, 102, .38);
+  font-size: 5px;
+  font-weight: 760;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+.kollaz-glue-stick__band {
+  position: absolute;
+  right: 7px;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  background: linear-gradient(180deg, #b597ee, var(--glue-purple) 56%, #4d2a8c);
+  box-shadow: inset 1px 0 rgba(255, 255, 255, .22), inset -1px 0 rgba(0, 0, 0, .14);
+}
+
+.kollaz-glue-stick__base {
+  width: 15px;
+  height: 27px;
+  border-radius: 2px 6px 6px 2px;
+  border: 1px solid rgba(46, 22, 86, .28);
+  background:
+    repeating-linear-gradient(90deg, rgba(40, 16, 80, .2) 0 1px, rgba(255, 255, 255, .08) 1px 2px, transparent 2px 3px),
+    linear-gradient(180deg, rgba(255, 255, 255, .35), transparent 38%),
+    linear-gradient(180deg, #9e7ae4 0%, #6d40bb 50%, #43247a 100%);
+}
+
+/* ---------- Glitter shaker ---------- */
+
+.kollaz-shaker { position: relative; display: flex; align-items: center; height: 28px; }
+
+/* Ribbed screw cap. */
+.kollaz-shaker__cap {
+  width: 20px;
+  height: 28px;
+  border-radius: 7px 3px 3px 7px;
+  border: 1px solid rgba(50, 52, 50, .22);
+  background:
+    repeating-linear-gradient(90deg, rgba(30, 30, 30, .1) 0 1px, rgba(255, 255, 255, .5) 1px 2px, transparent 2px 3px),
+    linear-gradient(180deg, rgba(255, 255, 255, .9), transparent 30%),
+    linear-gradient(180deg, #f6f6f3 0%, #d9d9d4 50%, #aeaea8 100%);
+  box-shadow: inset 0 -2px 2px rgba(0, 0, 0, .1);
+}
+
+/* Clear tube. Glitter settles to the bottom when it lies in the caddy. */
+.kollaz-shaker__tube {
+  position: relative;
+  width: 64px;
+  height: 24px;
+  overflow: hidden;
+  border-top: 1px solid rgba(40, 42, 40, .2);
+  border-bottom: 1px solid rgba(40, 42, 40, .28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(235, 238, 236, .35) 40%, rgba(210, 214, 212, .5));
+}
+.kollaz-shaker__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70%;
+  background: var(--fill) 0 0 / 64px 24px;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .18), inset 0 -2px 3px rgba(0, 0, 0, .25);
+}
+.kollaz-shaker__tube::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .75) 0 9%, rgba(255, 255, 255, .18) 18%, transparent 34%, transparent 78%, rgba(255, 255, 255, .22) 88%, transparent),
+    linear-gradient(90deg, rgba(255, 255, 255, .25), transparent 12%);
+  pointer-events: none;
+}
+
+.kollaz-shaker__end {
+  width: 6px;
+  height: 25px;
+  border-radius: 1px 5px 5px 1px;
+  border: 1px solid rgba(40, 42, 40, .18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(215, 218, 216, .6) 50%, rgba(170, 174, 172, .8));
+}
+
+/* Tipped cap-down in the hand, the glitter runs to the cap. */
+.kollaz-shaker--in-hand .kollaz-shaker__fill { top: 0; right: 22%; height: auto; box-shadow: inset -3px 0 4px rgba(0, 0, 0, .2); }
+
+
+/* ---------- Sequin tub ---------- */
+
+.kollaz-sequin-tub {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .7), rgba(210, 214, 220, .5));
+  box-shadow:
+    inset 0 0 0 1px rgba(40, 44, 52, .22),
+    inset 0 -2px 3px rgba(40, 44, 52, .18),
+    0 0 0 1.5px rgba(255, 255, 255, .7);
+  overflow: hidden;
+}
+.kollaz-sequin-tub__fill {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--fill) center / 64px 64px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .3);
+}
+/* Clear plastic wall catching the light. */
+.kollaz-sequin-tub::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 36% 18% at 32% 20%, rgba(255, 255, 255, .85), transparent 72%),
+    radial-gradient(circle, transparent 60%, rgba(255, 255, 255, .35) 70%, transparent 76%);
+  pointer-events: none;
+}
+
+/* ---------- Pom poms ---------- */
+
+.kollaz-pom-cup {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(from 0deg, rgba(0, 0, 0, .05) 0 6deg, transparent 6deg 12deg),
+    radial-gradient(circle at 50% 42%, #f4efe4 0%, #ddd6c6 72%);
+  box-shadow:
+    inset 0 3px 5px rgba(60, 50, 30, .35),
+    0 0 0 2.5px #f7f3ea,
+    0 0 0 3.5px rgba(60, 50, 30, .22);
+}
+.kollaz-pom {
+  position: absolute;
+  display: block;
+  background-size: 100% 100%;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25));
+}
+.kollaz-pom--single { position: relative; width: 34px; height: 34px; }
+
+/* ---------- Rubber stamp and ink pad ---------- */
+
+.kollaz-stamp {
+  position: relative;
+  display: block;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 38% 120%, rgba(120, 72, 30, .09) 0 2px, transparent 2px 5px),
+    radial-gradient(circle at 36% 30%, #ecd3a8 0%, #d7b27c 55%, #b88c55 100%);
+  /* The rubber face peeks out under the block, carrying whatever ink is on it. */
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .6),
+    inset 0 -2px 3px rgba(90, 50, 15, .3),
+    0 0 0 1px rgba(90, 55, 20, .3),
+    0 0 0 3px color-mix(in srgb, var(--ink) calc(var(--ink-level) * 100%), #6f4a3a),
+    0 1px 1px 3px rgba(0, 0, 0, .25);
+}
+.kollaz-stamp__knob {
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #b3452f 0%, #8e2e1f 60%, #6a1f14 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .35),
+    inset 0 -2px 3px rgba(0, 0, 0, .3),
+    1px 2px 3px rgba(60, 30, 10, .35);
+}
+.kollaz-stamp__label {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--label) center / cover, #f5efe2;
+  box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .15);
+}
+
+.kollaz-ink-pad {
+  position: relative;
+  display: block;
+  width: 70px;
+  height: 40px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #e8eae9 0%, #b9bdbb 45%, #d9dcda 70%, #9da19f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .85),
+    inset 0 -1px 1px rgba(30, 32, 31, .25),
+    0 0 0 1px rgba(40, 42, 41, .25);
+}
+.kollaz-ink-pad__felt {
+  position: absolute;
+  inset: 4px 4px 11px;
+  border-radius: 3px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.38 0 0 0 0 0.35 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23f)'/%3E%3C/svg%3E"),
+    var(--ink);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+  overflow: hidden;
+}
+/* A fresh dent where the stamp was pressed. */
+.kollaz-ink-pad__felt::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(90, 80, 60, .28), transparent 70%);
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.kollaz-ink-pad.is-pressed .kollaz-ink-pad__felt::after { opacity: 1; transition-duration: 60ms; }
+.kollaz-ink-pad__mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  color: rgba(40, 43, 40, .5);
+  font-size: 5.5px;
+  font-weight: 840;
+  letter-spacing: .14em;
+  line-height: 1;
+  text-align: center;
+}
+
+/* ---------- Cut paper ---------- */
+
+.kollaz-paper-shape { position: absolute; isolation: isolate; }
+.kollaz-paper-shape > .kollaz-paper__core,
+.kollaz-paper-shape > .kollaz-paper__face {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.kollaz-mat__pieces { position: absolute; inset: 0; pointer-events: none; }
+.kollaz-piece {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  /* A loose piece sits a little proud of the table, so its shadow is softer and longer. */
+  filter:
+    drop-shadow(0 .5px .5px rgba(8, 26, 18, .5))
+    drop-shadow(2px 5px 5px rgba(8, 26, 18, .22))
+    drop-shadow(4px 12px 14px rgba(8, 26, 18, .14));
+  transition: filter 160ms ease, translate 160ms ease;
+  will-change: transform;
+}
+.kollaz-piece.is-lifting { translate: -2px -5px; filter: drop-shadow(0 1px 1px rgba(8, 26, 18, .45)) drop-shadow(5px 14px 12px rgba(8, 26, 18, .22)); }
+.kollaz-piece.is-dragging { cursor: grabbing; translate: -2px -5px; filter: drop-shadow(0 1px 1px rgba(8, 26, 18, .45)) drop-shadow(6px 16px 14px rgba(8, 26, 18, .24)); }
+/* Glued pieces are pressed flat: a tight contact shadow only. */
+.kollaz-piece.is-glued { cursor: default; filter: drop-shadow(0 .5px .5px rgba(8, 26, 18, .45)) drop-shadow(1px 2px 2px rgba(8, 26, 18, .16)); }
+.kollaz-piece.is-falling { transition: transform 900ms cubic-bezier(.55, 0, .9, .4), opacity 900ms ease; opacity: 0; }
+.kollaz-piece__snapshot { position: absolute; background-size: 100% 100%; }
+.kollaz-piece__art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+.kollaz-piece .kollaz-mat__eye { pointer-events: none; }
+
+/* ---------- Scissors ---------- */
+
+.kollaz-scissors {
+  --open: 0deg;
+  position: relative;
+  display: block;
+  width: 130px;
+  height: 56px;
+}
+.kollaz-scissors__half {
+  position: absolute;
+  inset: 0;
+  transform-origin: 78px 28px;
+  transition: transform 70ms linear;
+}
+.kollaz-scissors__half--upper { transform: rotate(calc(var(--open) / 2)); }
+.kollaz-scissors__half--lower { transform: rotate(calc(var(--open) / -2)); }
+
+/* Brushed steel, with the bevelled cutting edge catching a line of light. */
+.kollaz-scissors__blade {
+  position: absolute;
+  left: 2px;
+  width: 80px;
+  height: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .9) 0 8%, transparent 20%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #eef1f2 0%, #c3c9cc 40%, #8c9498 62%, #d7dbdd 100%);
+  box-shadow: inset 0 -1px 0 rgba(40, 44, 46, .35);
+}
+.kollaz-scissors__half--upper .kollaz-scissors__blade {
+  top: 19px;
+  border-radius: 7px 0 0 2px;
+  clip-path: polygon(0 62%, 7% 18%, 100% 0, 100% 100%, 4% 100%);
+}
+.kollaz-scissors__half--lower .kollaz-scissors__blade {
+  top: 27px;
+  border-radius: 2px 0 0 7px;
+  clip-path: polygon(0 38%, 4% 0, 100% 0, 100% 100%, 7% 82%);
+  background:
+    linear-gradient(0deg, rgba(0, 0, 0, .18) 0 10%, transparent 30%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .06) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #d9dde0 0%, #a9b0b4 50%, #7b8387 80%, #9aa2a6 100%);
+}
+
+/* Moulded plastic finger loops: a small oval for the thumb, a long one for the fingers,
+   thick where they join the blades. Lit from the upper left like everything else. */
+.kollaz-scissors__loop {
+  position: absolute;
+  left: 77px;
+  top: 9px;
+  width: 42px;
+  height: 18px;
+  border-radius: 40% 50% 50% 40% / 50%;
+  border: 4px solid;
+  border-left-width: 9px;
+  border-color: #33b1bc #17808a #106871 #1f929d;
+  box-shadow:
+    inset 1px 1.5px 1px rgba(255, 255, 255, .3),
+    inset -1px -2px 2px rgba(0, 40, 45, .35),
+    0 0 0 .5px rgba(0, 40, 45, .35);
+}
+.kollaz-scissors__loop--large {
+  top: 29px;
+  width: 50px;
+  height: 20px;
+  border-radius: 40% 50% 50% 40% / 50%;
+  border-color: #2aa6b1 #17808a #0d5d65 #1b8b96;
+}
+.kollaz-scissors__pivot {
+  position: absolute;
+  left: 73px;
+  top: 23px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg, transparent 44%, rgba(40, 44, 46, .6) 45% 55%, transparent 56%),
+    radial-gradient(circle at 38% 34%, #ffffff, #b8bfc3 55%, #6f777b);
+  box-shadow: 0 .5px 1px rgba(0, 0, 0, .45);
+}
+.kollaz-well--scissors { width: 150px; border-radius: 14px; }
+.kollaz-well--scissors .kollaz-scissors { scale: .78; }
+
+/* ---------- Texta (permanent marker) ---------- */
+
+.kollaz-texta { position: relative; display: flex; align-items: center; height: 18px; }
+.kollaz-texta__cap {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border-radius: 8px 3px 3px 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .28) 0%, rgba(255, 255, 255, .06) 22%, transparent 40%),
+    linear-gradient(180deg, #3a3a40 0%, #19191d 55%, #0b0b0d 100%);
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, .4), 0 0 0 .5px rgba(0, 0, 0, .5);
+}
+.kollaz-texta__clip {
+  position: absolute;
+  left: 6px;
+  right: 3px;
+  top: -2px;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4a4a52, #1e1e22);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .4);
+}
+.kollaz-texta__tip {
+  width: 12px;
+  height: 7px;
+  border-radius: 6px 1px 1px 6px;
+  background: radial-gradient(ellipse 60% 40% at 45% 35%, #3a3a40, #0e0e10 80%);
+  clip-path: polygon(0 30%, 40% 0, 100% 0, 100% 100%, 40% 100%, 0 70%);
+}
+.kollaz-texta__barrel {
+  position: relative;
+  width: 84px;
+  height: 16px;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .85) 0%, rgba(255, 255, 255, .3) 14%, transparent 34%),
+    linear-gradient(180deg, #f4f4f2 0%, #d2d2ce 45%, #f1f1ee 72%, #adada8 100%);
+  box-shadow: 0 0 0 .5px rgba(0, 0, 0, .3);
+}
+.kollaz-texta--in-hand .kollaz-texta__barrel { border-radius: 5px 2px 2px 5px; }
+.kollaz-texta__label {
+  position: absolute;
+  left: 10px;
+  top: 4.5px;
+  color: rgba(20, 20, 24, .78);
+  font-size: 6px;
+  font-weight: 860;
+  letter-spacing: .18em;
+  line-height: 1;
+}
+.kollaz-texta__end {
+  width: 12px;
+  height: 16px;
+  border-radius: 2px 5px 5px 2px;
+  background: linear-gradient(180deg, #3a3a40, #121215 60%, #050506);
+}
+.kollaz-well--texta { width: 140px; border-radius: 14px; }
+
+/* ---------- Masking tape ---------- */
+
+.kollaz-tape-roll { position: relative; display: block; width: 52px; height: 48px; }
+/* The side of the roll: wound crepe paper, seen edge-on below the face. */
+.kollaz-tape-roll__side {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 12px;
+  bottom: 2px;
+  border-radius: 50% / 38%;
+  background:
+    repeating-linear-gradient(90deg, rgba(110, 90, 50, .1) 0 1px, transparent 1px 2.4px),
+    linear-gradient(180deg, #e6dab9 0%, #d8c9a2 45%, #bfad82 100%);
+  box-shadow: inset 0 -2px 3px rgba(90, 70, 30, .3), 0 1px 1px rgba(60, 45, 15, .3);
+}
+/* The top of the roll: an ellipse of wound tape with faint growth rings. */
+.kollaz-tape-roll__face {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 2px;
+  height: 36px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(ellipse at 50% 50%, rgba(120, 100, 60, .09) 0 1px, transparent 1px 2.6px),
+    radial-gradient(ellipse at 38% 30%, #f6efdc 0%, #ebe0c3 60%, #dccda7 100%);
+  box-shadow: inset 0 0 0 .75px rgba(120, 100, 60, .35), inset 0 1px 0 rgba(255, 255, 255, .7);
+  /* The see-through centre. */
+  -webkit-mask: radial-gradient(ellipse 34% 34% at 50% 50%, transparent 98%, #000 100%);
+  mask: radial-gradient(ellipse 34% 34% at 50% 50%, transparent 98%, #000 100%);
+}
+/* Cardboard core: a thin brown band just inside the hole, lit on its far wall. */
+.kollaz-tape-roll__core {
+  position: absolute;
+  left: 15.5px;
+  top: 12px;
+  width: 21px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1.6px #b08f5e,
+    inset 0 3px 0 1.6px rgba(150, 118, 72, .9),
+    0 0 0 .5px rgba(90, 60, 25, .45);
+}
+/* The free end peeling off the side of the roll, torn by hand. */
+.kollaz-tape-roll__tail {
+  position: absolute;
+  right: -7px;
+  top: 22px;
+  width: 16px;
+  height: 17px;
+  background:
+    repeating-linear-gradient(0deg, rgba(110, 90, 50, .08) 0 1px, transparent 1px 2.4px),
+    linear-gradient(90deg, #ddd0ac, #ece2c6);
+  clip-path: polygon(0 0, 78% 6%, 100% 18%, 86% 32%, 100% 48%, 88% 64%, 100% 80%, 84% 94%, 0 100%);
+  filter: drop-shadow(.5px 1px .6px rgba(60, 45, 15, .35));
+}
+
+.kollaz-tape-strips { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.kollaz-tape-strip {
+  position: absolute;
+  transform-origin: 0 50%;
+  /* Crepe paper: fine crinkles across the strip, a faint weave, and a little translucency. */
+  background:
+    repeating-linear-gradient(90deg, rgba(120, 100, 60, .06) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2 .3' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.25 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23f)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, .22), transparent 30%, transparent 75%, rgba(120, 100, 60, .1)),
+    rgba(236, 226, 196, .84);
+}
+.kollaz-tape-shadow { filter: drop-shadow(0 .5px .5px rgba(40, 30, 10, .22)) drop-shadow(1px 1.5px 1.5px rgba(40, 30, 10, .1)); }
+.kollaz-tape-strip--preview { opacity: .75; }
+
+/* ---------- Pipe cleaners ---------- */
+
+.kollaz-pipe-bundle { position: relative; display: block; width: 118px; height: 42px; }
+.kollaz-pipe-stem {
+  position: absolute;
+  left: 4px;
+  top: 16px;
+  width: 110px;
+  height: 11px;
+  background-size: 100% 100%;
+  transform-origin: 4px 50%;
+  filter: drop-shadow(0 .6px .5px rgba(0, 0, 0, .3));
+}
+.kollaz-pipe-stem--hand { position: relative; left: 0; top: 0; display: block; width: 70px; height: 10px; }
+.kollaz-well--pipes { width: 130px; border-radius: 14px; }
+
+.kollaz-pipes { position: absolute; inset: 0; pointer-events: none; }
+.kollaz-pipe {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  background-size: 100% 100%;
+  filter: drop-shadow(0 .5px .6px rgba(8, 26, 18, .5)) drop-shadow(2px 4px 4px rgba(8, 26, 18, .22));
+  transition: filter 160ms ease;
+  will-change: transform;
+}
+.kollaz-pipe.is-dragging { cursor: grabbing; translate: -2px -5px; filter: drop-shadow(0 1px 1px rgba(8, 26, 18, .45)) drop-shadow(5px 14px 10px rgba(8, 26, 18, .24)); }
+.kollaz-pipe.is-glued { cursor: default; filter: drop-shadow(0 .5px .5px rgba(8, 26, 18, .5)) drop-shadow(1px 2px 2px rgba(8, 26, 18, .18)); }
+.kollaz-pipe.is-falling { transition: transform 900ms cubic-bezier(.55, 0, .9, .4), opacity 900ms ease; opacity: 0; }
+
+/* ---------- Googly eye pot ---------- */
+
+.kollaz-eye-pot {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #3c3f3e 0%, #1f2120 72%);
+  box-shadow:
+    inset 0 3px 5px rgba(0, 0, 0, .6),
+    0 0 0 3px #c7cbc9,
+    0 0 0 4px rgba(40, 42, 41, .3);
+}
+/* Rolled tin rim catching the light. */
+.kollaz-eye-pot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(from 210deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .1) 22%, transparent 45%, rgba(0, 0, 0, .18) 60%, transparent 75%, rgba(255, 255, 255, .5) 92%, rgba(255, 255, 255, .95));
+  -webkit-mask: radial-gradient(circle, transparent 23px, #000 23.5px);
+  mask: radial-gradient(circle, transparent 23px, #000 23.5px);
+  pointer-events: none;
+}
+.kollaz-eye-pot .kollaz-googly-eye { position: absolute; }
+
+/* ---------- Tool in hand ----------
+   The shared motion engine hides a docked tool with [hidden] and marks one
+   pressed onto the paper with [data-state="contact"]. */
+
+.kollaz-tool-flight[hidden] { display: none; }
+
+.kollaz-tool-flight {
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  filter: drop-shadow(7px 12px 5px rgba(30, 31, 30, .22));
+}
+/* Shadow tightens as the tool meets the paper. */
+.kollaz-tool-flight[data-state="contact"] { filter: drop-shadow(2.25px 3px 1.5px rgba(30, 31, 30, .27)); }
+.kollaz-flight-body { position: absolute; display: flex; align-items: center; }
+
+.kollaz-tool-flight[data-state="contact"] .kollaz-glue-stick__nub { transform: scaleX(.8); transform-origin: right center; }
+.kollaz-tool-flight[data-state="contact"] .kollaz-shaker { animation: kollaz-shake 110ms linear infinite alternate; }
+@keyframes kollaz-shake {
+  from { transform: translate(-2px, 1px) rotate(-5deg); }
+  to { transform: translate(3px, -2px) rotate(6deg); }
+}
+.kollaz-tool-flight[data-state="contact"] .kollaz-static-eye { transform: scale(.96); }
+.kollaz-tool-flight[data-state="contact"] .kollaz-sequin-tub { animation: kollaz-shake 130ms linear infinite alternate; }
+.kollaz-tool-flight[data-state="contact"] .kollaz-pom--single { transform: scale(.9); }
+/* A stamp pressed flat casts almost no shadow. */
+.kollaz-tool-flight[data-kollaz-flight="stamp"][data-state="contact"] { filter: drop-shadow(.5px 1px .8px rgba(30, 31, 30, .35)); }
+.kollaz-tool-flight[data-kollaz-flight="stamp"][data-state="contact"] .kollaz-stamp { transform: scale(.94); }
+.kollaz-flight-body .kollaz-stamp, .kollaz-flight-body .kollaz-static-eye, .kollaz-flight-body .kollaz-pom--single, .kollaz-flight-body .kollaz-sequin-tub { transition: transform 90ms ease; }
+
+/* Below full desktop width the caddy becomes a compartment tray:
+   glue and eyes on top, the shakers, then sequins, pom poms, stamp and pad. */
+@media (max-width: 1240px) {
+  .kollaz-caddy {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    max-width: 560px;
+    gap: 8px;
+    padding: 9px;
+  }
+  .kollaz-well { width: auto; height: 52px; }
+  .kollaz-well--round, .kollaz-well--stamp { width: 52px; height: 52px; justify-self: center; }
+  .kollaz-well--long { grid-column: span 2; order: 0; }
+  .kollaz-well--scissors { width: auto; order: 1; }
+  .kollaz-well--scissors .kollaz-scissors { scale: .6; }
+  .kollaz-well--eyes { order: 1; }
+  .kollaz-well--tube { order: 2; }
+  .kollaz-well--sequins { order: 3; }
+  .kollaz-well--poms { order: 4; }
+  .kollaz-well--stamp { order: 5; }
+  .kollaz-well--pad { order: 6; }
+  .kollaz-caddy__row { display: contents; }
+  .kollaz-well--texta { grid-column: span 2; order: 7; }
+  .kollaz-well--pipes { order: 8; }
+  .kollaz-well--tape { order: 9; }
+  .kollaz-well--pipes .kollaz-pipe-bundle { scale: .66; }
+  .kollaz-well--texta .kollaz-texta { scale: .85; }
+  .kollaz-well--stamp { width: 58px; height: 58px; }
+  .kollaz-well--stamp .kollaz-stamp { transform: none; scale: .76; }
+}
+
+@media (max-width: 720px) {
+
+  .kollaz-well--tube > span { transform: scale(.7); }
+  .kollaz-well--round .kollaz-eye-pot, .kollaz-well--round .kollaz-sequin-tub, .kollaz-well--round .kollaz-pom-cup { transform: scale(.82); }
+  .kollaz-well--stamp .kollaz-stamp { transform: none; scale: .7; }
+  .kollaz-well--pad .kollaz-ink-pad { transform: scale(.8); }
+
+  .kollaz-utility-bar { flex-wrap: wrap; row-gap: 2px; border-radius: 22px; padding: 6px 6px 4px 14px; }
+  .kollaz-utility-divider { display: none; }
+}
+
+
+/* Held scissors rest slightly open, ready to cut. */
+.kollaz-tool-flight .kollaz-scissors { --open: 10deg; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kollaz *, .kollaz *::before, .kollaz *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

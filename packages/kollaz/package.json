@@ -1,0 +1,53 @@
+{
+  "name": "kollaz",
+  "version": "0.1.0",
+  "description": "A tactile craft table for React: a glue stick that dries clear, glitter that only sticks to wet glue, scissors, tape, pom poms and googly eyes.",
+  "license": "MIT",
+  "author": "Nick <nick@zonnioshunt.com.au>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickzonzh/object-studies.git",
+    "directory": "packages/kollaz"
+  },
+  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/kollaz#readme",
+  "bugs": "https://github.com/nickzonzh/object-studies/issues",
+  "keywords": [
+    "react",
+    "craft",
+    "glitter",
+    "googly-eyes",
+    "skeuomorphic",
+    "component"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:package": "publint --strict && attw --pack --profile esm-only"
+  },
+  "dependencies": {
+    "object-studies-core": "^0.1.0",
+    "polygon-clipping": "^0.15.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
