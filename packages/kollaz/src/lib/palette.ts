@@ -7,6 +7,15 @@ export const GLITTERS = [
   { id: 'teal', label: 'Teal', base: '#35b8c6', deep: '#0d525b' },
 ]
 
+/** Construction paper for a new sheet. */
+export const PAPERS = [
+  { id: 'cobalt', label: 'Cobalt', color: '#2f4f9e' },
+  { id: 'black', label: 'Black', color: '#26262b' },
+  { id: 'tomato', label: 'Tomato', color: '#c7433a' },
+  { id: 'sunflower', label: 'Sunflower', color: '#e6b23a' },
+  { id: 'kraft', label: 'Kraft', color: '#b58958' },
+]
+
 export const SHADES = 10
 
 const mix = (a: string, b: string, t: number) => {

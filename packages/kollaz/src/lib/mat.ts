@@ -88,5 +88,5 @@ export function drawMat(canvas: HTMLCanvasElement) {
   ctx.font = '780 8px ui-sans-serif, system-ui, sans-serif'
   ctx.textAlign = 'right'
   ctx.fillStyle = 'rgba(214, 238, 222, 0.4)'
-  ctx.fillText('A S P R O   ·   A 3   S E L F - H E A L I N G   ·   4 5  ×  3 0  C M', TABLE_WIDTH - 12, TABLE_HEIGHT - 10)
+  ctx.fillText('K O L L A Z   ·   A 3   S E L F - H E A L I N G   ·   4 5  ×  3 0  C M', TABLE_WIDTH - 12, TABLE_HEIGHT - 10)
 }

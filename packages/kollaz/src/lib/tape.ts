@@ -41,3 +41,11 @@ export function tapeSamples(t: Pick<TapeStrip, 'x1' | 'y1' | 'x2' | 'y2'>, spaci
   }
   return out
 }
+
+/** The outline of a laid strip in table units, torn ends included: what it covers. */
+export function tapeFootprint(t: TapeStrip, width = TAPE_WIDTH): Point[] {
+  const len = tapeLength(t)
+  const ux = (t.x2 - t.x1) / (len || 1)
+  const uy = (t.y2 - t.y1) / (len || 1)
+  return tapeOutline(len, width, t.seed).map((q) => ({ x: t.x1 + q.x * ux - q.y * uy, y: t.y1 + q.x * uy + q.y * ux }))
+}
