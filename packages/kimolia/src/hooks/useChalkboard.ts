@@ -3,9 +3,10 @@ import {
   clampPoint,
   type ActivationSource,
   type HistoryState,
-  type PersistenceStatus,
+  type LoadStatus,
   type Point,
   type Pose,
+  type SaveStatus,
 } from 'object-studies-core'
 import { createToolMotion } from '../tools/toolMotion.js'
 import { createDrawingSurface } from '../drawing/drawingSurface.js'
@@ -87,7 +88,9 @@ export function useChalkboard(options: ChalkboardOptions) {
     canUndo: false,
     canRedo: false,
   })
-  const [saveStatus, setSaveStatus] = useState<PersistenceStatus>('idle')
+  const [saveStatus, setSaveStatus] = useState<
+    LoadStatus | SaveStatus | 'saving'
+  >('idle')
   const [rendering, setRendering] = useState(false)
   const [exportStatus, setExportStatus] = useState<
     'idle' | 'exporting' | 'error'
@@ -206,7 +209,7 @@ export function useChalkboard(options: ChalkboardOptions) {
       over = false
       last = null
       if (active) {
-        motion.ready(active, immediate)
+        motion.ready(active, { immediate })
         phase('ready')
       }
     }
@@ -218,7 +221,7 @@ export function useChalkboard(options: ChalkboardOptions) {
       over = false
       last = null
       delete surface.dataset.selected
-      motion.dockAll(keyboard || immediate)
+      motion.dockAll({ immediate: keyboard || immediate })
       setSelected(null)
       phase('idle')
       if (keyboard && previous)
@@ -274,7 +277,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         return
       }
       releaseCapture()
-      if (active) motion.dock(active, activation === 'keyboard')
+      if (active) motion.dock(active, { immediate: activation === 'keyboard' })
       active = id
       surface.dataset.selected = id
       setSelected(id)
@@ -284,7 +287,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         last = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
         over = true
         surface.focus({ preventScroll: true })
-        motion.move(id, pose(last), false, true)
+        motion.move(id, pose(last), { immediate: true })
         phase('hover')
       }
     }
@@ -407,7 +410,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         const point = pointFrom(event)
         surface.setPointerCapture(event.pointerId)
         surface.focus({ preventScroll: true })
-        motion.move(active, pose(point), true)
+        motion.move(active, pose(point), { pressed: true })
         contactPressure = pressureFor(event.pointerType, event.pressure)
         beginMark(point, contactPressure)
         last = point
@@ -427,7 +430,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         const point = pointFrom(event)
         over = inside(point)
         if (touching) addSamples(event)
-        motion.move(active, pose(point), touching && over)
+        motion.move(active, pose(point), { pressed: touching && over })
         last = point
         phase(touching && over ? 'contact' : 'hover')
       },
@@ -495,7 +498,7 @@ export function useChalkboard(options: ChalkboardOptions) {
             x: rect.left + rect.width / 2,
             y: rect.top + rect.height / 2,
           }
-          motion.move(active, pose(last), true, true)
+          motion.move(active, pose(last), { pressed: true, immediate: true })
           beginMark(last)
           phase('contact')
           return
@@ -522,7 +525,7 @@ export function useChalkboard(options: ChalkboardOptions) {
           },
           rect,
         )
-        motion.move(active, pose(next), touching, true)
+        motion.move(active, pose(next), { pressed: touching, immediate: true })
         if (touching) {
           drawing.add(inkPoint(next))
           drawing.flush()
@@ -545,7 +548,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         event.preventDefault()
         drawing.end()
         touching = false
-        if (last) motion.move(active, pose(last), false, true)
+        if (last) motion.move(active, pose(last), { immediate: true })
         phase('hover')
       },
       listen,
@@ -621,7 +624,10 @@ export function useChalkboard(options: ChalkboardOptions) {
         rect = surface.getBoundingClientRect()
         if (active && last) {
           over = inside(last)
-          motion.move(active, pose(last), touching && pointer !== null && over, true)
+          motion.move(active, pose(last), {
+            pressed: touching && pointer !== null && over,
+            immediate: true,
+          })
           phase(touching && over ? 'contact' : 'hover')
         }
       },
@@ -631,7 +637,10 @@ export function useChalkboard(options: ChalkboardOptions) {
       rect = surface.getBoundingClientRect()
       if (active && last) {
         over = inside(last)
-        motion.move(active, pose(last), touching && pointer !== null && over, true)
+        motion.move(active, pose(last), {
+          pressed: touching && pointer !== null && over,
+          immediate: true,
+        })
         phase(touching && over ? 'contact' : 'hover')
       }
       drawing.resize(rect.width, rect.height)

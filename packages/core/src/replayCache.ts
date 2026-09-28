@@ -29,9 +29,18 @@ export function createReplayCache<Stroke>(
   const samePrefix = (snapshot: Snapshot<Stroke>, strokes: readonly Stroke[]) =>
     snapshot.strokes.length <= strokes.length &&
     snapshot.strokes.every((stroke, index) => stroke === strokes[index])
+  // An image taken at another size would paint the wrong picture.
+  const fits = (snapshot: Snapshot<Stroke>) =>
+    snapshot.image.width === canvas.width &&
+    snapshot.image.height === canvas.height
+  const release = (snapshot: Snapshot<Stroke>) => {
+    snapshot.image.width = snapshot.image.height = 0
+  }
   return {
     capture(strokes, checkpoint = false) {
-      if (!strokes.length) return
+      if (!strokes.length || !canvas.width || !canvas.height) return
+      for (let index = snapshots.length - 1; index >= 0; index--)
+        if (!fits(snapshots[index])) release(snapshots.splice(index, 1)[0])
       const capacity = Math.min(
         MAX_IMAGES,
         Math.floor(MAX_BYTES / (canvas.width * canvas.height * 4)),
@@ -77,6 +86,7 @@ export function createReplayCache<Stroke>(
       for (const snapshot of snapshots) {
         if (
           (!best || snapshot.strokes.length > best.strokes.length) &&
+          fits(snapshot) &&
           samePrefix(snapshot, strokes)
         )
           best = snapshot
@@ -92,8 +102,7 @@ export function createReplayCache<Stroke>(
       return best.strokes.length
     },
     clear() {
-      for (const snapshot of snapshots)
-        snapshot.image.width = snapshot.image.height = 0
+      snapshots.forEach(release)
       snapshots.length = 0
     },
   }

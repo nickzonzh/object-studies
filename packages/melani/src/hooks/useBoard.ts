@@ -95,7 +95,7 @@ export function useBoard({
     // Commit nib position and fresh ink in the same frame, including coalesced input.
     if (!pendingMoveActiveRef.current) return
     const pending = pendingMoveRef.current
-    motionRef.current?.move(pending.id, pending.pose, pending.contact)
+    motionRef.current?.move(pending.id, pending.pose, { pressed: pending.contact })
     pendingMoveActiveRef.current = false
   }, [])
 
@@ -190,7 +190,7 @@ export function useBoard({
       renderer.resize(rect.width, rect.height, backingScale(
         rect.width, rect.height, window.devicePixelRatio || 1, 2,
       ))
-      motion.dockAll(true)
+      motion.dockAll({ immediate: true })
       previousPointerRef.current = null
       render()
     }
@@ -344,21 +344,21 @@ export function useBoard({
       return
     }
     pendingMoveActiveRef.current = false
-    motionRef.current?.move(id, pose, false)
+    motionRef.current?.move(id, pose)
   }
 
   const select = useCallback((id: ToolId, source: ActivationSource) => {
     clearReturn()
     const motion = motionRef.current
     const previous = activeToolRef.current
-    if (previous) motion?.dock(previous, source === 'keyboard')
+    if (previous) motion?.dock(previous, { immediate: source === 'keyboard' })
     const next = previous === id ? null : id
     activeToolRef.current = next
     setActiveTool(next)
     previousPointerRef.current = null
     angleRef.current = restingAngle(next ?? id)
     if (!next) return
-    motion?.ready(next, source === 'keyboard')
+    motion?.ready(next, { immediate: source === 'keyboard' })
     const pointer = lastPointerRef.current
     if (source === 'keyboard' || !pointer) return
     cacheRects()
