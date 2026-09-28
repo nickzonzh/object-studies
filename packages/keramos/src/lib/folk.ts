@@ -21,6 +21,7 @@ import {
   transform,
   jitterPts,
   shade,
+  wobble,
 } from './painter.js'
 import type { Shape, Zone } from './shapes.js'
 
@@ -104,6 +105,11 @@ function leaf(c: C, f: Frame, len: number, width: number, bend = 0.25, color = F
   const poly = ribbon(center, (t) => width * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.8)), 0.85), false)
   shape(f, poly, color)
   inkLine(f, center.slice(1, -3), INK * 0.6)
+}
+
+/** One loaded brush mark: swells from a fine start to its width and lifts off to a point. */
+function brush(f: Frame, pts: Pt[], w: number, color: string = FOLK.ink, alpha = 0.92) {
+  f.fill('paint', ribbon(catmull(pts, 5), (t) => w * Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * t)), 0.6)), color, { alpha })
 }
 
 function stem(f: Frame, pts: Pt[], w = 1.1) {
@@ -291,6 +297,17 @@ function flowerSprig(c: C, f: Frame, h: number) {
   else floret(c, f.child(top[0], top[1] + h * 0.08), h * 0.12)
 }
 
+/** Whether a point lies inside a polygon (even-odd). */
+function inside([x, y]: Pt, poly: Pt[]) {
+  let hit = false
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]
+    const [xj, yj] = poly[j]
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit
+  }
+  return hit
+}
+
 // ------------------------------------------------------------------- figures
 
 /** A leg with a knee: widths taper through the joint like a real limb. */
@@ -372,7 +389,7 @@ function deer(c: C, f: Frame) {
   // the ear, long and laid back
   const ear = catmull([[24.2, 45.6], [19.5, 49.8], [15.4, 51.8], [18, 48.2], [21.8, 44.4]], 5, true)
   shape(f, ear, g, INK * 0.85)
-  f.line('paint', catmull([[22.8, 45.4], [19.2, 48.6], [17, 50.2]], 5), FOLK.greyDeep, 0.5, { alpha: 0.8 })
+  brush(f, [[22.8, 45.4], [19.2, 48.6], [17, 50.2]], 0.6, FOLK.greyDeep, 0.8)
 
   // pale belly and throat
   const belly: Pt[] = catmull([[-14, 19.4], [-5, 18.5], [5, 18.9], [11.6, 20.6], [6, 21.6], [-5, 21.2], [-12.5, 21.8]], 5, true)
@@ -398,15 +415,15 @@ function deer(c: C, f: Frame) {
   hatchLine([[-19.5, 21.8], [-26, 18.8], [-32.5, 18.4]], 0.4, 0.55)
   hatchLine([[15, 19.8], [21, 14.8], [26, 12]], 0.4, 0.55)
 
-  // face: almond eye with a bright catchlight, brow, nostril, mouth
-  const eye = catmull([[27, 41.6], [29.2, 43], [31.4, 41.8], [29.2, 40.4]], 5, true)
-  f.fill('paint', eye, '#fbf8f1')
-  ink(f, eye, INK * 0.6)
-  dot(f, 29.4, 41.7, 0.95, FOLK.ink)
-  dot(f, 29.75, 42.1, 0.28, '#fbf8f1')
-  f.line('paint', catmull([[26.6, 43.4], [29, 44.6], [31.6, 43.4]], 4), FOLK.ink, 0.45, { alpha: 0.85 })
-  dot(f, 34.9, 40.2, 0.55, FOLK.ink)
-  inkLine(f, catmull([[35.3, 38.8], [33.6, 38.3], [32, 38.5]], 4), INK * 0.5)
+  // face, as a quick brush does it: a pale almond under a heavy upper lid and a
+  // light lower one, an uneven dark pupil, and flicks for brow, nostril and mouth
+  f.fill('paint', catmull([[27.3, 41.7], [29.2, 42.8], [31.2, 41.8], [29.2, 40.7]], 5, true), '#ece9e1', { alpha: 0.85 })
+  brush(f, [[26.7, 41.4], [28.9, 43.1], [31.8, 41.9]], 0.8)
+  brush(f, [[27.5, 41.2], [29.3, 40.4], [31.2, 41.5]], 0.45, FOLK.ink, 0.8)
+  f.fill('paint', circle(29.5 + rng.range(-0.25, 0.25), 41.9, 0.95, 10, rng, 0.25), FOLK.ink, { alpha: 0.95 })
+  brush(f, [[26.3, 43.9], [28.9, 45], [31.3, 44.2]], 0.55, FOLK.ink, 0.85)
+  brush(f, [[34.3, 40.9], [35.1, 40.4], [34.9, 39.5]], 0.7)
+  brush(f, [[35.3, 38.9], [33.8, 38.2], [32, 38.5]], 0.5, FOLK.ink, 0.85)
   // white spots along the flank, as painted on the Ikaros mugs
   for (let i = 0; i < 4; i++) {
     f.fill('paint', circle(-6 + i * 4.8 + rng.range(-0.8, 0.8), 27.2 + rng.range(-0.8, 0.8), 0.75, 8), '#efece5', { alpha: 0.85 })
@@ -416,37 +433,54 @@ function deer(c: C, f: Frame) {
 /** A galley under sail on turquoise water. About 70 mm wide. */
 function ship(c: C, f: Frame) {
   const { rng } = c
-  // sea: a turquoise swell with rows of wave crests, little fish and foam flowers
+  // sea: a turquoise wash under a soft, uneven horizon, dabbed over with darker
+  // and paler strokes, loose wave marks and white speckles, with a few fish and
+  // white blossoms. Solid enough that nothing painted behind it shows through.
+  const horizon = wobble(rng, 6)
   const sea: Pt[] = []
-  for (let i = 0; i <= 48; i++) {
-    const t = i / 48
-    sea.push([-38 + t * 76, 1.5 + Math.sin(t * TAU * 3.5 + 0.4) * 1.4])
+  for (let i = 0; i <= 40; i++) sea.push([-38 + (i / 40) * 76, 1.6 + horizon(i / 40) * 0.9])
+  sea.push(...catmull([[38, 1.5], [36, -7], [20, -13.5], [0, -14.5], [-20, -13.5], [-36, -7], [-38, 1.5]], 8))
+  const bowl = jitterPts(sea, rng, 0.35)
+  f.fill('paint', bowl, FOLK.sea, { alpha: 1, pool: { color: FOLK.seaDeep, width: 0.0016, alpha: 0.3 } })
+  const inSea = (x: number, y: number) => inside([x, y], bowl)
+  for (let i = 0; i < 80; i++) {
+    const x = rng.range(-36, 36)
+    const y = rng.range(-13.5, 1)
+    const len = rng.range(3, 8)
+    if (!inSea(x - len / 2, y) || !inSea(x + len / 2, y)) continue
+    const dark = rng.chance(0.45)
+    brush(f, [[x - len / 2, y + rng.range(-0.4, 0.4)], [x, y + rng.range(-0.5, 0.5)], [x + len / 2, y + rng.range(-0.4, 0.4)]], rng.range(0.9, 2.2), dark ? FOLK.seaDeep : shade(FOLK.sea, 0.3), rng.range(0.18, 0.35))
   }
-  sea.push(...catmull([[38, 1.5], [35, -8], [18, -13.5], [0, -14.5], [-18, -13.5], [-35, -8], [-38, 1.5]], 8))
-  f.fill('paint', sea, FOLK.sea, { alpha: 0.9, pool: { color: FOLK.seaDeep, width: 0.0012, alpha: 0.35 } })
-  f.line('paint', sea.slice(0, 49), FOLK.seaDeep, 0.8, { alpha: 0.95 })
-  for (let row = 0; row < 2; row++) {
-    for (let i = 0; i < 7; i++) {
-      const x = -30 + i * 10 + (row ? 5 : 0) + rng.range(-1, 1)
-      const y = -4 - row * 4.5
-      f.line('paint', catmull([[x - 3, y], [x - 1, y + 1.6], [x + 1.2, y + 1.3], [x + 1.6, y + 0.2]], 5), FOLK.seaDeep, 0.6, { alpha: 0.85 })
-    }
+  for (let i = 0; i < 18; i++) {
+    const x = rng.range(-32, 32)
+    const y = rng.range(-11.5, -1)
+    const w = rng.range(2.2, 4.2)
+    if (!inSea(x - w, y) || !inSea(x + w, y + 1)) continue
+    brush(f, [[x - w, y], [x - w * 0.3, y + w * 0.45 * rng.vary(1, 0.3)], [x + w * 0.4, y + w * 0.35], [x + w * 0.6, y + rng.range(-0.2, 0.3)]], rng.range(0.45, 0.7), FOLK.seaDeep, 0.8)
+  }
+  for (let i = 0; i < 30; i++) {
+    const x = rng.range(-36, 36)
+    const y = rng.range(-13.5, 0.5)
+    if (inSea(x, y)) f.fill('paint', circle(x, y, rng.range(0.22, 0.5), 8, rng, 0.2), '#fbf8f1', { alpha: rng.range(0.6, 0.95) })
   }
   for (let i = 0; i < 3; i++) {
-    const x = -22 + i * 20 + rng.range(-3, 3)
-    const y = -9.5 + rng.range(-1, 1)
-    const fish = catmull([[x - 3, y], [x, y + 1.3], [x + 2.6, y + 0.2], [x, y - 1.2]], 5, true)
-    f.fill('paint', fish, '#fbf8f1', { alpha: 0.95 })
-    f.fill('paint', [[x - 2.8, y], [x - 4.6, y + 1.2], [x - 4.6, y - 1.2]], '#fbf8f1', { alpha: 0.95 })
-    dot(f, x + 1.3, y + 0.25, 0.3, FOLK.seaDeep)
+    const g = f.child(-22 + i * 20 + rng.range(-4, 4), -9 + rng.range(-2, 1.5), rng.range(-0.3, 0.3), rng.range(0.8, 1.25), rng.chance(0.5))
+    g.fill('paint', jitterPts(catmull([[-3, 0], [0, 1.3], [2.6, 0.2], [0, -1.2]], 5, true), rng, 0.15), '#fbf8f1', { alpha: 0.95 })
+    g.fill('paint', [[-2.8, 0], [-4.6, rng.range(0.9, 1.4)], [-4.2, 0], [-4.6, -rng.range(0.9, 1.4)]], '#fbf8f1', { alpha: 0.95 })
+    dot(g, 1.3, 0.25, 0.3, FOLK.seaDeep)
   }
-  for (let i = 0; i < 5; i++) {
-    const x = -28 + i * 13 + rng.range(-2, 2)
-    const y = -2.5 + rng.range(-1, 1)
+  for (let i = 0; i < 4; i++) {
+    const x = rng.range(-30, 30)
+    const y = rng.range(-12, -2)
+    if (!inSea(x - 2, y) || !inSea(x + 2, y)) continue
+    const g = f.child(x, y, rng.range(0, TAU), rng.range(0.85, 1.15))
     for (let k = 0; k < 3; k++) {
-      const a = (k / 3) * TAU + 0.3
-      f.fill('paint', circle(x + Math.cos(a) * 0.9, y + Math.sin(a) * 0.9, 0.75, 10), '#fbf8f1', { alpha: 0.95 })
+      const a = (k / 3) * TAU
+      const petal = circle(Math.cos(a) * 0.85, Math.sin(a) * 0.85, 0.8, 10, rng, 0.15)
+      g.fill('paint', petal, '#fbf8f1')
+      ink(g, petal, INK * 0.45)
     }
+    dot(g, 0, 0, 0.3, FOLK.seaDeep)
   }
   // oars
   for (let i = 0; i < 8; i++) {
@@ -696,7 +730,8 @@ const DEER_SPACE: [number, number, number][] = [
 const SHIP_SPACE: [number, number, number][] = [
   [-26, -4, 10], [-10, -5, 10], [8, -5, 10], [26, -4, 10], [-28, 16, 6], [-18, 10, 6.5], [-6, 10, 6.5],
   [6, 10, 6.5], [18, 10, 6.5], [30, 12, 6.5], [-12, 26, 9], [2, 26, 9], [15, 26, 9], [-12, 43, 9],
-  [2, 43, 9], [15, 43, 9], [2, 57, 5], [9, 60, 3.5],
+  [2, 43, 9], [15, 43, 9], [2, 57, 5], [9, 60, 3.5], [-35, -3, 4.5], [35, -3, 4.5], [-18, -12, 4], [0, -13, 4],
+  [18, -12, 4],
 ]
 
 // ------------------------------------------------------------------ filling
