@@ -12,6 +12,7 @@ import { createToolMotion } from '../tools/toolMotion.js'
 import { createDrawingSurface } from '../drawing/drawingSurface.js'
 import { pressureFor } from '../drawing/chalkSampler.js'
 import { createBoardStorage } from '../drawing/boardStorage.js'
+import { replayable, startingDrawing } from '../drawing/startingDrawing.js'
 import { defaultChalkColors } from '../drawing/chalkBrush.js'
 import type { ChalkColor, DrawingStroke } from '../drawing/types.js'
 import {
@@ -30,7 +31,6 @@ export type ChalkboardOptions = {
   onStrokesChange?: (strokes: readonly DrawingStroke[]) => void
   persistence: false | { key: string }
   exportFileName: string
-  wear: number
 }
 
 type Controller = {
@@ -56,7 +56,7 @@ function themeColors(root: HTMLElement): Record<ChalkColor, string> {
   return colors
 }
 
-function boardTone(root: HTMLElement, wear: number): BoardTone {
+function boardTone(root: HTMLElement): BoardTone {
   const styles = getComputedStyle(root)
   const read = (name: string, fallback: string) =>
     styles.getPropertyValue(name).trim() || fallback
@@ -64,7 +64,11 @@ function boardTone(root: HTMLElement, wear: number): BoardTone {
     slate: read('--kimolia-slate', defaultTone.slate),
     slateLight: read('--kimolia-slate-light', defaultTone.slateLight),
     slateDark: read('--kimolia-slate-dark', defaultTone.slateDark),
-    wear,
+    // The residue's resolved opacity is the wear on screen, however it was
+    // set: the prop, the board's own style, or an ancestor.
+    wear: Number(
+      getComputedStyle(root.querySelector('.kimolia-residue')!).opacity,
+    ),
   }
 }
 
@@ -108,18 +112,28 @@ export function useChalkboard(options: ChalkboardOptions) {
     if (!overlay) return
     const board = boardRef.current!
     const surface = surfaceRef.current!
-    const motion = createToolMotion(board, overlayRef.current!)
     const storage = storageKey === null ? null : createBoardStorage(storageKey)
     const restored = storage?.load()
+    const initial = startingDrawing(
+      latest.current.strokes,
+      restored?.value,
+      latest.current.defaultStrokes,
+    )
+    const motion = createToolMotion(board, overlayRef.current!)
     let saveTimer = 0
     let pendingSave: readonly DrawingStroke[] | null = null
     let disposed = false
     let exporting = false
+    // Another tab saved this key while a gesture here was still open.
+    let incoming = false
+    // The last save failed, so this board holds the only copy of its drawing.
+    let unsaved = false
     const flushSave = () => {
       window.clearTimeout(saveTimer)
       if (pendingSave === null || !storage) return
       const status = storage.save([...pendingSave])
       pendingSave = null
+      unsaved = status !== 'saved'
       if (!disposed) setSaveStatus(status)
     }
     const drawing = createDrawingSurface(canvasRef.current!, {
@@ -133,20 +147,18 @@ export function useChalkboard(options: ChalkboardOptions) {
         if (!storage) return
         setSaveStatus('saving')
         pendingSave = snapshot
+        // This save lands after anything another tab has written.
+        incoming = false
         window.clearTimeout(saveTimer)
         saveTimer = window.setTimeout(flushSave, 250)
       },
-      initial:
-        latest.current.strokes ??
-        latest.current.defaultStrokes ??
-        restored?.value ??
-        [],
+      initial,
       onBusy: setRendering,
       curtain: curtainRef.current,
       colors: themeColors(board),
     })
     setHistory(drawing.state())
-    if (restored) setSaveStatus(restored.status)
+    setSaveStatus(restored?.status ?? 'idle')
     const parkedDuster = board.querySelector<HTMLElement>(
       '[data-slot="duster"] .kimolia-duster',
     )!
@@ -203,6 +215,7 @@ export function useChalkboard(options: ChalkboardOptions) {
       touching = false
       if (captured !== null && surface.hasPointerCapture(captured))
         surface.releasePointerCapture(captured)
+      adoptIncoming()
     }
     const ready = (immediate = false) => {
       drawing.end()
@@ -228,6 +241,26 @@ export function useChalkboard(options: ChalkboardOptions) {
         board
           .querySelector<HTMLButtonElement>(`[data-slot="${previous}"]`)!
           .focus({ preventScroll: true })
+    }
+    // Like a controlled update: the drawing is replaced and undo starts again.
+    const replace = (next: readonly DrawingStroke[]) => {
+      releaseCapture()
+      drawing.setStrokes(next)
+      setHistory(drawing.state())
+      if (active) ready(true)
+    }
+    // A save from another tab never lands mid-gesture. It waits for the
+    // gesture to end, and a gesture that commits saves over it instead.
+    const adoptIncoming = () => {
+      if (!incoming || touching || !storage) return
+      incoming = false
+      const loaded = storage.load()
+      setSaveStatus(loaded.status)
+      if (!loaded.value) return
+      replace(loaded.value)
+      const snapshot = [...drawing.strokes()]
+      synced.current = snapshot
+      latest.current.onStrokesChange?.(snapshot)
     }
     const pose = (point: Point): Pose => {
       const maxTilt = active === 'duster' ? 3 : 8
@@ -310,18 +343,13 @@ export function useChalkboard(options: ChalkboardOptions) {
         if (active) ready(true)
       },
       getStrokes: () => [...drawing.strokes()],
-      setStrokes(next) {
-        releaseCapture()
-        drawing.setStrokes(next)
-        setHistory(drawing.state())
-        if (active) ready(true)
+      setStrokes: replace,
+      async toBlob(type) {
+        // Mid-replay the canvas holds half a drawing; the curtain only hides it.
+        while (drawing.isBusy()) await drawing.settled()
+        if (disposed) throw new Error('The chalkboard was unmounted')
+        return createBoardPng(canvasRef.current!, boardTone(board), type)
       },
-      toBlob: (type) =>
-        createBoardPng(
-          canvasRef.current!,
-          boardTone(board, latest.current.wear),
-          type,
-        ),
       async savePng() {
         if (exporting || drawing.isBusy()) return
         releaseCapture()
@@ -550,6 +578,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         touching = false
         if (last) motion.move(active, pose(last), { immediate: true })
         phase('hover')
+        adoptIncoming()
       },
       listen,
     )
@@ -559,6 +588,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         if (pointer === null && active) {
           touching = false
           ready(true)
+          adoptIncoming()
         }
       },
       listen,
@@ -569,7 +599,7 @@ export function useChalkboard(options: ChalkboardOptions) {
         const target = event.target
         if (
           target instanceof HTMLElement &&
-          board.contains(target) &&
+          component.contains(target) &&
           !target.closest('input, textarea, select, [contenteditable="true"]') &&
           (event.ctrlKey || event.metaKey) &&
           !event.altKey
@@ -597,6 +627,26 @@ export function useChalkboard(options: ChalkboardOptions) {
       },
       listen,
     )
+    // One key is one drawing: when another tab saves it, this board follows.
+    // A save of its own still pending here lands later, so it wins instead,
+    // and a drawing that failed to save is never thrown away for another tab's.
+    if (storage)
+      window.addEventListener(
+        'storage',
+        (event) => {
+          if (
+            event.key !== storageKey ||
+            event.storageArea !== localStorage ||
+            latest.current.strokes ||
+            pendingSave !== null ||
+            unsaved
+          )
+            return
+          incoming = true
+          adoptIncoming()
+        },
+        listen,
+      )
     window.addEventListener('blur', () => putBack(false, true), listen)
     document.addEventListener(
       'visibilitychange',
@@ -650,6 +700,7 @@ export function useChalkboard(options: ChalkboardOptions) {
     window.addEventListener('resize', resizeSurface, listen)
     phase('idle')
     return () => {
+      incoming = false
       cancelReturn()
       releaseCapture()
       flushSave()
@@ -669,7 +720,7 @@ export function useChalkboard(options: ChalkboardOptions) {
   useEffect(() => {
     if (!strokes || strokes === synced.current) return
     synced.current = strokes
-    controller.current?.setStrokes(strokes)
+    controller.current?.setStrokes(replayable(strokes, 'strokes'))
   }, [strokes])
 
   return {

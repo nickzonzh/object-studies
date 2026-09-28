@@ -43,21 +43,26 @@ and 17 KB of CSS.
 
 | Prop | Type | Default | |
 | --- | --- | --- | --- |
-| `defaultStrokes` | `readonly DrawingStroke[]` | `[]` | Starting drawing, uncontrolled. |
+| `defaultStrokes` | `readonly DrawingStroke[]` | `[]` | Starting drawing for an uncontrolled board. A drawing saved under the `persistence` key, even an empty one, takes its place. |
 | `strokes` | `readonly DrawingStroke[]` | — | Controlled drawing. Pair with `onStrokesChange`. |
-| `onStrokesChange` | `(strokes: readonly DrawingStroke[]) => void` | — | Called after every committed gesture, undo, redo and clear, with a fresh array. |
+| `onStrokesChange` | `(strokes: readonly DrawingStroke[]) => void` | — | Called after every committed gesture, undo, redo and clear, and when another tab's save replaces the drawing, with a fresh array. |
 | `persistence` | `false \| { key: string }` | `false` | Opt in to keeping the drawing on the device under your own key. |
 | `exportFileName` | `string` | `'kimolia-board.png'` | File name for the built-in Save PNG control. |
 | `showControls` | `boolean` | `true` | The built-in undo / redo / clear / save bar. |
-| `labels` | `Partial<ChalkboardLabels>` | English | Every user-visible string. |
-| `wear` | `number` | `0.35` | 0–1. How much old chalk haze the slate has kept. |
-| `portalContainer` | `HTMLElement \| null` | a body-level element | Where the tools in flight are rendered. |
+| `labels` | `ChalkboardLabelOverrides` | English | Every user-visible string. Pass only the ones you change, down to a single chalk colour: `{ chalk: { white: 'Weiße Kreide' } }`. |
+| `wear` | `number` | `--kimolia-wear` | 0–1. How much old chalk haze the slate has kept. Overrides the custom property. |
+| `portalContainer` | `HTMLElement \| null` | `document.body` | Where the tools in flight are rendered. The board adds its own layer inside it and removes it on unmount. |
 | `className`, `style` | | | Applied to the component root, which always carries `kimolia`. |
 | `ref` | `Ref<ChalkboardHandle>` | | See below. |
 
 A board is uncontrolled unless `strokes` is set. In controlled mode the board
 replays whatever you pass — except the array it just handed you, which it
 recognises as its own drawing coming back.
+
+The board starts from `strokes` if set, then from the drawing saved under the
+`persistence` key, then from `defaultStrokes`. Strokes passed as props must meet
+the same replay limits as stored ones (see Persistence); a drawing that breaks
+them throws instead of tying the board up.
 
 ```tsx
 const [strokes, setStrokes] = useState<readonly DrawingStroke[]>([])
@@ -84,9 +89,12 @@ const board = useRef<ChalkboardHandle>(null)
 <button onClick={() => board.current?.undo()}>Undo</button>
 ```
 
+`toBlob` waits for a replay in progress (after a resize, undo or reload) to
+finish, so the image is always the whole drawing.
+
 Exported types: `ChalkboardProps`, `ChalkboardHandle`, `ChalkboardLabels`,
-`DrawingStroke`, `ChalkStroke`, `DusterStroke`, `ChalkPoint`, `ChalkColor`,
-plus `defaultLabels`, `defaultChalkColors` and `decodeStrokes`.
+`ChalkboardLabelOverrides`, `DrawingStroke`, `ChalkStroke`, `DusterStroke`,
+`ChalkPoint`, `ChalkColor`, plus `defaultLabels` and `decodeStrokes`.
 
 ## Persistence
 
@@ -97,21 +105,34 @@ because it was rendered. Opt in with a key:
 <Chalkboard persistence={{ key: 'lesson:board:v1' }} />
 ```
 
+One key holds one drawing. Boards in several tabs on the same key share it: when
+one tab saves, the others replace their drawing with it (their undo history
+starts again), and a gesture in progress finishes first. The latest save wins,
+except that a tab whose own drawing could not be saved keeps it rather than
+losing it to another tab's. Two boards on the same page should not share a key.
+
 Stored drawings are versioned and treated as untrusted. A document that does not
 decode cleanly is reported to the user and left alone rather than partially
 restored, and oversized drawings (4000 strokes, 40 000 points or 2 MB) are
-refused before they replace a good one. Failures — blocked storage, a full
-quota, an unreadable document — are the only things announced to screen readers;
-a successful autosave is not news.
+refused before they replace a good one. So are drawings that would take too long
+to replay: tool sizes the board never produces, a slate smaller than 64 px, or
+more than four million chalk and felt stamps in all. Failures — blocked storage,
+a full quota, an unreadable document — are the only things announced to screen
+readers; a successful autosave is not news.
 
 For your own storage, keep `onStrokesChange` and validate on the way back in
-with the exported `decodeStrokes`.
+with the exported `decodeStrokes`, which takes the array and returns a clean
+copy, or throws for anything invalid:
+
+```ts
+const strokes = decodeStrokes(JSON.parse(saved))
+```
 
 ## Theming
 
-Every colour is a custom property readable from the component root, so a
-wrapper, a `className` or `style` can retheme the object. The chalk colours also
-drive the marks on the canvas.
+Every colour is a custom property. The defaults sit on the document root with
+no specificity, so setting one on any ancestor, a `className` or `style`
+rethemes the object. The chalk colours also drive the marks on the canvas.
 
 | Property | Default | |
 | --- | --- | --- |
@@ -126,7 +147,7 @@ drive the marks on the canvas.
 | `--kimolia-chalk-yellow` | `#e2d288` | |
 | `--kimolia-chalk-blue` | `#9cbfcd` | |
 | `--kimolia-chalk-pink` | `#dfabaf` | |
-| `--kimolia-wear` | `0.35` | Residual chalk haze; also set by the `wear` prop. |
+| `--kimolia-wear` | `0.35` | Residual chalk haze, on screen and in the PNG; the `wear` prop overrides it. |
 | `--kimolia-text` / `--kimolia-muted` / `--kimolia-focus` | `#515a4a` / `#727469` / `#65725b` | Caption, note and focus ring. |
 | `--kimolia-light-x` / `--kimolia-light-y` | `24%` / `0%` | Where the key light sits. |
 
@@ -147,18 +168,23 @@ sidebar.
 
 Safe to render on a server: nothing touches `window`, `document`,
 `localStorage`, `matchMedia` or `devicePixelRatio` during render. The tools in
-flight are portalled into an element created in an effect (override it with
-`portalContainer`), and the materials are drawn on the client. There is no
+flight are portalled into an element created in an effect (`portalContainer`
+chooses where it goes), and the materials are drawn on the client. There is no
 hydration mismatch — the markup is the board and its controls.
 
 ## Accessibility
 
-- The rail is a group of toggle buttons with `aria-pressed`; the slate is a
-  focusable group described by the full instructions.
+- The rail is a group of toggle buttons with `aria-pressed`. The slate is a
+  focusable `application`, so screen readers in browse mode hand it the arrow
+  keys, and it is described by the full instructions.
+- Controls that cannot act right now are `aria-disabled` rather than disabled,
+  so pressing Undo to the last step or Clear keeps keyboard focus on the button
+  and the shortcuts keep working.
 - Keyboard: choose chalk with Enter or Space and focus moves to the slate. Arrow
   keys move the tool (Shift for larger steps); hold Space or Enter while moving
   to draw or erase. Escape puts the tool back and returns focus to its slot.
-  Control/Command Z undoes, Shift Z or Control Y redoes.
+  Control/Command Z undoes, Shift Z or Control Y redoes, while the board or its
+  controls have focus.
 - Touch activates on a completed tap rather than the compatibility click that
   follows it, so a tool can be picked up immediately after a drawing gesture.
   All controls are at least 44×44 px.

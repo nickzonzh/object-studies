@@ -1,5 +1,8 @@
 import type { ChalkPoint } from './types.js'
 
+/** Distance between stamps, as a share of the felt's height. */
+export const DUSTER_SPACING = 0.12
+
 // A pass is a sweep, not a pointer event. Sampling carries across packets;
 // reversing direction after meaningful travel starts another cleaning pass.
 export function createDusterSampler(
@@ -7,7 +10,7 @@ export function createDusterSampler(
   emit: (point: ChalkPoint) => void,
   nextPass: () => void,
 ) {
-  const spacing = height * 0.12
+  const spacing = height * DUSTER_SPACING
   let previous: ChalkPoint | null = null
   let heading: { x: number; y: number } | null = null
   let travelled = 0
