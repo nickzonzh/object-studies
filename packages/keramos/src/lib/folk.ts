@@ -37,8 +37,6 @@ export const FOLK = {
   seaDeep: '#2f8f9c',
   grey: '#9a9b96',
   greyDeep: '#5a5b57',
-  ochre: '#c28a4c',
-  ochreDeep: '#7d4f26',
   yellow: '#d8c24a',
   hull: '#8a4a2b',
 }
@@ -260,8 +258,8 @@ function hoof(f: Frame, pts: Pt[]) {
  */
 function deer(c: C, f: Frame) {
   const { rng } = c
-  const g = FOLK.ochre
-  const gFar = shade(FOLK.ochre, -0.2)
+  const g = FOLK.grey
+  const gFar = shade(FOLK.grey, -0.2)
   const kick = rng.range(-1.5, 1.5)
 
   // far legs, darker, behind everything
@@ -314,16 +312,16 @@ function deer(c: C, f: Frame) {
   // the ear, long and laid back
   const ear = catmull([[24.2, 45.6], [19.5, 49.8], [15.4, 51.8], [18, 48.2], [21.8, 44.4]], 5, true)
   shape(f, ear, g, INK * 0.85)
-  f.line('paint', catmull([[22.8, 45.4], [19.2, 48.6], [17, 50.2]], 5), FOLK.ochreDeep, 0.5, { alpha: 0.8 })
+  f.line('paint', catmull([[22.8, 45.4], [19.2, 48.6], [17, 50.2]], 5), FOLK.greyDeep, 0.5, { alpha: 0.8 })
 
   // pale belly and throat
   const belly: Pt[] = catmull([[-14, 19.4], [-5, 18.5], [5, 18.9], [11.6, 20.6], [6, 21.6], [-5, 21.2], [-12.5, 21.8]], 5, true)
   f.fill('paint', belly, '#e9e6de', { alpha: 0.75 })
-  f.line('paint', catmull([[-15, 21.8], [-5, 21.3], [7, 21.8], [13.5, 22.8]], 6), FOLK.ochreDeep, 0.45, { alpha: 0.7 })
+  f.line('paint', catmull([[-15, 21.8], [-5, 21.3], [7, 21.8], [13.5, 22.8]], 6), FOLK.greyDeep, 0.45, { alpha: 0.7 })
   f.fill('paint', catmull([[17, 25], [21, 31], [25, 35.6], [22.6, 35], [18.6, 30], [15.6, 25.6]], 5, true), '#e9e6de', { alpha: 0.55 })
 
   // grey brush hatching: the painter's shading along the neck, flank and haunch
-  const hatchLine = (pts: Pt[], w = 0.5, a = 0.72) => f.line('paint', catmull(pts, 5), FOLK.ochreDeep, w, { alpha: a })
+  const hatchLine = (pts: Pt[], w = 0.5, a = 0.72) => f.line('paint', catmull(pts, 5), FOLK.greyDeep, w, { alpha: a })
   for (let i = 0; i < 4; i++) {
     const t = i / 3
     const x = 15.5 + t * 6.5
@@ -668,9 +666,10 @@ function scatter(c: C, field: Field, region: Region, items: { r: number; tries: 
   }
 }
 
-function fillers(c: C) {
+/** Fillers for the gaps round a figure. `density` multiplies how hard each is tried. */
+function fillers(c: C, density = 1) {
   const { rng } = c
-  return [
+  const items = [
     { r: 13, tries: 200, draw: (f: Frame, r: number) => flowerSprig(c, f.child(0, -r * 0.95, rng.range(-0.35, 0.35)), r * 2.1) },
     { r: 11, tries: 200, draw: (f: Frame, r: number) => leafSpray(c, f.child(0, -r * 0.9, rng.range(-0.6, 0.6)), r * 1.9) },
     { r: 8.5, tries: 260, draw: (f: Frame, r: number) => redFlower(c, f, r * 0.85) },
@@ -683,6 +682,7 @@ function fillers(c: C) {
     } },
     { r: 2.4, tries: 1000, draw: (f: Frame, r: number) => dot(f, 0, 0, r * rng.range(0.6, 0.78), FOLK.red, rng.chance(0.25)) },
   ]
+  return items.map((item) => ({ ...item, tries: Math.round(item.tries * density) }))
 }
 
 // --------------------------------------------------------------------- main
@@ -775,11 +775,11 @@ function paintVessel(c: C, shape: Shape, zone: (r: Zone['role']) => Zone | undef
 
 function paintPlate(c: C, shape: Shape) {
   const { p, rng, U } = c
-  const zone = (role: Zone['role']) => shape.zones.find((z) => z.role === role)!
-  const well = zone('body')
-  const cav = zone('shoulder')
-  const rimBand = zone('collar')
-  const edge = zone('rim')
+  // Ikaros deer plates give the picture most of the face: a wide well packed with
+  // flowers, a double line, and one band of blue leaves round the rim.
+  const well = { from: 0, to: 0.36 }
+  const rimBand = { from: 0.372, to: 0.47 }
+  const edge = shape.zones.find((z) => z.role === 'rim')!
 
   // centre: a big leaping deer (or a ship) among flowers
   const field = new Field(c)
@@ -792,12 +792,11 @@ function paintPlate(c: C, shape: Shape) {
   if (kind === 'deer') deer(c, f)
   else ship(c, f)
   field.reserve(f, kind === 'deer' ? DEER_SPACE : SHIP_SPACE)
-  scatter(c, field, { kind: 'disc', radius: well.to - 0.006 }, fillers(c))
+  scatter(c, field, { kind: 'disc', radius: well.to - 0.006 }, fillers(c, 2))
   p.unclip()
   p.ring('paint', well.to, FOLK.ink, INK * 1.6 * U, rng)
   p.ring('paint', well.to - 0.006, FOLK.ink, INK * 0.9 * U, rng)
 
-  dashBand(c, cav.from, cav.to)
   waveBand(c, rimBand.from, rimBand.to)
   p.band('paint', edge.from, edge.to, FOLK.blue, 0.95)
   p.ring('paint', edge.from, FOLK.ink, INK * 1.2 * U, rng)

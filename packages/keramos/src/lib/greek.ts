@@ -854,11 +854,18 @@ function tondo(g: G) {
   if (mode === 'red') p.band('paint', 0, 0.5, pal.slip)
   else p.band('paint', ring.to, 0.5, pal.slip)
   const fig = rng.pick([hoplite, runner, maiden, youth])
-  const h = well.to * 1.62
-  const base = -well.to * 0.62
-  const f = p.flat(fig === runner ? -0.01 : 0.02, base, 0, h, rng.chance(0.5))
+  const flip = rng.chance(0.5)
+  const figSeed = Math.floor(rng.next() * 4294967296)
+  const draw = (x: number, y: number, size: number) => fig({ ...g, rng: new Rng(figSeed) }, p.flat(x, y, 0, size, flip))
+  // Centre the figure in the tondo and size it to clear the inscription round the top.
+  const bare = p.measure(() => draw(0, 0, 1))
+  const cx = (bare.minX + bare.maxX) / 2
+  const cy = (bare.minY + bare.maxY) / 2
+  const reach = p.measure(() => draw(-cx, -cy, 1)).maxR
+  const size = (well.to - 0.06) / reach
+  const base = (bare.minY - cy) * size
   p.clip(0, well.to)
-  fig({ ...g, rng: rng.fork() }, f)
+  draw(-cx * size, -cy * size, size)
   p.unclip()
   // exergue: the ground line the figure stands on
   const half = Math.sqrt(Math.max(0, well.to * well.to - base * base))
