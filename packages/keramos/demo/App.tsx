@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { SHAPES, STYLES, Vase, type ShapeId, type StyleId } from '../src/index.js'
 
-type Piece = { shape: ShapeId; style: StyleId; palette: string; seed: number }
+// `angle` is how a piece stands on the shelf: handles in profile, turned a little
+// toward the viewer, and facing outward at the ends of a shelf.
+type Piece = { shape: ShapeId; style: StyleId; palette: string; seed: number; angle?: number }
+
+const HANDLE_LEFT = -0.35
+const HANDLE_RIGHT = Math.PI + 0.35
 
 const WALL: Piece[] = [
   { shape: 'plate', style: 'ikaros', palette: 'folk', seed: 4 },
@@ -10,17 +15,17 @@ const WALL: Piece[] = [
 ]
 
 const IKAROS_SHELF: Piece[] = [
-  { shape: 'baluster', style: 'ikaros', palette: 'lindos', seed: 11 },
-  { shape: 'mug', style: 'ikaros', palette: 'folk', seed: 3 },
-  { shape: 'rhodos', style: 'ikaros', palette: 'cobalt-gold', seed: 21 },
-  { shape: 'mug', style: 'ikaros', palette: 'folk', seed: 8 },
-  { shape: 'jug', style: 'ikaros', palette: 'midnight', seed: 9 },
+  { shape: 'baluster', style: 'ikaros', palette: 'lindos', seed: 11, angle: 0.6 },
+  { shape: 'mug', style: 'ikaros', palette: 'folk', seed: 3, angle: HANDLE_RIGHT },
+  { shape: 'rhodos', style: 'ikaros', palette: 'cobalt-gold', seed: 21, angle: 1.3 },
+  { shape: 'mug', style: 'ikaros', palette: 'folk', seed: 8, angle: HANDLE_LEFT },
+  { shape: 'jug', style: 'ikaros', palette: 'midnight', seed: 9, angle: HANDLE_RIGHT },
 ]
 
 const GREEK_SHELF: Piece[] = [
-  { shape: 'lekythos', style: 'red-figure', palette: 'attic', seed: 6 },
-  { shape: 'amphora', style: 'black-figure', palette: 'attic', seed: 3 },
-  { shape: 'jug', style: 'black-figure', palette: 'corinthian', seed: 5 },
+  { shape: 'lekythos', style: 'red-figure', palette: 'attic', seed: 6, angle: HANDLE_LEFT },
+  { shape: 'amphora', style: 'black-figure', palette: 'attic', seed: 3, angle: 0.2 },
+  { shape: 'jug', style: 'black-figure', palette: 'corinthian', seed: 5, angle: HANDLE_RIGHT },
 ]
 
 const paletteLabel = (style: StyleId, id: string) =>
@@ -62,9 +67,9 @@ function Shelf({ pieces, onPick, label }: { pieces: Piece[]; onPick: (p: Piece) 
   return (
     <section className="shelf" aria-label={label}>
       <div className="shelf-row">
-        {pieces.map((p, i) => (
+        {pieces.map((p) => (
           <figure className={`shelf-piece shelf-piece--${p.shape}`} key={`${p.shape}-${p.palette}-${p.seed}`}>
-            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} angle={i * 1.3 + (p.shape === 'mug' ? 1.2 : 0)} spin={0.9} maxFps={40} />
+            <Vase mode="still" shape={p.shape} vaseStyle={p.style} palette={p.palette} seed={p.seed} angle={p.angle} spin={0.9} maxFps={40} />
             <figcaption>
               <button type="button" onClick={() => onPick(p)}>
                 <span>{SHAPES[p.shape].label}</span>
