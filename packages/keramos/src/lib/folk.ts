@@ -27,8 +27,8 @@ import type { Shape, Zone } from './shapes.js'
 export const FOLK = {
   ground: '#f5f2ea',
   ink: '#191816',
-  red: '#a8432b',
-  redDeep: '#8c3321',
+  red: '#9e2622',
+  redDeep: '#7c1f1b',
   green: '#2f7f55',
   greenLight: '#4c9a6a',
   blue: '#4058bd',
@@ -149,8 +149,11 @@ function floret(c: C, f: Frame, r: number, color = FOLK.lilac) {
   dot(f, 0, 0, r * 0.2, FOLK.red)
 }
 
-/** Side-view carnation in blue with a red tongue, the way the jug handle side shows it. */
-function carnation(c: C, f: Frame, h: number) {
+const BLUE_CARNATION = { petal: FOLK.blue, deep: FOLK.blueDeep, tongue: FOLK.red }
+const RED_CARNATION = { petal: FOLK.red, deep: FOLK.redDeep, tongue: FOLK.blue }
+
+/** Side-view carnation: a fan of toothed lobes round a tongue, blue with a red tongue or the other way round. */
+function carnation(c: C, f: Frame, h: number, colors = BLUE_CARNATION) {
   const { rng } = c
   const lobes = 5
   const pivot: Pt = [0, h * 0.3]
@@ -167,19 +170,19 @@ function carnation(c: C, f: Frame, h: number) {
     }
     lobe.push(...catmull([[w, len * 0.86], [w * 0.8, len * 0.55], [h * 0.04, h * 0.05]], 5), [h * 0.03, 0])
     const poly = transform(lobe, pivot[0], pivot[1], -ang)
-    shape(f, poly, i === 2 ? FOLK.blueDeep : FOLK.blue, INK * 0.8)
+    shape(f, poly, i === 2 ? colors.deep : colors.petal, INK * 0.8)
     inkLine(f, transform([[0, h * 0.08], [0, len * 0.7]], pivot[0], pivot[1], -ang), INK * 0.5, 0.75)
   }
-  // red tongue in the middle
+  // the tongue in the middle
   const tongue = transform(catmull([[-h * 0.06, h * 0.05], [-h * 0.07, h * 0.3], [0, h * 0.5], [h * 0.07, h * 0.3], [h * 0.06, h * 0.05]], 5), pivot[0], pivot[1])
-  shape(f, tongue, FOLK.red, INK * 0.7)
+  shape(f, tongue, colors.tongue, INK * 0.7)
   const cal: Pt[] = catmull([[-h * 0.1, 0], [-h * 0.16, h * 0.18], [-h * 0.2, h * 0.34], [0, h * 0.28], [h * 0.2, h * 0.34], [h * 0.16, h * 0.18], [h * 0.1, 0]], 4)
   shape(f, cal, FOLK.green, INK * 0.8)
 }
 
 /**
- * Big red carnation, face on, as the plates show it: a ring of long toothed
- * petals over a shorter inner ring, round a blue heart. Radius in mm.
+ * Big red carnation, face on, as the plates show it: a ragged ring of toothed
+ * petals, sometimes over a shorter inner ring, round a blue heart. Radius in mm.
  */
 function carnationHead(c: C, f: Frame, r: number) {
   const { rng } = c
@@ -191,32 +194,32 @@ function carnationHead(c: C, f: Frame, r: number) {
       shape(g, catmull([[-r * 0.16, 0], [-r * 0.2, r * 0.7], [0, r * rng.range(1.12, 1.25)], [r * 0.2, r * 0.7], [r * 0.16, 0]], 4), FOLK.blue, INK * 0.7)
     }
   }
-  const n = rng.int(8, 10)
+  // loose and uneven, as a quick brush leaves them: petals differ in length,
+  // width, spacing and teeth, and only some heads carry an inner ring
+  const n = rng.int(9, 13)
   const rot = rng.range(0, TAU)
-  for (const [ring, len] of [[0, 1], [0.5, 0.64]] as const) {
+  const rings: [number, number][] = rng.chance(0.55) ? [[0, 1], [0.5, 0.6]] : [[0, 1]]
+  for (const [ring, len] of rings) {
     for (let i = 0; i < n; i++) {
-      const a = rot + ((i + ring) / n) * TAU - Math.PI / 2
-      const l = r * len * rng.vary(1, 0.07)
-      // broad enough that neighbours overlap into one solid red disc
-      const w = ((TAU * l * 0.65) / n) * 1.3
+      const a = rot + ((i + ring + rng.range(-0.22, 0.22)) / n) * TAU - Math.PI / 2
+      const l = r * len * rng.vary(1, 0.16)
+      // broad enough that neighbours overlap into one red flower
+      const w = ((TAU * l * 0.62) / n) * rng.range(1.05, 1.45)
+      const teeth = rng.int(2, 4) * 2
+      const tip: Pt[] = []
+      for (let j = 1; j < teeth; j++) tip.push([-w * 0.46 + (w * 0.92 * j) / teeth, l * (j % 2 ? rng.range(0.95, 1.05) : rng.range(0.82, 0.9))])
       const petal: Pt[] = [
         ...catmull([[-w * 0.18, r * 0.1], [-w * 0.5, l * 0.5], [-w * 0.5, l * 0.84]], 4),
-        [-w * 0.36, l * 0.97],
-        [-w * 0.2, l * 0.9],
-        [-w * 0.08, l * 1.01],
-        [w * 0.06, l * 0.92],
-        [w * 0.2, l * 1.0],
-        [w * 0.34, l * 0.9],
-        [w * 0.46, l * 0.95],
+        ...tip,
         ...catmull([[w * 0.5, l * 0.84], [w * 0.5, l * 0.5], [w * 0.18, r * 0.1]], 4),
       ]
       const g = f.child(0, 0, a)
-      shape(g, jitterPts(petal, rng, r * 0.02), ring ? FOLK.redDeep : rng.chance(0.8) ? FOLK.red : FOLK.redDeep, INK * 0.75)
+      shape(g, jitterPts(petal, rng, r * 0.035), ring ? FOLK.redDeep : rng.chance(0.8) ? FOLK.red : FOLK.redDeep, INK * 0.75)
       g.line('paint', [[0, l * 0.35], [rng.range(-0.15, 0.15) * w, l * 0.8]], shade(FOLK.redDeep, -0.3), 0.55, { alpha: 0.45 })
     }
   }
-  shape(f, circle(0, 0, r * 0.24, 18, rng, 0.08), rng.chance(0.75) ? FOLK.blue : FOLK.redDeep, INK * 0.8)
-  dot(f, 0, 0, r * 0.08, FOLK.ink)
+  shape(f, circle(0, 0, r * rng.range(0.16, 0.26), 18, rng, 0.14), rng.chance(0.65) ? FOLK.blue : FOLK.redDeep, INK * 0.8)
+  dot(f, 0, 0, r * 0.07, FOLK.ink)
 }
 
 /** Blue flower of five pointed petals round a red eye, the small flower of the plates. */
@@ -603,6 +606,60 @@ function waveBand(c: C, from: number, to: number) {
   }
 }
 
+/**
+ * The deer plates' rim: fat blue feathered leaves sweeping round the plate,
+ * each rising from the inner line and hooking over a white flower, with a
+ * green tuft between. The well's double line serves as the inner border.
+ */
+function leafBand(c: C, from: number, to: number) {
+  const { p, rng, U } = c
+  const hMm = (to - from) / U
+  const circ = p.circumference((from + to) / 2) / U
+  const n = Math.max(8, Math.round(circ / (hMm * 1.8)))
+  const wMm = circ / n
+  p.ring('paint', to - INK * U * 0.6, FOLK.ink, INK * 1.2 * U, rng)
+  for (let i = 0; i < n; i++) {
+    const f = p.frame((i / n) * TAU, 0, from, 0, U)
+    // green tuft first, so the leaf's tip may lie over it
+    for (const a of [0.55, 0.1, -0.35]) leaf(c, f.child(-wMm * 0.47, hMm * 0.04, a + rng.range(-0.1, 0.1)), hMm * rng.range(0.3, 0.38), hMm * 0.12, a * 0.6)
+    // the leaf: smooth on its inner side, scalloped along its outer one
+    const spine = catmull([[-wMm * 0.38, hMm * 0.06], [-wMm * 0.2, hMm * 0.44], [wMm * 0.04, hMm * 0.78], [wMm * 0.3, hMm * 0.8], [wMm * 0.42, hMm * 0.5]], 10)
+    const outer: Pt[] = []
+    const inner: Pt[] = []
+    const lobes = rng.range(5, 6.2)
+    for (let k = 0; k <= 40; k++) {
+      const t = k / 40
+      const { p: q, d } = along(spine, t)
+      const w = hMm * 0.27 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.pow(t, 0.8) * 0.98 + 0.02)), 0.8)
+      const scallop = t > 0.08 && t < 0.96 ? hMm * 0.1 * Math.abs(Math.sin(Math.PI * t * lobes)) : 0
+      outer.push([q[0] - d[1] * (w + scallop), q[1] + d[0] * (w + scallop)])
+      inner.push([q[0] + d[1] * w * 0.85, q[1] - d[0] * w * 0.85])
+    }
+    const plume = jitterPts([...outer, ...inner.reverse()], rng, hMm * 0.012)
+    shape(f, plume, rng.chance(0.25) ? FOLK.blueDeep : FOLK.blue, INK * 0.8)
+    // brush streaks: a dark stroke down the spine, paler ones toward the scalloped edge
+    f.line('paint', spine.slice(4, -3), FOLK.blueDeep, hMm * 0.05, { alpha: 0.55 })
+    for (const off of [0.35, 0.65]) {
+      const streak = spine.slice(6, -5).map((q, k) => {
+        const { d } = along(spine, (k + 6) / 40)
+        const w = hMm * 0.27 * off
+        return [q[0] - d[1] * w, q[1] + d[0] * w] as Pt
+      })
+      f.line('paint', streak, shade(FOLK.blue, 0.35), hMm * 0.035, { alpha: 0.5 })
+    }
+    // the white flower in the curl, with a red heart
+    const fl = f.child(wMm * 0.17, hMm * 0.43, rng.range(0, TAU))
+    const r = hMm * 0.22
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * TAU
+      const pp = circle(Math.cos(a) * r * 0.52, Math.sin(a) * r * 0.52, r * 0.46, 12, rng, 0.1)
+      fl.fill('paint', pp, '#fbf8f1')
+      ink(fl, pp, INK * 0.6)
+    }
+    dot(fl, 0, 0, r * 0.3, FOLK.red, true)
+  }
+}
+
 /** Row of red half-flowers sitting on the base line. */
 function fanBand(c: C, from: number, to: number) {
   const { p, rng, U } = c
@@ -766,7 +823,7 @@ function fillWell(c: C, field: Field, radiusMm: number) {
     const turn = rng.chance(0.5) ? 1 : -1
     const path: Pt[] = [start]
     for (let i = 0; i < steps; i++) {
-      dir += bend(i / steps) * 0.22
+      dir += bend(i / steps) * 0.3
       const [x, y] = path[path.length - 1]
       let moved = false
       for (const t of [0, 1, -1, 2, -2, 3, -3]) {
@@ -791,15 +848,15 @@ function fillWell(c: C, field: Field, radiusMm: number) {
     const line = catmull(path, 6)
     const acc = lengths(line)
     const L = acc[acc.length - 1]
-    shape(f, ribbon(line, (t) => (2.3 - t * 0.9) * k), FOLK.green, INK * 0.6)
+    shape(f, ribbon(line, (t) => (3.1 - t * 1.3) * k), FOLK.green, INK * 0.7)
     let side = rng.chance(0.5) ? 1 : -1
     for (let s = Math.max(bare, step * 0.8); s < L - step * 0.5; s += step * rng.range(1.5, 2.2)) {
       const { p: q, d } = along(line, s / L)
       const ang = Math.atan2(d[1], d[0]) - Math.PI / 2
       for (const sd of rng.chance(0.35) ? [-1, 1] : [side]) {
-        const len = rng.range(9.5, 13) * k
+        const len = rng.range(11, 15) * k
         const g = f.child(q[0], q[1], ang + sd * rng.range(0.55, 0.9))
-        leaf(c, g, len, len * 0.32, -sd * 0.4, rng.chance(0.25) ? FOLK.greenLight : FOLK.green)
+        leaf(c, g, len, len * 0.27, -sd * 0.5, rng.chance(0.25) ? FOLK.greenLight : FOLK.green)
         // keep just the leaf's own space, so dots can still fill in beside it
         for (const t of [0.35, 0.72]) {
           const [lx, ly] = g.phys([0, len * t])
@@ -833,7 +890,11 @@ function fillWell(c: C, field: Field, radiusMm: number) {
     }
     const up = path.length >= 4 ? Math.atan2(y - path[0][1], x - path[0][0]) - Math.PI / 2 : rng.range(0, TAU)
     if (path.length >= 4) stemWithLeaves([[x, y], ...path], big * 1.1)
-    carnationHead(c, f.child(x, y, up), big * rng.vary(1, 0.06))
+    // mostly face on, some turned side-on as a red fan; never all one size
+    const g = f.child(x, y, up)
+    const r = big * rng.range(0.78, 1.05)
+    if (rng.chance(0.3)) carnation(c, g.child(0, -r * 0.9), r * 1.85, RED_CARNATION)
+    else carnationHead(c, g, r)
   }
 
   // free stems through what is left, each ending in a flower if there is room
@@ -897,7 +958,7 @@ export function paintFolk(p: Painter, shape: Shape, seed: number) {
   p.ground(FOLK.ground, 'rgba(210, 202, 186, 1)', 0.25, 0.006)
   const zone = (role: Zone['role']) => shape.zones.find((z) => z.role === role)
 
-  if (shape.kind === 'plate') paintPlate(c, shape)
+  if (shape.kind === 'plate') paintPlate(c)
   else paintVessel(c, shape, zone)
 
   return p.finish({
@@ -976,19 +1037,19 @@ function paintVessel(c: C, shape: Shape, zone: (r: Zone['role']) => Zone | undef
   }
 }
 
-function paintPlate(c: C, shape: Shape) {
+function paintPlate(c: C) {
   const { p, rng, U } = c
   // Ikaros deer plates give the picture most of the face: a wide well packed with
   // flowers, a double line, and one band of blue leaves round the rim.
   const well = { from: 0, to: 0.36 }
-  const rimBand = { from: 0.372, to: 0.47 }
-  const edge = shape.zones.find((z) => z.role === 'rim')!
+  // the band runs out almost to the edge, leaving a narrow white lip
+  const rimBand = { from: 0.362, to: 0.478 }
 
   // centre: a big leaping deer (or a ship) among flowers
   const field = new Field(c)
   p.clip(0, well.to)
   const kind = rng.chance(0.7) ? 'deer' : 'ship'
-  const s = (well.to * (kind === 'deer' ? 1.85 : 1.5)) / (kind === 'deer' ? 84 : 80) / U
+  const s = (well.to * (kind === 'deer' ? 1.05 : 1.5)) / (kind === 'deer' ? 84 : 80) / U
   const flip = rng.chance(0.5)
   // centre the figure: the deer spans roughly x -46..38, y 2..64 in its own millimetres
   const f = p.flat(kind === 'deer' ? (flip ? -4 : 4) * s * U : 0, kind === 'deer' ? -32 * s * U : -0.075, 0, U * s, flip)
@@ -1002,7 +1063,5 @@ function paintPlate(c: C, shape: Shape) {
   p.ring('paint', well.to, FOLK.ink, INK * 1.6 * U, rng)
   p.ring('paint', well.to - 0.006, FOLK.ink, INK * 0.9 * U, rng)
 
-  waveBand(c, rimBand.from, rimBand.to)
-  p.band('paint', edge.from, edge.to, FOLK.blue, 0.95)
-  p.ring('paint', edge.from, FOLK.ink, INK * 1.2 * U, rng)
+  leafBand(c, rimBand.from, rimBand.to)
 }
