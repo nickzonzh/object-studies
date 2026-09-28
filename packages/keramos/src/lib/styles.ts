@@ -62,8 +62,9 @@ export function paintVessel(shape: Shape, style: StyleId, palette: string, seed:
       interiorGloss: 0.95,
       handle: hex(pal.field ?? pal.bandGround),
       handleGloss: 0.95,
-      rim: hex('#caa55a'),
-      rimGold: 1,
+      // Lindos copies Iznik, which used no gold; the other palettes are Ikaros's gilded ware
+      rim: hex(id === 'lindos' ? pal.cobalt : '#caa55a'),
+      rimGold: id === 'lindos' ? 0 : 1,
       glaze: 1,
       relief: 0.0022,
     }

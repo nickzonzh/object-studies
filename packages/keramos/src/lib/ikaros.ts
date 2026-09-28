@@ -795,6 +795,51 @@ function latticeBand(c: Ctx, z: Zone) {
 }
 
 /** Shoulder band: a chain of reserved medallions linked by gold knots. */
+/**
+ * Rock and wave: the rim of almost every Iznik dish, and so of the Lindos plates
+ * Ikaros copied. White roundels holding tight black spirals, packed on cobalt,
+ * broken at intervals by a white wave crest carrying a small red flower.
+ */
+function rockAndWaveBand(c: Ctx, z: Zone) {
+  const { p, pal, rng } = c
+  const mid = (z.from + z.to) / 2
+  const h = z.to - z.from
+  p.band('paint', z.from, z.to, pal.cobalt, 0.97)
+  const circ = p.circumference(mid)
+  const r = h * 0.19
+  const cols = Math.max(12, Math.round(circ / (r * 2.3)))
+  const step = circ / cols
+  const every = 5
+  for (let i = 0; i < cols; i++) {
+    const f = p.frame((i / cols) * TAU, 0, mid)
+    if (i % every === 0) {
+      // the wave: a lobed white crest across the band, curling at its tip
+      const crest = catmull([[-step * 0.9, -h * 0.36], [-step * 0.2, -h * 0.3], [step * 0.35, 0], [step * 0.1, h * 0.3], [step * 0.75, h * 0.36], [step * 1.1, h * 0.12], [step * 0.55, -h * 0.05], [step * 0.15, -h * 0.38]], 6, true)
+      f.fill('paint', crest, pal.ground, { alpha: 0.98 })
+      f.outline('paint', crest, pal.dark, 0.0011)
+      f.child(step * 0.15, 0).fill('over', circle(0, 0, h * 0.09, 12, rng, 0.12), pal.accent, { alpha: 0.95 })
+      continue
+    }
+    // two staggered rows of rocks
+    for (const [dx, dy] of [[0, h * 0.2], [step * 0.5, -h * 0.2]] as const) {
+      const g = f.child(dx, dy)
+      const rr = r * rng.range(0.9, 1.05)
+      const disc = circle(0, 0, rr, 18, rng, 0.05)
+      g.fill('paint', disc, pal.ground, { alpha: 0.98 })
+      g.outline('paint', disc, pal.dark, 0.0009)
+      const turn = rng.range(0, TAU)
+      const spiral: Pt[] = Array.from({ length: 22 }, (_, k) => {
+        const t = k / 21
+        const a = turn + t * Math.PI * 3.4
+        return [Math.cos(a) * rr * (0.12 + 0.72 * t), Math.sin(a) * rr * (0.12 + 0.72 * t)]
+      })
+      g.line('paint', spiral, pal.dark, 0.0013)
+    }
+  }
+  p.ring('paint', z.from + 0.001, pal.dark, 0.0012, rng)
+  p.ring('paint', z.to - 0.001, pal.dark, 0.0012, rng)
+}
+
 function medallionBand(c: Ctx, z: Zone) {
   const { p, pal, rng } = c
   const mid = (z.from + z.to) / 2
@@ -904,8 +949,15 @@ function paintPlate(c: Ctx, zone: (r: Zone['role']) => Zone | undefined) {
   p.ring(gold ? 'gold' : 'paint', well.to, gold ? GOLD : pal.dark, 0.0022, rng)
   medallionBand(c, cav)
   if (pal.field) p.band('paint', cav.to, rimBand.from, pal.field, 1)
-  latticeBand(c, rimBand)
-  p.band('gold', edge.from, edge.to, GOLD)
+  // Lindos copies the Iznik rim; the gilded palettes keep Ikaros's own cartouche band
+  // Iznik used no gold: a Lindos rim ends in a dark line
+  if (pal.id === 'lindos') {
+    rockAndWaveBand(c, rimBand)
+    p.ring('paint', edge.from + 0.004, pal.dark, 0.003, rng)
+  } else {
+    latticeBand(c, rimBand)
+    p.band('gold', edge.from, edge.to, GOLD)
+  }
 }
 
 // --------------------------------------------------------------------- main
@@ -1137,13 +1189,14 @@ export function paintIkaros(p: Painter, zones: Zone[], paletteId: IkarosPaletteI
   const collar = zone('collar')
   if (collar) latticeBand(c, collar)
 
-  // gold foot and rim
+  // foot and rim: gold, except on Lindos pieces, which copy Iznik and finish in cobalt
   const foot = zone('foot')
-  if (foot) p.band('gold', foot.from, foot.to, GOLD)
+  const trim = (from: number, to: number) => (pal.id === 'lindos' ? p.band('paint', from, to, pal.cobalt) : p.band('gold', from, to, GOLD))
+  if (foot) trim(foot.from, foot.to)
   const rim = zone('rim')
-  if (rim) p.band('gold', rim.from, 1, GOLD)
+  if (rim) trim(rim.from, 1)
   if (pal.contour !== 'gold') {
-    // Lindos pieces keep gold to the edges only; add a cobalt line under the rim
+    // a cobalt line under the rim
     if (rim) p.ring('paint', rim.from - 0.004, pal.cobalt, 0.003, rng)
   }
 

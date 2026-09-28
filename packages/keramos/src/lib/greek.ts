@@ -843,11 +843,14 @@ const GREEK_MATERIAL = {
   paintBlur: 0.35,
 }
 
-/** A plate painted like the inside of a drinking cup: one figure in a meander ring. */
-function tondo(g: G, zone: (r: Zone['role']) => Zone | undefined) {
+/**
+ * A plate painted as Attic plates of about 500 BC were: one figure filling a wide
+ * tondo in a meander ring, then a plain black rim with a single reserved line.
+ */
+function tondo(g: G) {
   const { p, pal, rng, mode } = g
-  const well = zone('body')!
-  const ring = zone('shoulder')!
+  const well = { from: 0, to: 0.36 }
+  const ring = { from: 0.365, to: 0.41 }
   if (mode === 'red') p.band('paint', 0, 0.5, pal.slip)
   else p.band('paint', ring.to, 0.5, pal.slip)
   const fig = rng.pick([hoplite, runner, maiden, youth])
@@ -868,11 +871,8 @@ function tondo(g: G, zone: (r: Zone['role']) => Zone | undefined) {
   }
   inscribeArc(g, rng.pick(WORDS.filter((w) => w.length > 5)), well.to - 0.026, Math.PI / 2, 0.02)
   meanderBand(g, ring.from, ring.to)
-  // a palmette frieze round the rim, so the plate does not read as a bare black disc
-  const rim = zone('collar')!
-  const inset = (rim.to - rim.from) * 0.2
-  palmetteBand(g, rim.from + inset, rim.to - inset)
-  if (mode === 'black') p.ring('over', (ring.to + rim.from) / 2, pal.red, 0.004, rng, 0.85)
+  if (mode === 'black') p.ring('over', (ring.to + 0.5) / 2, pal.red, 0.004, rng, 0.85)
+  p.eraseZone('paint', 0.466, 0.469)
 }
 
 // --------------------------------------------------------------------- main
@@ -887,7 +887,7 @@ export function paintGreek(p: Painter, shape: Shape, style: string, paletteId: G
   const zones = shape.zones
 
   if (p.mode === 'disc') {
-    tondo(g, zone)
+    tondo(g)
     return p.finish(GREEK_MATERIAL)
   }
 
@@ -925,8 +925,14 @@ export function paintGreek(p: Painter, shape: Shape, style: string, paletteId: G
   }
   if (body) {
     p.clip(body.from, body.to)
-    if (mode === 'black' && pal.id === 'corinthian') animalFrieze(g, body)
-    else figureFrieze(g, body)
+    if (mode === 'black' && pal.id === 'corinthian') {
+      // Corinthian jugs stack their friezes one above another, divided by glazed bands
+      const gap = 0.012
+      const half = (body.to - body.from - gap) / 2
+      animalFrieze(g, { ...body, to: body.from + half })
+      p.band('paint', body.from + half, body.from + half + gap, pal.slip)
+      animalFrieze(g, { ...body, from: body.from + half + gap })
+    } else figureFrieze(g, body)
     p.unclip()
     if (mode === 'black') {
       p.ring('paint', body.to - 0.003, pal.slip, 0.004, rng)
