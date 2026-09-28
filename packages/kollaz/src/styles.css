@@ -25,6 +25,8 @@
 .kollaz {
   --light-x: 45%;
   --light-y: 30%;
+  /* the caddy lays itself out for the width the table is given, not the window */
+  container: kollaz / inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1000,9 +1002,9 @@
 .kollaz-tool-flight[data-kollaz-flight="stamp"][data-state="contact"] .kollaz-stamp { transform: scale(.94); }
 .kollaz-flight-body .kollaz-stamp, .kollaz-flight-body .kollaz-static-eye, .kollaz-flight-body .kollaz-pom--single, .kollaz-flight-body .kollaz-sequin-tub { transition: transform 90ms ease; }
 
-/* Below full desktop width the caddy becomes a compartment tray:
+/* Narrower than the full caddy row, it becomes a compartment tray:
    glue and eyes on top, the shakers, then sequins, pom poms, stamp and pad. */
-@media (max-width: 1240px) {
+@container kollaz (max-width: 1060px) {
   .kollaz-caddy {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1032,7 +1034,7 @@
   .kollaz-well--stamp .kollaz-stamp { transform: none; scale: .76; }
 }
 
-@media (max-width: 720px) {
+@container kollaz (max-width: 700px) {
 
   .kollaz-well--tube > span { transform: scale(.7); }
   .kollaz-well--round .kollaz-eye-pot, .kollaz-well--round .kollaz-sequin-tub, .kollaz-well--round .kollaz-pom-cup { transform: scale(.82); }

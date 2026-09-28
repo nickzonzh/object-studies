@@ -534,11 +534,13 @@ export function CraftTable() {
       const rect = surface.getBoundingClientRect()
       scaleRef.current = rect.width / TABLE_WIDTH
       setScale(rect.width / TABLE_WIDTH)
-      drawMat(matRef.current!)
+      // Sized from the width and the table's proportions, never from the height the
+      // canvases themselves give the mat: without the stylesheet that would grow forever.
+      drawMat(matRef.current!, rect.width)
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       for (const canvas of [fxRef.current!, inkRef.current!, baseRef.current!]) {
         canvas.width = Math.round(rect.width * dpr)
-        canvas.height = Math.round(rect.height * dpr)
+        canvas.height = Math.round(((rect.width * TABLE_HEIGHT) / TABLE_WIDTH) * dpr)
       }
       redrawPrints()
       sim.current.baseStale = true

@@ -70,7 +70,8 @@ a:focus-visible {
 
 .site-nav {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   margin-top: 28px;
   font-size: 14px;
 }
@@ -197,6 +198,88 @@ a:focus-visible {
   padding: 36px 0 56px;
   font-size: 13px;
   color: #6d6a61;
+}
+
+.site-button {
+  padding: 8px 14px;
+  border: 1px solid rgb(44 43 39 / 0.28);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.site-button:hover {
+  border-color: rgb(44 43 39 / 0.55);
+}
+
+.site-button:focus-visible,
+.site-keramos-pick:focus-visible {
+  outline: 2px solid #3f5a46;
+  outline-offset: 3px;
+}
+
+/* Keramos: one live piece to study, and a still of each tradition to choose from. */
+.site-keramos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(20px, 4vw, 48px);
+  align-items: center;
+}
+
+.site-keramos-bench {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.site-keramos-live {
+  width: auto;
+  height: min(64vh, 540px);
+  max-width: 100%;
+}
+
+.site-keramos-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.site-keramos-pick {
+  display: grid;
+  place-items: center;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.site-keramos-pick[aria-pressed=true] {
+  background: rgb(44 43 39 / 0.07);
+}
+
+.site-keramos-pick .keramos-vase {
+  width: auto;
+  height: 112px;
+}
+
+@media (max-width: 860px) {
+  .site-keramos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .site-keramos-picks {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .site-keramos-pick .keramos-vase {
+    height: clamp(64px, 18vw, 112px);
+  }
 }
 
 @media (max-width: 860px) {
