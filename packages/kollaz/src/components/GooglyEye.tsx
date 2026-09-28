@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useRef } from 'react'
+import { BUMP_EVENT } from '../lib/bump.js'
 import { restingPupil, stepPupil, type Pupil } from '../lib/googly.js'
 import '../styles.css'
 
@@ -17,13 +18,7 @@ const PUPIL_RATIO = 0.52
 // The pupil rattles inside the white card, which sits just inside the clear flange.
 const CARD_RATIO = 0.86
 const LIMIT = CARD_RATIO - PUPIL_RATIO
-const BUMP_EVENT = 'craft:bump'
 const SLEEP_AFTER = 24
-
-/** Jiggle every googly eye on the page, like knocking the table. */
-export function bumpGooglyEyes(strength = 1) {
-  window.dispatchEvent(new CustomEvent(BUMP_EVENT, { detail: strength }))
-}
 
 // One shared ticker for every eye on the page. Each frame reads all eye positions
 // first, then writes all pupils, so there is never a forced layout. Eyes fall asleep

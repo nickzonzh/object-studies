@@ -95,7 +95,7 @@ export function drawStampDesign(ctx: CanvasRenderingContext2D, cx: number, cy: n
   ctx.beginPath(); ctx.arc(cx, cy, r * 0.94, 0, Math.PI * 2); ctx.stroke()
   ctx.lineWidth = r * 0.035
   ctx.beginPath(); ctx.arc(cx, cy, r * 0.62, 0, Math.PI * 2); ctx.stroke()
-  const text = 'ASPRO · CRAFT CLUB · FIRST PRIZE · '
+  const text = 'KOLLAZ · CRAFT CLUB · FIRST PRIZE · '
   ctx.font = `800 ${r * 0.2}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'

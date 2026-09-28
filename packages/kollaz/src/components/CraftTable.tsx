@@ -1,6 +1,7 @@
-import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { PaperShapeView } from './PaperShape.js'
-import { GooglyEye, bumpGooglyEyes } from './GooglyEye.js'
+import { GooglyEye } from './GooglyEye.js'
+import { bumpGooglyEyes } from '../lib/bump.js'
 import { EyePot, GlueStickBody, InkPad, MarkerBody, PipeBundle, PipeInHand, Pom, PomCup, ScissorsBody, SequinTub, ShakerBody, StampBody, TapeRoll } from './CraftObjects.js'
 import { createRng } from '../lib/rng.js'
 import {
@@ -10,32 +11,26 @@ import { paintFlakes, paintGlints, paintGlue as paintGlueFilm, paintPompoms, pai
 import { dropPompom, isRolling, nudgePompoms, settlePompom, stepPompoms, type Pompom } from '../lib/pompom.js'
 import { inkAfterStamp, inkCoverage, stampNoise } from '../lib/stamp.js'
 import { createToolMotion, leanToward, type Pose, type ToolAnchor } from '../lib/toolMotion.js'
-import { GLITTERS } from '../lib/palette.js'
+import { GLITTERS, PAPERS } from '../lib/palette.js'
 import { INK, POM_COLORS, STAMP_RADIUS, drawStampDesign, paintChenille, paintMarkerSegment, paintTapeStrip } from '../lib/sprites.js'
-import { TAPE_WIDTH, tapeLength, tapeOutline, tapeSamples, type TapeStrip } from '../lib/tape.js'
+import { TAPE_WIDTH, tapeFootprint, tapeLength, tapeOutline, tapeSamples, type TapeStrip } from '../lib/tape.js'
 import { PIPE_LENGTH, PIPE_RADIUS, pathLength, resamplePath, smoothPath, trimToLength } from '../lib/pipe.js'
 import { TABLE_HEIGHT, TABLE_WIDTH, drawMat } from '../lib/mat.js'
 import { tornOutline, type Point } from '../lib/tornEdge.js'
+import { hitMask } from '../lib/hitMask.js'
 import {
   SNIP_LENGTH, bounds, cutSheet, fromPoints, inShape, shapeMask, shapePath2D, translateShape, unionOf,
   type PaperShape, type Shape,
 } from '../lib/cut.js'
 import '../styles.css'
 
-export { TABLE_HEIGHT, TABLE_WIDTH }
-
 const SHEET = { x: 150, y: 48, w: 700, h: 520 }
 const GLUE_WIDTH = 24
 const MAX_FLAKES = 20000
 const MAX_SEQUINS = 800
-
-export const PAPERS = [
-  { id: 'cobalt', label: 'Cobalt', color: '#2f4f9e' },
-  { id: 'black', label: 'Black', color: '#26262b' },
-  { id: 'tomato', label: 'Tomato', color: '#c7433a' },
-  { id: 'sunflower', label: 'Sunflower', color: '#e6b23a' },
-  { id: 'kraft', label: 'Kraft', color: '#b58958' },
-]
+// Idle shimmer keeps going this long after the last sign of someone at the table, then
+// the table goes still until the pointer moves again: nobody watching, no battery spent.
+const SHIMMER_MS = 10_000
 
 type Tool = 'glue' | 'scissors' | 'marker' | 'tape' | 'pipes' | 'eyes' | 'sequins' | 'pompoms' | 'stamp' | `glitter-${number}` | null
 type Eye = { id: number; x: number; y: number; size: number }
@@ -53,18 +48,21 @@ type Piece = {
   dx: number
   dy: number
   color: string
-  art: string
+  art: HTMLCanvasElement
   eyes: Eye[]
   glued: boolean
   falling: boolean
 }
 type Cut = { shape: Shape; path: Path2D }
 /** A pipe cleaner: a bent chenille stem, painted once and moved as a whole. */
-type Pipe = { id: number; points: Point[]; box: Box; art: string; dx: number; dy: number; color: number; glued: boolean; falling: boolean }
+type Pipe = { id: number; points: Point[]; box: Box; art: HTMLCanvasElement; dx: number; dy: number; color: number; glued: boolean; falling: boolean }
 /** A texta line, drawn into the paper like a stamp print. */
 type Mark = { points: Point[]; epoch: number; seq: number }
-/** Tape lives in the same layer as ink, in the order things happened. */
-type LaidTape = TapeStrip & { epoch: number; seq: number }
+/**
+ * Tape lives in the same layer as ink, in the order things happened. Loose glitter and
+ * sequins it was laid over are pressed under it, and show faintly through the crepe.
+ */
+type LaidTape = TapeStrip & { epoch: number; seq: number; under: { flakes: Flake[]; sequins: Flake[] } }
 const padBox = (shape: Shape): Box => {
   const b = bounds(shape)
   return { x: b.x - 2, y: b.y - 2, width: b.width + 4, height: b.height + 4 }
@@ -191,6 +189,21 @@ function printStamp(ctx: CanvasRenderingContext2D, k: number, print: Print) {
   ctx.restore()
 }
 
+// Flakes pressed under tape no longer catch the moving light; they keep one resting look.
+const UNDER_TAPE_LIGHT = { x: TABLE_WIDTH * 0.45, y: TABLE_HEIGHT * 0.4, z: 380 }
+
+/** Paint a strip of tape into the ink layer, over whatever it was laid on. */
+function paintLaidTape(ctx: CanvasRenderingContext2D, k: number, tape: LaidTape) {
+  if (tape.under.flakes.length || tape.under.sequins.length) {
+    ctx.save()
+    ctx.setTransform(k, 0, 0, k, 0, 0)
+    paintFlakes(ctx, tape.under.flakes)
+    paintSequins(ctx, tape.under.sequins, UNDER_TAPE_LIGHT, [])
+    ctx.restore()
+  }
+  paintTapeStrip(ctx, k, tape, tapeOutline(tapeLength(tape), TAPE_WIDTH, tape.seed), TAPE_WIDTH)
+}
+
 /** Redraw a texta line into the ink layer (after a resize). */
 function replayMark(ctx: CanvasRenderingContext2D, k: number, mark: Mark) {
   const pts = mark.points
@@ -207,20 +220,36 @@ function eraseCut(ctx: CanvasRenderingContext2D, k: number, cut: Cut) {
   ctx.restore()
 }
 
+/**
+ * Shows a painted canvas. It is copied rather than moved into place: a piece cut from a
+ * piece keeps its parent's snapshot, and a canvas can only be in one place at a time.
+ * Copying pixels is far cheaper than encoding the snapshot as an image.
+ */
+function CanvasCopy({ source, className, style }: { source: HTMLCanvasElement; className: string; style?: CSSProperties }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useLayoutEffect(() => {
+    const canvas = ref.current!
+    canvas.width = source.width
+    canvas.height = source.height
+    canvas.getContext('2d')!.drawImage(source, 0, 0)
+  }, [source])
+  return <canvas ref={ref} className={className} style={style} aria-hidden="true" />
+}
+
 /** A piece's snapshot, shaped to the piece so nothing spills past its cut edge. */
 function PieceArt({ piece }: { piece: Piece }) {
   const mask = useMemo(() => shapeMask(piece.shape.outer, piece.box), [piece.shape, piece.box])
   const { box, artBox } = piece
   return (
     <div className="kollaz-piece__art" style={{ maskImage: mask, WebkitMaskImage: mask }}>
-      <div
+      <CanvasCopy
+        source={piece.art}
         className="kollaz-piece__snapshot"
         style={{
           left: `${((artBox.x - box.x) / box.width) * 100}%`,
           top: `${((artBox.y - box.y) / box.height) * 100}%`,
           width: `${(artBox.width / box.width) * 100}%`,
           height: `${(artBox.height / box.height) * 100}%`,
-          backgroundImage: `url(${piece.art})`,
         }}
       />
     </div>
@@ -247,15 +276,18 @@ export function CraftTable() {
   const toolRef = useRef<Tool>(null)
   const [sheet, setSheet] = useState(() => ({ color: PAPERS[0].color, seed: 4, shape: freshSheet(4) }))
   const sheetRef = useRef(sheet)
-  sheetRef.current = sheet
   const [pieces, setPieces] = useState<Piece[]>([])
   const [pipes, setPipes] = useState<Pipe[]>([])
   const pipesRef = useRef(pipes)
-  pipesRef.current = pipes
   const [nextPipe, setNextPipe] = useState(4)
   const tapePreviewRef = useRef<HTMLDivElement>(null)
   const piecesRef = useRef(pieces)
-  piecesRef.current = pieces
+  // Handlers and the render loop read the latest committed state through these.
+  useLayoutEffect(() => {
+    sheetRef.current = sheet
+    piecesRef.current = pieces
+    pipesRef.current = pipes
+  })
   const [eyes, setEyes] = useState<Eye[]>([])
   const [scale, setScale] = useState(1)
   const [hasLoose, setHasLoose] = useState(false)
@@ -294,6 +326,8 @@ export function CraftTable() {
     clipCache: new Map<string, Path2D | null>(),
     snipTravel: 0,
     pieceId: 0,
+    tapeId: 0,
+    eyeId: 2,
     ink: 0,
     nextPom: 0,
     pomId: 0,
@@ -310,6 +344,8 @@ export function CraftTable() {
     baseCount: 0,
     baseStale: true,
     visible: true,
+    /** When someone last moved over the table, or it came into view. */
+    lastActive: 0,
   })
 
   useEffect(() => { toolRef.current = tool }, [tool])
@@ -356,7 +392,7 @@ export function CraftTable() {
     const items = [
       ...s.prints.map((print, i) => ({ seq: print.seq ?? i, epoch: print.epoch, draw: () => printStamp(ctx, k, print) })),
       ...s.marks.map((mark) => ({ seq: mark.seq, epoch: mark.epoch, draw: () => replayMark(ctx, k, mark) })),
-      ...s.tapes.map((tape) => ({ seq: tape.seq, epoch: tape.epoch, draw: () => paintTapeStrip(ctx, k, tape, tapeOutline(tapeLength(tape), TAPE_WIDTH, tape.seed), TAPE_WIDTH) })),
+      ...s.tapes.map((tape) => ({ seq: tape.seq, epoch: tape.epoch, draw: () => paintLaidTape(ctx, k, tape) })),
     ].sort((a, b) => a.seq - b.seq)
     let erased = 0
     for (const item of items) {
@@ -400,6 +436,17 @@ export function CraftTable() {
     s.covers = s.covers.filter((c) => !ids.includes(c.id))
     s.clipCache.clear()
     s.dirty = true
+  }
+
+  /** Glue under something laid over it can no longer grab anything. */
+  const unglue = (inside: (x: number, y: number) => boolean, box: Box) => {
+    const { field } = sim.current
+    for (let r = Math.floor(box.y / field.cell); r <= Math.ceil((box.y + box.height) / field.cell); r++) {
+      for (let c = Math.floor(box.x / field.cell); c <= Math.ceil((box.x + box.width) / field.cell); c++) {
+        if (r < 0 || c < 0 || r >= field.rows || c >= field.cols) continue
+        if (inside((c + 0.5) * field.cell, (r + 0.5) * field.cell)) field.wetAt[r * field.cols + c] = -Infinity
+      }
+    }
   }
 
   const say = (message: string) => {
@@ -516,8 +563,10 @@ export function CraftTable() {
     let lastDraw = 0
     let looseCheck = 0
     let wasTilting = false
+    sim.current.lastActive = performance.now()
     const observer = new IntersectionObserver(([entry]) => {
       sim.current.visible = entry.isIntersecting
+      if (entry.isIntersecting) sim.current.lastActive = performance.now()
       sim.current.dirty = true
     })
     observer.observe(surfaceRef.current!)
@@ -581,7 +630,7 @@ export function CraftTable() {
       if (!s.visible) return
 
       const wet = s.glue.some((g) => now - g.points[g.points.length - 1].t < GLUE_DRY_MS)
-      const twinkle = !reduced && !s.light && (s.flakes.length > 0 || s.sequins.length > 0)
+      const twinkle = !reduced && !s.light && now - s.lastActive < SHIMMER_MS && (s.flakes.length > 0 || s.sequins.length > 0)
       if (!s.dirty && !wet && !twinkle) return
       // Drying glue and idle shimmer are slow changes. 30 fps is plenty.
       if (!s.dirty && now - lastDraw < 33) return
@@ -698,7 +747,7 @@ export function CraftTable() {
 
   const toolScale = () => Math.max(0.72, Math.min(1.05, scaleRef.current * 1.1))
 
-  // Same model as Aspro: the tool leans with travel, and while working its pose is
+  // Same model as melani: the tool leans with travel, and while working its pose is
   // held until the render frame so tool and ink move together.
   const updateTool = (clientX: number, clientY: number, working: boolean, pickup = true) => {
     const id = toolRef.current
@@ -792,7 +841,7 @@ export function CraftTable() {
       s.snipTravel = 0
       s.dirty = true
     } else if (t === 'glue') {
-      const now = performance.now()
+      const now = event.timeStamp
       s.drawing = true
       const stroke = makeStroke([{ ...p, t: now }, { x: p.x + 0.1, y: p.y, t: now }])
       stroke.epoch = s.cuts.length
@@ -802,10 +851,11 @@ export function CraftTable() {
       s.dirty = true
     } else if (t === 'eyes') {
       const size = EYE_SIZES[s.eyeCount++ % EYE_SIZES.length]
-      setEyes((list) => [...list, { id: Date.now(), x: p.x, y: p.y, size }])
+      const id = ++s.eyeId
+      setEyes((list) => [...list, { id, x: p.x, y: p.y, size }])
     } else if (t === 'pompoms') {
       const pom = dropPompom(s.rng, ++s.pomId, p.x, p.y, s.nextPom, 11 + s.rng() * 6)
-      settlePompom(pom, s.field, performance.now())
+      settlePompom(pom, s.field, event.timeStamp)
       s.poms.push(pom)
       let next = s.nextPom
       while (next === s.nextPom) next = Math.floor(s.rng() * POM_COLORS.length)
@@ -857,7 +907,7 @@ export function CraftTable() {
     const glow = glowRef.current
     if (glow) glow.style.transform = `translate3d(${event.clientX - rect.left - rect.width * 0.3}px, ${event.clientY - rect.top - rect.width * 0.3}px, 0)`
     if (s.drawing) {
-      const now = performance.now()
+      const now = event.timeStamp
       const stroke = s.glue[s.glue.length - 1]
       const prev = stroke.points[stroke.points.length - 1]
       if (Math.hypot(p.x - prev.x, p.y - prev.y) < 1.5) return
@@ -887,7 +937,7 @@ export function CraftTable() {
       hideTapePreview()
     }
     if (s.piping) {
-      finishPipe(s.piping)
+      finishPipe(s.piping, event.timeStamp)
       s.piping = null
       s.dirty = true
     }
@@ -902,7 +952,7 @@ export function CraftTable() {
     updateTool(event.clientX, event.clientY, false)
     const rect = rootRef.current!.getBoundingClientRect()
     const outside = event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom
-    // Touch has no hover, so the tool goes back to the caddy between strokes, as in Aspro.
+    // Touch has no hover, so the tool goes back to the caddy between strokes, as in melani.
     if (event.pointerType === 'touch' || event.type !== 'pointerup' || outside) motionRef.current?.dockAll()
   }
 
@@ -943,21 +993,15 @@ export function CraftTable() {
     g.setTransform(1, 0, 0, 1, 0, 0)
     g.drawImage(inkCanvas, -box.x * k, -box.y * k)
     g.drawImage(fx, -box.x * k, -box.y * k)
-    const art = snap.toDataURL()
+    const art = snap
 
     // Everything under the piece goes with it.
-    const inside = (x: number, y: number) => inShape(shape.outer, x, y)
+    const inside = hitMask(hole.path, box)
     s.flakes = s.flakes.filter((f) => !inside(f.x, f.y))
     s.sequins = s.sequins.filter((q) => !inside(q.x, q.y))
     s.poms = s.poms.filter((p) => !inside(p.x, p.y))
     s.baseStale = true
-    const { field } = s
-    for (let r = Math.floor(box.y / field.cell); r <= Math.ceil((box.y + box.height) / field.cell); r++) {
-      for (let c = Math.floor(box.x / field.cell); c <= Math.ceil((box.x + box.width) / field.cell); c++) {
-        if (r < 0 || c < 0 || r >= field.rows || c >= field.cols) continue
-        if (inside((c + 0.5) * field.cell, (r + 0.5) * field.cell)) field.wetAt[r * field.cols + c] = -Infinity
-      }
-    }
+    unglue(inside, box)
     s.cuts.push(hole)
     s.clipCache.clear()
     eraseCut(inkCanvas.getContext('2d')!, k, hole)
@@ -1024,9 +1068,8 @@ export function CraftTable() {
   }
 
   /** Is there tacky glue anywhere under this piece at its current position? */
-  const pieceSticks = (piece: Piece, dx: number, dy: number) => {
+  const pieceSticks = (piece: Piece, dx: number, dy: number, now: number) => {
     const s = sim.current
-    const now = performance.now()
     const b = piece.box
     for (let y = b.y + 4; y < b.y + b.height; y += 8) {
       for (let x = b.x + 4; x < b.x + b.width; x += 8) {
@@ -1053,12 +1096,12 @@ export function CraftTable() {
       target.style.left = `${((piece.box.x + at.dx) / TABLE_WIDTH) * 100}%`
       target.style.top = `${((piece.box.y + at.dy) / TABLE_HEIGHT) * 100}%`
     }
-    const up = () => {
+    const up = (e: PointerEvent) => {
       target.classList.remove('is-dragging')
       target.removeEventListener('pointermove', move)
       target.removeEventListener('pointerup', up)
       target.removeEventListener('pointercancel', up)
-      const glued = pieceSticks(piece, at.dx, at.dy)
+      const glued = pieceSticks(piece, at.dx, at.dy, e.timeStamp)
       coverWith(piece, at.dx, at.dy)
       setPieces((list) => list.map((p) => (p.id === id ? { ...p, ...at, glued } : p)))
       if (glued) say('Stuck down. The glue under it was still purple.')
@@ -1100,15 +1143,33 @@ export function CraftTable() {
   /** Lay a strip, and hold down any cut-out pieces and pipe cleaners it crosses. */
   const layTape = (a: Point, b: Point) => {
     const s = sim.current
-    const strip = stripBetween(a, b, Date.now(), Math.floor(s.rng() * 1e6))
+    const strip = stripBetween(a, b, ++s.tapeId, Math.floor(s.rng() * 1e6))
     const samples = tapeSamples(strip)
     const pinnedPieces = piecesRef.current.filter((piece) => !piece.glued && !piece.falling
       && samples.some((q) => inShape(piece.shape.outer, q.x - piece.dx, q.y - piece.dy))).map((p) => p.id)
     const pinnedPipes = pipesRef.current.filter((pipe) => !pipe.glued && !pipe.falling
       && samples.some((q) => pipe.points.some((pt) => Math.hypot(pt.x + pipe.dx - q.x, pt.y + pipe.dy - q.y) < PIPE_RADIUS + 6))).map((p) => p.id)
-    const laid: LaidTape = { ...strip, epoch: s.cuts.length, seq: ++s.seq }
+    // Tape covers what it is laid on: loose glitter is pressed under it, older glue is
+    // hidden and stops being tacky, so glitter poured on the tape later slides off.
+    const footprint = fromPoints(tapeFootprint(strip))
+    const footprintBox = bounds(footprint)
+    const under = hitMask(shapePath2D(footprint), footprintBox)
+    const covered = (f: Flake) => under(f.x, f.y)
+    const laid: LaidTape = {
+      ...strip, epoch: s.cuts.length, seq: ++s.seq,
+      under: { flakes: s.flakes.filter(covered), sequins: s.sequins.filter(covered) },
+    }
+    if (laid.under.flakes.length) {
+      s.flakes = s.flakes.filter((f) => !covered(f))
+      s.baseStale = true
+    }
+    if (laid.under.sequins.length) s.sequins = s.sequins.filter((q) => !covered(q))
+    unglue(under, footprintBox)
+    s.covers = [...s.covers, { id: -strip.id, order: ++s.order, shape: footprint }]
+    s.clipCache.clear()
+    s.dirty = true
     s.tapes.push(laid)
-    paintTapeStrip(inkRef.current!.getContext('2d')!, inkScale(), laid, tapeOutline(tapeLength(laid), TAPE_WIDTH, laid.seed), TAPE_WIDTH)
+    paintLaidTape(inkRef.current!.getContext('2d')!, inkScale(), laid)
     if (pinnedPieces.length) setPieces((list) => list.map((p) => (pinnedPieces.includes(p.id) ? { ...p, glued: true } : p)))
     if (pinnedPipes.length) setPipes((list) => list.map((p) => (pinnedPipes.includes(p.id) ? { ...p, glued: true } : p)))
     if (pinnedPieces.length || pinnedPipes.length) say('Taped down.')
@@ -1117,7 +1178,7 @@ export function CraftTable() {
   // ---------- Pipe cleaners ----------
 
   /** Bend a pipe cleaner along the drawn path and paint its chenille once. */
-  const finishPipe = (raw: Point[]) => {
+  const finishPipe = (raw: Point[], now: number) => {
     const s = sim.current
     const points = trimToLength(smoothPath(raw, 3), PIPE_LENGTH)
     if (pathLength(points) < 24) return
@@ -1131,17 +1192,16 @@ export function CraftTable() {
     const samples = resamplePath(points, 0.9).map((q) => ({ x: (q.x - box.x) * k, y: (q.y - box.y) * k, angle: q.angle }))
     const color = s.nextPipe
     paintChenille(canvas.getContext('2d')!, samples, POM_COLORS[color], PIPE_RADIUS * k, s.pipeId + 17)
-    const pipe: Pipe = { id: ++s.pipeId, points, box, art: canvas.toDataURL(), dx: 0, dy: 0, color, glued: false, falling: false }
-    pipe.glued = pipeSticks(pipe, 0, 0)
+    const pipe: Pipe = { id: ++s.pipeId, points, box, art: canvas, dx: 0, dy: 0, color, glued: false, falling: false }
+    pipe.glued = pipeSticks(pipe, 0, 0, now)
     setPipes((list) => [...list, pipe])
     s.nextPipe = (s.nextPipe + 3) % POM_COLORS.length
     setNextPipe(s.nextPipe)
     setHasLoose(true)
   }
 
-  const pipeSticks = (pipe: Pipe, dx: number, dy: number) => {
+  const pipeSticks = (pipe: Pipe, dx: number, dy: number, now: number) => {
     const s = sim.current
-    const now = performance.now()
     return resamplePath(pipe.points, 8).some((q) => tackiness(s.field, q.x + dx, q.y + dy, now) > 0)
   }
 
@@ -1160,12 +1220,12 @@ export function CraftTable() {
       target.style.left = `${((pipe.box.x + at.dx) / TABLE_WIDTH) * 100}%`
       target.style.top = `${((pipe.box.y + at.dy) / TABLE_HEIGHT) * 100}%`
     }
-    const up = () => {
+    const up = (e: PointerEvent) => {
       target.classList.remove('is-dragging')
       target.removeEventListener('pointermove', move)
       target.removeEventListener('pointerup', up)
       target.removeEventListener('pointercancel', up)
-      const glued = pipeSticks(pipe, at.dx, at.dy)
+      const glued = pipeSticks(pipe, at.dx, at.dy, e.timeStamp)
       setPipes((list) => list.map((p) => (p.id === id ? { ...p, ...at, glued } : p)))
       if (glued) say('Stuck down. The glue under it was still purple.')
     }
@@ -1174,9 +1234,9 @@ export function CraftTable() {
     target.addEventListener('pointercancel', up)
   }
 
-  const tipOff = () => {
+  const tipOff = (event: ReactMouseEvent<HTMLButtonElement>) => {
     const s = sim.current
-    s.tipUntil = performance.now() + 1300
+    s.tipUntil = event.timeStamp + 1300
     setTipping(true)
     bumpGooglyEyes(2)
     window.setTimeout(() => setTipping(false), 900)
@@ -1258,6 +1318,7 @@ export function CraftTable() {
       ref={rootRef}
       onPointerMove={(event) => {
         const s = sim.current
+        s.lastActive = event.timeStamp
         if (event.isPrimary && !s.drawing && !s.pouring) updateTool(event.clientX, event.clientY, false)
       }}
       onPointerLeave={() => {
@@ -1310,12 +1371,13 @@ export function CraftTable() {
               style={{
                 left: pct(pipe.box.x + pipe.dx, TABLE_WIDTH), top: pct(pipe.box.y + pipe.dy, TABLE_HEIGHT),
                 width: pct(pipe.box.width, TABLE_WIDTH), height: pct(pipe.box.height, TABLE_HEIGHT),
-                backgroundImage: `url(${pipe.art})`,
                 pointerEvents: tool ? 'none' : undefined,
                 transform: pipe.falling ? `translateY(${TABLE_HEIGHT * scale * 1.2}px) rotate(${pipe.id % 2 ? 10 : -10}deg)` : undefined,
               }}
               onPointerDown={dragPipe(pipe.id)}
-            />
+            >
+              <CanvasCopy source={pipe.art} className="kollaz-pipe__art" />
+            </div>
           ))}
         </div>
         <canvas ref={inkRef} className="kollaz-mat__ink" />

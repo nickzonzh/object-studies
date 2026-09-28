@@ -13,7 +13,7 @@ export function GlueStickBody({ inHand = false }: { inHand?: boolean }) {
         ? <><span className="kollaz-glue-stick__nub" /><span className="kollaz-glue-stick__lip" /></>
         : <span className="kollaz-glue-stick__cap" />}
       <span className="kollaz-glue-stick__body">
-        <span className="kollaz-glue-stick__brand">ASPRO</span>
+        <span className="kollaz-glue-stick__brand">KOLLAZ</span>
         <span className="kollaz-glue-stick__weight">21 g</span>
         <span className="kollaz-glue-stick__band" />
       </span>

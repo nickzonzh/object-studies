@@ -6,7 +6,7 @@ export default function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">ASPRO CRAFT</p>
+          <p className="eyebrow">KOLLAZ</p>
           <h1>Glue first, then glitter.</h1>
         </div>
         <p className="app-note">
