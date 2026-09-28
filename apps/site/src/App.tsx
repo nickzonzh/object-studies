@@ -40,7 +40,8 @@ export function App() {
           id="kimolia"
           number="01"
           name="Kimolia"
-          greek="κιμωλία, chalk"
+          greek="κιμωλία"
+          meaning="chalk"
           summary="A slate chalkboard in an oak frame. Textured chalk that catches the grain, and a felt duster that lifts rather than deletes."
         >
           <Chalkboard persistence={{ key: 'object-studies:kimolia' }} />
@@ -50,7 +51,8 @@ export function App() {
           id="melani"
           number="02"
           name="Melani"
-          greek="μελάνι, ink"
+          greek="μελάνι"
+          meaning="ink"
           summary="An aluminium-framed whiteboard. Four markers and an eraser wait in the tray; the ink pools, streaks and ghosts like the real thing."
         >
           <Whiteboard persistence={{ key: 'object-studies:melani' }} />
@@ -60,7 +62,8 @@ export function App() {
           id="korniza"
           number="03"
           name="Korniza"
-          greek="κορνίζα, frame"
+          greek="κορνίζα"
+          meaning="frame"
           summary="Six dimensional frames for images or any React content, with an optional bevelled mat and glazing, lit by your pointer."
         >
           <KornizaGallery />
@@ -78,7 +81,8 @@ export function App() {
           id="keramos"
           number="04"
           name="Keramos"
-          greek="κέραμος, potter's clay"
+          greek="κέραμος"
+          meaning="potter's clay"
           summary="Hand-painted Greek pottery, glazed and lit by your pointer. Every seed paints a different piece, stroke by stroke, in the Rhodian, black-figure or red-figure tradition. Drag a piece to turn it."
         >
           <KeramosBench />
@@ -88,7 +92,8 @@ export function App() {
           id="kollaz"
           number="05"
           name="Kollaz"
-          greek="κολάζ, collage"
+          greek="κολάζ"
+          meaning="collage"
           summary="A craft table. Purple glue that dries clear, glitter that only sticks while it is wet, scissors that cut everything under the blades, tape, pom poms and googly eyes."
         >
           <CraftTable />
@@ -108,18 +113,19 @@ type StudyProps = {
   number: string
   name: string
   greek: string
+  meaning: string
   summary: string
   children: ReactNode
 }
 
-function Study({ id, number, name, greek, summary, children }: StudyProps) {
+function Study({ id, number, name, greek, meaning, summary, children }: StudyProps) {
   return (
     <section className="site-study" id={id} aria-labelledby={`${id}-title`}>
       <div className="site-study-head">
         <p className="site-number">No. {number}</p>
         <h2 id={`${id}-title`}>{name}</h2>
-        <p className="site-greek" lang="el">
-          {greek}
+        <p className="site-greek">
+          <span lang="el">{greek}</span>, {meaning}
         </p>
         <p className="site-summary">{summary}</p>
         <pre className="site-install">

@@ -581,7 +581,13 @@ export function useChalkboard(options: ChalkboardOptions) {
             return
           }
         }
-        if (event.key === 'Escape' && active) {
+        // Escape belongs to the board only while it is in use, so another
+        // component on the page keeps its own Escape and its focus.
+        if (
+          event.key === 'Escape' &&
+          active &&
+          (component.contains(event.target as Node) || component.matches(':hover'))
+        ) {
           event.preventDefault()
           putBack(true)
         }
