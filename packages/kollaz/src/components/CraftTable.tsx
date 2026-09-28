@@ -987,9 +987,9 @@ export function CraftTable({ labels, portalContainer, className, style }: CraftT
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     // One hand at a time: a second finger would start its own stroke and hijack the first.
     if (!event.isPrimary) return
+    // Only the main button touches the table; the others belong to the browser.
+    if (event.button !== 0) return
     const t = toolRef.current
-    // Only the main button works a tool; the others belong to the browser.
-    if (t && event.button !== 0) return
     const s = sim.current
     const p = toLogical(event.clientX, event.clientY)
     s.pointer = { x: p.x, y: p.y, speed: 0, t: event.timeStamp }
