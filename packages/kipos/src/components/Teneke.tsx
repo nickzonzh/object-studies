@@ -5,6 +5,7 @@ import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { type KiposLabelOverrides, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
 import { Plant } from './Plant.js'
+import '../art.css'
 import '../styles.css'
 
 export type TenekePlant = 'basil' | 'geranium'
@@ -115,7 +116,6 @@ export function Teneke({
             <Plant crop={plant} progress={state.progress} wilted={state.wilted} seed={planting.plantedAt % 100_000} />
           )}
           <span className="kipos-teneke__body" aria-hidden="true" />
-          <span className="kipos-teneke__rim" aria-hidden="true" />
           {pourId !== null && (
             <span key={pourId} className="kipos-pour" aria-hidden="true">
               <i /><i /><i /><i /><i />

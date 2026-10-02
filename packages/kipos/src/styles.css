@@ -3,13 +3,16 @@
  *
  * Every rule is scoped to kipos classes; nothing here styles the page. Sizes are
  * in garden units (--kipos-u): a thousandth of a bed's width, or a 240th of a
- * tin's, so the whole object scales with the width it is given.
+ * tin's, so the whole object scales with the width it is given. The materials
+ * and drawings themselves are baked SVG in art.css.
  */
 
 .kipos {
   --kipos-ink: #4a3a2a;
   --kipos-soft: #6b5a47;
   --kipos-focus: #2f3434;
+  /* Contact shadow for things resting on a surface: tight and dark, then soft. */
+  --kipos-contact: drop-shadow(0 calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 0.8) rgba(30, 18, 8, 0.45)) drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) rgba(30, 18, 8, 0.2));
   color: var(--kipos-ink);
 }
 
@@ -20,6 +23,7 @@
   color: inherit;
   -webkit-tap-highlight-color: transparent;
 }
+:where(.kipos) :where(i) { display: block; font-style: normal; }
 
 .kipos-sr-only {
   position: absolute;
@@ -31,6 +35,12 @@
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* Every sprite is drawn to fill its box exactly. */
+[class*='kipos-sprite--'] {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 
 /* ---------- The bed ---------- */
@@ -48,73 +58,129 @@
   --kipos-u: calc(100cqw / 1000);
   position: relative;
   width: 100%;
-  aspect-ratio: 1000 / 700;
+  aspect-ratio: 1000 / 672;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.kipos-bed__shadow {
+/* The shadow the bed throws on the ground, darkest where stone meets earth. */
+.kipos-bed__ground {
   position: absolute;
-  left: calc(var(--kipos-u) * 30);
-  top: calc(var(--kipos-u) * 532);
-  width: calc(var(--kipos-u) * 940);
-  height: calc(var(--kipos-u) * 34);
+  left: calc(var(--kipos-u) * 14);
+  top: calc(var(--kipos-u) * 520);
+  width: calc(var(--kipos-u) * 972);
+  height: calc(var(--kipos-u) * 52);
   border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 30%, rgba(60, 32, 14, 0.34), rgba(60, 32, 14, 0) 70%);
+  background:
+    radial-gradient(ellipse 50% 40% at 50% 26%, rgba(42, 26, 12, 0.5), rgba(42, 26, 12, 0) 100%),
+    radial-gradient(ellipse 52% 60% at 52% 36%, rgba(42, 26, 12, 0.18), rgba(42, 26, 12, 0) 100%);
+}
+
+/* The far wall's top edge, glimpsed beyond the soil and in its own shade. */
+.kipos-bed__back {
+  position: absolute;
+  left: calc(var(--kipos-u) * 40);
+  top: calc(var(--kipos-u) * 342);
+  width: calc(var(--kipos-u) * 920);
+  height: calc(var(--kipos-u) * 18);
+  border-radius: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) 0 0;
+  background:
+    linear-gradient(rgba(255, 250, 238, 0.45), rgba(255, 250, 238, 0) 40%, rgba(40, 28, 14, 0.25)),
+    var(--kipos-limestone) 0 0 / calc(var(--kipos-u) * 256);
+  filter: brightness(0.9);
 }
 
 .kipos-bed__soil {
   position: absolute;
-  left: calc(var(--kipos-u) * 40);
-  top: calc(var(--kipos-u) * 376);
-  width: calc(var(--kipos-u) * 920);
-  height: calc(var(--kipos-u) * 52);
-  border-radius: calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) 0 0;
-  background:
-    radial-gradient(circle at 18% 40%, rgba(140, 100, 66, 0.5) 0 calc(var(--kipos-u) * 2), rgba(0, 0, 0, 0) calc(var(--kipos-u) * 3)) 0 0 / calc(var(--kipos-u) * 46) calc(var(--kipos-u) * 22),
-    radial-gradient(circle at 70% 60%, rgba(30, 18, 10, 0.4) 0 calc(var(--kipos-u) * 2), rgba(0, 0, 0, 0) calc(var(--kipos-u) * 3)) 0 0 / calc(var(--kipos-u) * 34) calc(var(--kipos-u) * 18),
-    linear-gradient(#6a4630, #4c3121);
-  box-shadow: inset 0 calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 8) rgba(20, 10, 4, 0.35);
+  left: calc(var(--kipos-u) * 46);
+  top: calc(var(--kipos-u) * 356);
+  width: calc(var(--kipos-u) * 908);
+  height: calc(var(--kipos-u) * 56);
+  background: var(--kipos-soil) 0 0 / calc(var(--kipos-u) * 200);
+  /* The walls shade the soil along the back and the ends. */
+  box-shadow:
+    inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(18, 10, 4, 0.55),
+    inset calc(var(--kipos-u) * 12) 0 calc(var(--kipos-u) * 12) rgba(18, 10, 4, 0.3),
+    inset calc(var(--kipos-u) * -12) 0 calc(var(--kipos-u) * 12) rgba(18, 10, 4, 0.3);
 }
 
+/* Dry-stone face: limestone set in moss-grown lime mortar. */
 .kipos-bed__face {
   position: absolute;
-  left: calc(var(--kipos-u) * 40);
-  top: calc(var(--kipos-u) * 420);
-  width: calc(var(--kipos-u) * 920);
-  height: calc(var(--kipos-u) * 132);
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--kipos-u) * 5);
-  padding: calc(var(--kipos-u) * 5);
-  border-radius: 0 0 calc(var(--kipos-u) * 8) calc(var(--kipos-u) * 8);
-  background: #a5957a;
-  box-shadow: inset 0 calc(var(--kipos-u) * -8) calc(var(--kipos-u) * 12) rgba(60, 40, 20, 0.28);
-}
-
-.kipos-bed__course {
-  display: flex;
-  flex: 1;
-  gap: calc(var(--kipos-u) * 5);
+  left: calc(var(--kipos-u) * 46);
+  top: calc(var(--kipos-u) * 432);
+  width: calc(var(--kipos-u) * 908);
+  height: calc(var(--kipos-u) * 104);
+  overflow: hidden;
+  border-radius: 0 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 4);
+  background: var(--kipos-mortar) 0 0 / calc(var(--kipos-u) * 160);
+  box-shadow: inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(20, 12, 4, 0.45);
 }
 
 .kipos-stone {
-  flex-basis: 0;
-  border-radius: calc(var(--kipos-u) * 8);
-  background: linear-gradient(#e3d9c5, #cdbfa4);
-  box-shadow: inset 0 calc(var(--kipos-u) * 2) 0 rgba(255, 250, 240, 0.45), inset 0 calc(var(--kipos-u) * -3) calc(var(--kipos-u) * 4) rgba(90, 70, 40, 0.2);
+  position: absolute;
+  background-color: #dccfb5;
+  background-image:
+    radial-gradient(ellipse 80% 70% at 30% 25%, rgba(255, 252, 242, 0.32), rgba(255, 252, 242, 0) 70%),
+    var(--kipos-limestone);
+  background-size: 100% 100%, calc(var(--kipos-u) * 360);
+  filter: brightness(var(--tone, 1));
+  /* Lit from the upper left; each stone sits slightly proud of the mortar. */
+  box-shadow:
+    inset calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 2) rgba(255, 251, 240, 0.55),
+    inset calc(var(--kipos-u) * -3) calc(var(--kipos-u) * -5) calc(var(--kipos-u) * 6) rgba(70, 52, 30, 0.38),
+    calc(var(--kipos-u) * 1.5) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) rgba(30, 20, 8, 0.4);
 }
-.kipos-stone:nth-child(3n + 2) { background: linear-gradient(#d7cbb3, #c0b094); border-radius: calc(var(--kipos-u) * 10); }
-.kipos-stone:nth-child(4n + 3) { background: linear-gradient(#e7ddca, #d2c4aa); border-radius: calc(var(--kipos-u) * 6); }
+
+/* Capstones along the front edge, a little proud of the face below. */
+.kipos-bed__coping {
+  position: absolute;
+  left: calc(var(--kipos-u) * 30);
+  top: calc(var(--kipos-u) * 404);
+  width: calc(var(--kipos-u) * 940);
+  height: calc(var(--kipos-u) * 34);
+  /* Mortar in the joints between capstones. */
+  background: var(--kipos-mortar) 0 0 / calc(var(--kipos-u) * 160);
+  border-radius: calc(var(--kipos-u) * 4);
+}
+
+.kipos-capstone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3);
+  background-color: #e0d4bb;
+  background-image:
+    /* worn top face catching the light, then the front face turning away */
+    linear-gradient(rgba(255, 252, 244, 0.6) 0, rgba(255, 252, 244, 0.25) 28%, rgba(60, 42, 20, 0) 34%, rgba(60, 42, 20, 0.04) 60%, rgba(60, 42, 20, 0.2) 100%),
+    var(--kipos-limestone);
+  background-size: 100% 100%, calc(var(--kipos-u) * 360);
+  filter: brightness(var(--tone, 1));
+  box-shadow:
+    inset 0 calc(var(--kipos-u) * 1.5) 0 rgba(255, 255, 250, 0.7),
+    inset calc(var(--kipos-u) * -2) 0 calc(var(--kipos-u) * 3) rgba(60, 42, 20, 0.25),
+    0 calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) rgba(20, 12, 4, 0.45);
+}
+
+.kipos-trowel {
+  position: absolute;
+  left: calc(var(--kipos-u) * 22);
+  top: calc(var(--kipos-u) * 388);
+  width: calc(var(--kipos-u) * 130);
+  height: calc(var(--kipos-u) * 35);
+  transform: rotate(4deg);
+  filter: var(--kipos-contact);
+  pointer-events: none;
+}
 
 /* ---------- Plots ---------- */
 
 .kipos-plot {
   position: absolute;
-  left: calc(var(--kipos-u) * (40 + var(--plot) * 306.67));
+  left: calc(var(--kipos-u) * (46 + var(--plot) * 302.67));
   top: 0;
-  width: calc(var(--kipos-u) * 306.67);
-  height: calc(var(--kipos-u) * 426);
+  width: calc(var(--kipos-u) * 302.67);
+  height: calc(var(--kipos-u) * 412);
   padding: 0;
   border: 0;
   background: none;
@@ -123,32 +189,73 @@
 }
 .kipos-plot:focus-visible { outline: none; }
 
+/* Wet soil darkens from where the water lands; dry soil goes dusty. */
 .kipos-plot__soil {
   position: absolute;
-  left: calc(var(--kipos-u) * 26);
-  right: calc(var(--kipos-u) * 26);
-  bottom: calc(var(--kipos-u) * 8);
-  height: calc(var(--kipos-u) * 34);
+  left: calc(var(--kipos-u) * 18);
+  right: calc(var(--kipos-u) * 18);
+  bottom: calc(var(--kipos-u) * 4);
+  height: calc(var(--kipos-u) * 46);
   border-radius: 50%;
-  /* Wet soil goes dark; dry soil fades to dusty brown. */
-  background: radial-gradient(ellipse at 50% 40%,
-    color-mix(in oklab, #3c2416 calc(var(--wet) * 100%), #8a6a4e),
-    color-mix(in oklab, #4a2e1d calc(var(--wet) * 100%), #7a5c42) 70%,
-    rgba(0, 0, 0, 0));
-  transition: background 900ms ease, box-shadow 200ms ease;
+}
+.kipos-plot__soil::before,
+.kipos-plot__soil::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transition: opacity 1200ms ease;
+}
+.kipos-plot__soil::before {
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(22, 12, 5, 0.62), rgba(22, 12, 5, 0.3) 60%, rgba(22, 12, 5, 0) 100%);
+  opacity: var(--wet);
+}
+.kipos-plot__soil::after {
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(206, 178, 146, 0.32), rgba(206, 178, 146, 0) 100%);
+  opacity: calc(1 - var(--wet));
 }
 
 .kipos-plot:focus-visible .kipos-plot__soil {
   outline: 2px solid var(--kipos-focus);
-  outline-offset: calc(var(--kipos-u) * 6);
+  outline-offset: calc(var(--kipos-u) * 4);
 }
 
 @media (hover: hover) {
   .kipos-bed--holding .kipos-plot:hover .kipos-plot__soil,
   .kipos-plot--ripe:hover .kipos-plot__soil {
-    box-shadow: 0 0 0 calc(var(--kipos-u) * 4) rgba(255, 244, 214, 0.45);
+    box-shadow: 0 0 0 calc(var(--kipos-u) * 3) rgba(255, 244, 214, 0.5);
   }
 }
+
+/* Canes left standing in an empty plot: a tepee of three, lashed at the top. */
+.kipos-idle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--kipos-u) * 20);
+  width: 0;
+  height: 0;
+  filter: drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 2) rgba(30, 20, 8, 0.3));
+}
+.kipos-idle__cane {
+  position: absolute;
+  bottom: 0;
+  width: calc(var(--kipos-u) * 9);
+  height: calc(var(--kipos-u) * 300);
+  transform-origin: 50% 100%;
+}
+.kipos-idle__cane:nth-child(1) { left: calc(var(--kipos-u) * -62); transform: rotate(11deg); }
+.kipos-idle__cane:nth-child(2) { left: calc(var(--kipos-u) * 52); transform: rotate(-10deg); }
+.kipos-idle__cane:nth-child(3) { left: calc(var(--kipos-u) * -8); height: calc(var(--kipos-u) * 286); transform: rotate(1deg); filter: brightness(0.86); z-index: -1; }
+.kipos-idle__tie {
+  position: absolute;
+  left: calc(var(--kipos-u) * -14);
+  bottom: calc(var(--kipos-u) * 262);
+  width: calc(var(--kipos-u) * 26);
+  height: calc(var(--kipos-u) * 14);
+}
+/* The middle plot's canes lean the other way and stand a little shorter. */
+.kipos-idle--1 { transform: scale(0.92) rotate(-2deg); transform-origin: 50% 100%; }
+.kipos-idle--2 { transform: scale(0.97) rotate(2deg); transform-origin: 50% 100%; }
 
 /* ---------- Plants ---------- */
 
@@ -156,169 +263,106 @@
   --droop: 0;
   position: absolute;
   left: 50%;
-  bottom: calc(var(--kipos-u) * 24);
+  bottom: calc(var(--kipos-u) * 22);
   width: 0;
   height: 0;
+  /* One soft shadow for the whole plant, cast down and away from the sun. */
+  filter: drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 3) rgba(20, 30, 8, 0.32));
   transition: filter 1200ms ease;
 }
 
 .kipos-plant--wilted {
   --droop: 1;
-  filter: saturate(0.7) brightness(0.98) sepia(0.08);
+  filter:
+    drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 3) rgba(20, 30, 8, 0.28))
+    saturate(0.7) brightness(0.98) sepia(0.1);
+}
+
+.kipos-plant__shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * -70);
+  bottom: calc(var(--kipos-u) * -10);
+  width: calc(var(--kipos-u) * 140);
+  height: calc(var(--kipos-u) * 22);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(16, 9, 3, 0.45), rgba(16, 9, 3, 0) 70%);
+  transform: scaleX(calc(0.3 + var(--spread, 0) * 0.9));
+  transition: transform 1200ms ease;
 }
 
 .kipos-plant__mound {
   position: absolute;
-  left: calc(var(--kipos-u) * -30);
+  left: calc(var(--kipos-u) * -26);
   bottom: calc(var(--kipos-u) * -5);
-  width: calc(var(--kipos-u) * 60);
-  height: calc(var(--kipos-u) * 14);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 30%, #6b4630, #4a2f1f 70%);
+  width: calc(var(--kipos-u) * 52);
+  height: calc(var(--kipos-u) * 13);
+  border-radius: 50% 50% 46% 46%;
+  background:
+    radial-gradient(ellipse 60% 70% at 40% 25%, rgba(255, 220, 180, 0.22), rgba(255, 220, 180, 0) 70%),
+    var(--kipos-soil) 0 0 / calc(var(--kipos-u) * 120);
+  box-shadow: 0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) rgba(16, 9, 3, 0.4);
 }
 
 .kipos-part {
   position: absolute;
-  display: block;
   transform:
-    rotate(calc(var(--r, 0deg) + var(--droop) * var(--side, 0) * 34deg))
+    rotate(calc(var(--r, 0deg) + var(--droop) * var(--side, 0) * 32deg))
     scale(var(--s, 1));
-  transition: transform 1200ms cubic-bezier(0.3, 1.25, 0.5, 1);
+  transition: transform 1200ms cubic-bezier(0.3, 1.2, 0.5, 1);
 }
 
 /* Stems and runners stretch rather than pop, and lean a little when they wilt. */
 .kipos-part--stem,
 .kipos-part--runner {
-  transform: rotate(calc(var(--r, 0deg) + var(--droop) * 7deg)) scaleY(var(--grow, 1));
+  transform: rotate(calc(var(--r, 0deg) + var(--droop) * 6deg)) scaleY(var(--grow, 1));
 }
 .kipos-part--across { transform: rotate(var(--r, 0deg)) scaleX(var(--grow, 1)); }
 
-/* Fruit and flowers swell from a bud to full size. */
+/* Fruit and flowers swell from a bud to full size, and hang a little lower when it's dry. */
 .kipos-part--tomato,
 .kipos-part--cucumber,
 .kipos-part--melon,
 .kipos-part--bloom {
   transform:
-    rotate(calc(var(--r, 0deg) + var(--droop) * 6deg))
+    rotate(calc(var(--r, 0deg) + var(--droop) * 5deg))
     scale(calc(var(--s, 1) * var(--size, 1)));
 }
 
-.kipos-part--cane {
-  border-radius: calc(var(--kipos-u) * 4);
-  background:
-    repeating-linear-gradient(0deg, rgba(120, 90, 40, 0.55) 0 calc(var(--kipos-u) * 2), rgba(0, 0, 0, 0) calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 72)),
-    linear-gradient(90deg, #b49556, #ddc68c 50%, #b49556);
-  box-shadow: calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) rgba(60, 40, 20, 0.18);
-}
+/* Canes and ties are set by hand; they never wilt. */
+.kipos-part--cane,
+.kipos-part--tie,
+.kipos-part--twine { transform: rotate(var(--r, 0deg)); }
 
-.kipos-part--tie {
-  border-radius: calc(var(--kipos-u) * 2);
-  background: #ede6d8;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-.kipos-part--tie:nth-child(4n) { background: #6e9ac4; }
+.kipos-part--cane { filter: drop-shadow(calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1.5) rgba(30, 20, 8, 0.3)); }
 
-.kipos-part--twine { background: #cdb98e; }
+.kipos-part--twine {
+  background: linear-gradient(#d9c595, #a8915e);
+  border-radius: 1px;
+  opacity: 0.9;
+}
 
 .kipos-part--stem {
   border-radius: calc(var(--kipos-u) * 3);
-  background: linear-gradient(90deg, #3e6a2b, #5a8a3e 50%, #3e6a2b);
+  background:
+    linear-gradient(90deg, #345d23, #6a9a48 45%, #3c6a29);
+}
+.kipos-plant--geranium .kipos-part--stem {
+  background: linear-gradient(90deg, #5b7a36, #8aa860 45%, #5e7e3a);
 }
 
 .kipos-part--runner {
   border-radius: calc(var(--kipos-u) * 3);
-  background: #5c8a42;
+  background: linear-gradient(#7aa257, #4c7535);
 }
 
-.kipos-part--cotyledon {
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 40% 35%, #9bd06e, #5f9a40 75%);
-}
-
-.kipos-part--leaf {
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background:
-    linear-gradient(0deg, rgba(0, 0, 0, 0) 46%, rgba(220, 240, 190, 0.35) 48% 52%, rgba(0, 0, 0, 0) 54%),
-    radial-gradient(ellipse at 40% 35%, #73a04c, #4a7834 72%);
-}
-.kipos-part--leaf:nth-child(3n) { background:
-    linear-gradient(0deg, rgba(0, 0, 0, 0) 46%, rgba(220, 240, 190, 0.35) 48% 52%, rgba(0, 0, 0, 0) 54%),
-    radial-gradient(ellipse at 40% 35%, #82ad57, #567f3b 72%); }
-
-.kipos-part--vine-leaf {
-  border-radius: 50% 50% 50% 8%;
-  background: radial-gradient(circle at 60% 40%, #80ae58, #527f38 72%);
-}
-.kipos-part--vine-leaf:nth-child(2n) { background: radial-gradient(circle at 60% 40%, #6f9c4c, #456e2f 72%); }
-
-.kipos-part--melon-leaf {
-  border-radius: 46% 54% 42% 58% / 58% 46% 54% 42%;
-  background:
-    radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.08) 0 30%, rgba(0, 0, 0, 0) 32%),
-    radial-gradient(ellipse at 50% 30%, #86a76c, #5b7c45 75%);
-}
-
-.kipos-part--basil-leaf {
-  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
-  background:
-    radial-gradient(ellipse at 35% 28%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 32%),
-    radial-gradient(ellipse at 45% 40%, #86c864, #3f8a33 78%);
-}
-
-.kipos-part--round-leaf {
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, #6e9a4c 0 40%, #5c8040 44% 52%, #6e9a4c 58%), #6e9a4c;
-  box-shadow: inset 0 calc(var(--kipos-u) * -3) calc(var(--kipos-u) * 4) rgba(30, 50, 20, 0.25);
-}
-
-.kipos-part--flower {
-  border-radius: 50%;
-  background: radial-gradient(circle, #e2961a 0 26%, #f7d64a 28% 100%);
-  box-shadow: 0 0 0 calc(var(--kipos-u) * 1) rgba(247, 214, 74, 0.4);
-}
-
-.kipos-part--tomato {
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 32%,
-    color-mix(in oklab, #f57b62 calc(var(--ripe, 0) * 100%), #c6da7e),
-    color-mix(in oklab, #c8351f calc(var(--ripe, 0) * 100%), #7fa03e) 72%);
-  box-shadow: 0 calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) rgba(60, 20, 10, 0.25);
-}
+/* A ripe tomato: the red drawing cross-fades in over the green. */
 .kipos-part--tomato::after {
   content: '';
   position: absolute;
-  left: 32%;
-  top: -8%;
-  width: 36%;
-  height: 22%;
-  border-radius: 50%;
-  background: #3f6e2c;
-}
-
-.kipos-part--cucumber {
-  border-radius: calc(var(--kipos-u) * 10);
-  background:
-    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.35) 0 1px, rgba(0, 0, 0, 0) 2px) 0 0 / calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 10),
-    linear-gradient(90deg, #2d5623, #4c7d38 45%, #2d5623);
-  box-shadow: 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 5) rgba(20, 40, 10, 0.25);
-}
-
-.kipos-part--melon {
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 34% 28%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 40%),
-    repeating-linear-gradient(98deg, #2b612a 0 7%, #5a984a 7% 16%);
-  box-shadow: 0 calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) rgba(40, 20, 8, 0.32);
-}
-
-.kipos-part--bloom {
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 40%, #f26a60 0 20%, rgba(0, 0, 0, 0) 22%),
-    radial-gradient(circle at 66% 34%, #e8504a 0 20%, rgba(0, 0, 0, 0) 22%),
-    radial-gradient(circle at 48% 70%, #f0605a 0 22%, rgba(0, 0, 0, 0) 24%),
-    radial-gradient(circle at 74% 66%, #f57a6c 0 16%, rgba(0, 0, 0, 0) 18%),
-    radial-gradient(circle at 50% 50%, #c42c2c 0 30%, rgba(0, 0, 0, 0) 32%);
+  inset: 0;
+  background: var(--kipos-tomato-red) 0 0 / 100% 100% no-repeat;
+  opacity: var(--ripe, 0);
+  transition: opacity 1200ms ease;
 }
 
 /* ---------- Watering ---------- */
@@ -335,10 +379,10 @@
 .kipos-pour i {
   position: absolute;
   top: 0;
-  width: calc(var(--kipos-u) * 5);
-  height: calc(var(--kipos-u) * 14);
+  width: calc(var(--kipos-u) * 4);
+  height: calc(var(--kipos-u) * 16);
   border-radius: 50%;
-  background: linear-gradient(rgba(190, 225, 245, 0), rgba(150, 200, 235, 0.9));
+  background: linear-gradient(rgba(220, 238, 250, 0), rgba(200, 228, 246, 0.85) 70%, rgba(255, 255, 255, 0.95));
   opacity: 0;
   animation: kipos-drop 620ms cubic-bezier(0.5, 0, 0.9, 0.6) 2;
 }
@@ -354,38 +398,56 @@
   100% { opacity: 0.2; transform: translateY(calc(var(--kipos-u) * 130)); }
 }
 
-/* ---------- The kraft tag ---------- */
+/* ---------- The kraft tag, hung from the coping on a loop of twine ---------- */
 
 .kipos-tag {
   position: absolute;
-  left: calc(var(--kipos-u) * 62);
+  left: calc(var(--kipos-u) * 160);
   top: calc(var(--kipos-u) * 446);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--kipos-u) * 2);
-  padding: calc(var(--kipos-u) * 8) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 8) calc(var(--kipos-u) * 26);
-  border-radius: calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 4);
-  background: linear-gradient(#dcc394, #cdaf7b);
-  box-shadow: 0 calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) rgba(60, 40, 20, 0.32);
-  transform: rotate(-4deg);
-  font-size: calc(var(--kipos-u) * 17);
-  font-weight: 600;
-  line-height: 1.15;
-  color: #4a3622;
+  gap: calc(var(--kipos-u) * 1);
+  padding: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 7) calc(var(--kipos-u) * 22);
+  border-radius: calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 3);
+  background:
+    linear-gradient(rgba(255, 240, 210, 0.25), rgba(90, 60, 20, 0.12)),
+    var(--kipos-paper) 0 0 / calc(var(--kipos-u) * 160);
+  background-color: #cfae78;
+  background-blend-mode: normal, multiply;
+  box-shadow: 0 calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) rgba(40, 24, 8, 0.4);
+  transform: rotate(-5deg);
+  transform-origin: 6% 50%;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: calc(var(--kipos-u) * 15);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #3c2a18;
   white-space: nowrap;
   pointer-events: none;
 }
 .kipos-tag::before {
   content: '';
   position: absolute;
-  left: calc(var(--kipos-u) * 9);
+  left: calc(var(--kipos-u) * 7);
   top: calc(50% - var(--kipos-u) * 4);
   width: calc(var(--kipos-u) * 8);
   height: calc(var(--kipos-u) * 8);
   border-radius: 50%;
-  background: #a5957a;
+  background: #8c7a5c;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
 }
-.kipos-tag__count { font-size: calc(var(--kipos-u) * 13); font-weight: 400; }
+.kipos-tag::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--kipos-u) * 9);
+  top: calc(var(--kipos-u) * -16);
+  width: calc(var(--kipos-u) * 2);
+  height: calc(var(--kipos-u) * 30);
+  background: #b49a68;
+  transform: rotate(14deg);
+  transform-origin: bottom;
+}
+.kipos-tag__count { font-size: calc(var(--kipos-u) * 11); font-weight: 400; }
 
 /* ---------- Light ----------
    A filter on the whole object rather than an overlay, so the light falls on
@@ -394,7 +456,7 @@
 .kipos-bed__scene,
 .kipos-teneke__scene { transition: filter 2400ms ease; }
 [data-light='morning'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.08) saturate(1.08) brightness(1.03); }
-[data-light='afternoon'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.2) saturate(1.12) brightness(1.01); }
+[data-light='afternoon'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.16) saturate(1.1) brightness(1.01); }
 [data-light='dusk'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.2) saturate(0.92) brightness(0.86) hue-rotate(-10deg); }
 [data-light='night'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: brightness(0.66) saturate(0.72) hue-rotate(14deg); }
 
@@ -407,182 +469,191 @@
 }
 .kipos-tray > * { pointer-events: auto; }
 
+/* An olive-wood board: top face, a rounded front edge, and the maker's mark burned in. */
 .kipos-tray__wood {
   position: absolute;
-  left: calc(var(--kipos-u) * 24);
-  top: calc(var(--kipos-u) * 604);
-  width: calc(var(--kipos-u) * 952);
+  left: calc(var(--kipos-u) * 64);
+  top: calc(var(--kipos-u) * 576);
+  width: calc(var(--kipos-u) * 872);
   height: calc(var(--kipos-u) * 88);
-  border-radius: calc(var(--kipos-u) * 12);
+  border-radius: calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 14);
   pointer-events: none;
   background:
-    repeating-linear-gradient(90deg, rgba(60, 35, 15, 0.12) 0 1px, rgba(0, 0, 0, 0) 1px calc(var(--kipos-u) * 9)),
-    repeating-linear-gradient(88deg, rgba(255, 230, 190, 0.1) 0 calc(var(--kipos-u) * 2), rgba(0, 0, 0, 0) calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 23)),
-    linear-gradient(#b98e5d, #8c633c);
+    linear-gradient(rgba(255, 236, 200, 0.28), rgba(255, 236, 200, 0) 12%, rgba(0, 0, 0, 0) 70%, rgba(48, 26, 8, 0.1) 74%, rgba(255, 230, 190, 0.18) 78%, rgba(48, 26, 8, 0.3) 92%, rgba(30, 16, 4, 0.5) 100%),
+    var(--kipos-olive) 0 0 / calc(var(--kipos-u) * 900) calc(var(--kipos-u) * 280);
   box-shadow:
-    inset 0 calc(var(--kipos-u) * 3) 0 rgba(255, 235, 200, 0.35),
-    inset 0 calc(var(--kipos-u) * -4) calc(var(--kipos-u) * 8) rgba(40, 20, 5, 0.35),
-    0 calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 12) rgba(40, 20, 5, 0.3);
+    inset 0 calc(var(--kipos-u) * 1.5) 0 rgba(255, 240, 210, 0.55),
+    0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 2) rgba(30, 16, 4, 0.4),
+    0 calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 16) rgba(30, 16, 4, 0.25);
+}
+
+.kipos-tray__brand {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--kipos-u) * 4);
+  transform: translateX(-50%);
+  font-family: 'GFS Didot', Didot, 'Bodoni 72', 'Times New Roman', serif;
+  font-size: calc(var(--kipos-u) * 9.5);
+  letter-spacing: 0.42em;
+  color: rgba(52, 26, 8, 0.72);
+  text-shadow: 0 0 calc(var(--kipos-u) * 1) rgba(52, 26, 8, 0.5), 0 calc(var(--kipos-u) * 0.6) 0 rgba(255, 228, 186, 0.3);
+  white-space: nowrap;
 }
 
 .kipos-packet {
-  --tilt: -3deg;
   position: absolute;
-  left: calc(var(--kipos-u) * (64 + var(--slot) * 178));
-  top: calc(var(--kipos-u) * 566);
-  width: calc(var(--kipos-u) * 156);
-  height: calc(var(--kipos-u) * 112);
+  left: calc(var(--kipos-u) * (112 + var(--slot) * 140));
+  top: calc(var(--kipos-u) * 552);
+  width: calc(var(--kipos-u) * 120);
+  height: calc(var(--kipos-u) * 88);
   padding: 0;
   overflow: hidden;
   text-align: left;
-  border: 1px solid rgba(80, 50, 20, 0.16);
-  border-radius: calc(var(--kipos-u) * 4);
-  background: #f4e8cc;
-  box-shadow: 0 calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 10) rgba(40, 20, 5, 0.32);
+  border: 0;
+  border-radius: calc(var(--kipos-u) * 1.5);
+  background: var(--kipos-paper) 0 0 / calc(var(--kipos-u) * 160);
+  background-color: #f3e7cb;
+  /* Crimped top edge, as a packet is sealed. */
+  mask:
+    conic-gradient(from 135deg at 50% 0, #0000 90deg, #000 0) 0 0 / calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 2) repeat-x,
+    linear-gradient(#000 0 0) 0 calc(var(--kipos-u) * 2) / 100% 100% no-repeat;
+  box-shadow: inset 0 0 calc(var(--kipos-u) * 6) rgba(120, 86, 40, 0.25);
   transform: rotate(var(--tilt));
-  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 220ms ease;
+  transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1);
   cursor: pointer;
 }
-.kipos-packet:nth-of-type(2) { --tilt: 2deg; }
-.kipos-packet:nth-of-type(3) { --tilt: -1.5deg; }
+/* The packet's shadow on the board, a sibling of the paper so the crimp mask can't clip it. */
+.kipos-packet-shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * (114 + var(--slot) * 140));
+  top: calc(var(--kipos-u) * 556);
+  width: calc(var(--kipos-u) * 120);
+  height: calc(var(--kipos-u) * 88);
+  border-radius: calc(var(--kipos-u) * 3);
+  background: rgba(30, 16, 4, 0.34);
+  filter: blur(calc(var(--kipos-u) * 3));
+  transform: rotate(var(--tilt));
+  transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1), opacity 240ms ease;
+  pointer-events: none;
+}
 .kipos-packet[aria-pressed='true'] {
-  transform: translateY(calc(var(--kipos-u) * -30)) rotate(0deg) scale(1.04);
-  box-shadow: 0 calc(var(--kipos-u) * 18) calc(var(--kipos-u) * 22) rgba(40, 20, 5, 0.3);
+  transform: translateY(calc(var(--kipos-u) * -34)) rotate(0deg) scale(1.06);
+}
+.kipos-packet-shadow:has(+ .kipos-packet[aria-pressed='true']) {
+  transform: translate(calc(var(--kipos-u) * 6), calc(var(--kipos-u) * 4)) rotate(0deg) scale(1.02);
+  opacity: 0.45;
+  filter: blur(calc(var(--kipos-u) * 8));
 }
 .kipos-packet:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
 
+/* Ink printed onto the paper: flat colour, a slight misregistration, the paper's tooth showing through. */
 .kipos-packet__band {
   position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  height: calc(var(--kipos-u) * 44);
-  padding: calc(var(--kipos-u) * 9) calc(var(--kipos-u) * 12) 0;
+  left: calc(var(--kipos-u) * 6);
+  right: calc(var(--kipos-u) * 6);
+  top: calc(var(--kipos-u) * 8);
+  height: calc(var(--kipos-u) * 26);
+  padding-top: calc(var(--kipos-u) * 4);
   background: var(--band);
-  color: #f8eeda;
+  color: #f7ecd4;
   font-family: 'GFS Didot', Didot, 'Bodoni 72', 'Times New Roman', serif;
-  font-size: calc(var(--kipos-u) * 21);
+  font-size: calc(var(--kipos-u) * 16);
   letter-spacing: 0.08em;
-  line-height: 1.2;
+  line-height: 1;
+  text-align: center;
   white-space: nowrap;
+  text-shadow: calc(var(--kipos-u) * 0.7) calc(var(--kipos-u) * 0.5) 0 rgba(30, 20, 10, 0.25);
 }
 .kipos-packet__name {
   position: absolute;
-  left: calc(var(--kipos-u) * 12);
-  top: calc(var(--kipos-u) * 56);
-  font-size: calc(var(--kipos-u) * 12);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  left: calc(var(--kipos-u) * 8);
+  top: calc(var(--kipos-u) * 42);
+  font-size: calc(var(--kipos-u) * 9.5);
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #5a4530;
+  color: #4f3a24;
 }
 .kipos-packet__sub {
   position: absolute;
-  left: calc(var(--kipos-u) * 12);
-  top: calc(var(--kipos-u) * 78);
-  font-size: calc(var(--kipos-u) * 11);
+  left: calc(var(--kipos-u) * 8);
+  top: calc(var(--kipos-u) * 56);
+  font-size: calc(var(--kipos-u) * 8);
+  font-style: italic;
   color: #7a6248;
+}
+.kipos-packet__count {
+  position: absolute;
+  left: calc(var(--kipos-u) * 8);
+  bottom: calc(var(--kipos-u) * 7);
+  font-family: 'GFS Didot', Didot, 'Times New Roman', serif;
+  font-size: calc(var(--kipos-u) * 8);
+  color: var(--band);
+  opacity: 0.85;
 }
 .kipos-packet__art {
   position: absolute;
-  right: calc(var(--kipos-u) * 12);
-  top: calc(var(--kipos-u) * 54);
-  width: calc(var(--kipos-u) * 34);
-  height: calc(var(--kipos-u) * 32);
-  border-radius: 50%;
+  right: calc(var(--kipos-u) * 5);
+  bottom: calc(var(--kipos-u) * 4);
+  width: calc(var(--kipos-u) * 44);
+  height: calc(var(--kipos-u) * 38.5);
+  background-size: 100% 100%;
+  mix-blend-mode: multiply;
+}
+/* Paper tooth over everything printed. */
+.kipos-packet::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--kipos-grain) 0 0 / calc(var(--kipos-u) * 64);
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
-.kipos-packet--tomato { --band: #c9452f; }
-.kipos-packet--tomato .kipos-packet__art { background: radial-gradient(circle at 35% 32%, #f57b62, #c8351f 72%); }
-.kipos-packet--cucumber { --band: #3e6b33; }
-.kipos-packet--cucumber .kipos-packet__art {
-  right: calc(var(--kipos-u) * 20);
-  top: calc(var(--kipos-u) * 50);
-  width: calc(var(--kipos-u) * 16);
-  height: calc(var(--kipos-u) * 48);
-  border-radius: calc(var(--kipos-u) * 9);
-  background: linear-gradient(90deg, #2d5623, #4c7d38 45%, #2d5623);
-  transform: rotate(28deg);
-}
-.kipos-packet--watermelon { --band: #b9465a; }
-.kipos-packet--watermelon .kipos-packet__art {
-  top: calc(var(--kipos-u) * 56);
-  right: calc(var(--kipos-u) * 8);
-  width: calc(var(--kipos-u) * 30);
-  height: calc(var(--kipos-u) * 15);
-  border-radius: 0 0 calc(var(--kipos-u) * 15) calc(var(--kipos-u) * 15);
-  background:
-    radial-gradient(circle at 30% 30%, #2a1a12 0 calc(var(--kipos-u) * 1.5), rgba(0, 0, 0, 0) calc(var(--kipos-u) * 2)) 0 0 / calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 9),
-    linear-gradient(#e8505e 0 72%, #f2ead0 72% 84%, #3e7a3a 84%);
-}
+.kipos-packet--tomato { --band: #b8402a; }
+.kipos-packet--tomato .kipos-packet__art { background-image: var(--kipos-art-tomato); }
+.kipos-packet--cucumber { --band: #3a6630; }
+.kipos-packet--cucumber .kipos-packet__art { background-image: var(--kipos-art-cucumber); }
+.kipos-packet--watermelon { --band: #ad3f52; }
+.kipos-packet--watermelon .kipos-packet__art { background-image: var(--kipos-art-watermelon); }
 
 .kipos-can {
   position: absolute;
-  left: calc(var(--kipos-u) * 682);
-  top: calc(var(--kipos-u) * 524);
-  width: calc(var(--kipos-u) * 290);
-  height: calc(var(--kipos-u) * 170);
+  left: calc(var(--kipos-u) * 650);
+  top: calc(var(--kipos-u) * 496);
+  width: calc(var(--kipos-u) * 250);
+  height: calc(var(--kipos-u) * 152);
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
-  transform-origin: 60% 70%;
-  transition: transform 260ms cubic-bezier(0.23, 1, 0.32, 1), filter 260ms ease;
+  transform-origin: 62% 80%;
+  transition: transform 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.kipos-can__metal {
+  position: absolute;
+  inset: 0;
+  background: var(--kipos-can) 0 0 / 100% 100% no-repeat;
+}
+.kipos-can__shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * 86);
+  bottom: calc(var(--kipos-u) * -6);
+  width: calc(var(--kipos-u) * 150);
+  height: calc(var(--kipos-u) * 16);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(30, 16, 4, 0.55), rgba(30, 16, 4, 0) 70%);
+  transition: transform 280ms ease, opacity 280ms ease;
 }
 .kipos-can[aria-pressed='true'] {
-  transform: translate(calc(var(--kipos-u) * -16), calc(var(--kipos-u) * -34)) rotate(-14deg);
-  filter: drop-shadow(0 calc(var(--kipos-u) * 16) calc(var(--kipos-u) * 10) rgba(40, 20, 5, 0.3));
+  transform: translate(calc(var(--kipos-u) * -16), calc(var(--kipos-u) * -40)) rotate(-14deg);
+}
+.kipos-can[aria-pressed='true'] .kipos-can__shadow {
+  transform: translate(calc(var(--kipos-u) * 30), calc(var(--kipos-u) * 36)) rotate(14deg) scale(1.15);
+  opacity: 0.5;
 }
 .kipos-can:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 2px; border-radius: calc(var(--kipos-u) * 12); }
-.kipos-can i { position: absolute; display: block; }
-.kipos-can__handle {
-  left: calc(var(--kipos-u) * 150);
-  top: calc(var(--kipos-u) * 6);
-  width: calc(var(--kipos-u) * 84);
-  height: calc(var(--kipos-u) * 64);
-  border: calc(var(--kipos-u) * 9) solid #8e979a;
-  border-bottom: 0;
-  border-radius: calc(var(--kipos-u) * 42) calc(var(--kipos-u) * 42) 0 0;
-}
-.kipos-can__spout {
-  left: calc(var(--kipos-u) * 22);
-  top: calc(var(--kipos-u) * 54);
-  width: calc(var(--kipos-u) * 120);
-  height: calc(var(--kipos-u) * 13);
-  border-radius: calc(var(--kipos-u) * 6);
-  background: linear-gradient(#b9c0c2, #7e8689);
-  transform: rotate(32deg);
-  transform-origin: right center;
-}
-.kipos-can__rose {
-  left: calc(var(--kipos-u) * 20);
-  top: calc(var(--kipos-u) * -20);
-  width: calc(var(--kipos-u) * 30);
-  height: calc(var(--kipos-u) * 34);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, #6e7679 0 calc(var(--kipos-u) * 1.5), rgba(0, 0, 0, 0) calc(var(--kipos-u) * 2)) 0 0 / calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6),
-    linear-gradient(#c3c9cb, #8a9295);
-  transform: rotate(-58deg);
-}
-.kipos-can__body {
-  left: calc(var(--kipos-u) * 110);
-  top: calc(var(--kipos-u) * 54);
-  width: calc(var(--kipos-u) * 150);
-  height: calc(var(--kipos-u) * 100);
-  border-radius: calc(var(--kipos-u) * 16) calc(var(--kipos-u) * 16) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10);
-  background:
-    linear-gradient(0deg, rgba(0, 0, 0, 0) 0 22%, rgba(70, 78, 80, 0.45) 22% 25%, rgba(0, 0, 0, 0) 25% 74%, rgba(70, 78, 80, 0.45) 74% 77%, rgba(0, 0, 0, 0) 77%),
-    linear-gradient(90deg, #7e8689, #c9cfd1 30%, #e4e8e9 42%, #a3aaad 70%, #7a8285);
-}
-.kipos-can__lip {
-  left: calc(var(--kipos-u) * 106);
-  top: calc(var(--kipos-u) * 50);
-  width: calc(var(--kipos-u) * 158);
-  height: calc(var(--kipos-u) * 10);
-  border-radius: calc(var(--kipos-u) * 6);
-  background: linear-gradient(#d5dadc, #8e979a);
-}
 
 .kipos-hint {
   margin: 10px 0 0;
@@ -615,12 +686,14 @@
 
 .kipos-teneke__shadow {
   position: absolute;
-  left: calc(var(--kipos-u) * 18);
+  left: calc(var(--kipos-u) * 14);
   top: calc(var(--kipos-u) * 306);
-  width: calc(var(--kipos-u) * 204);
-  height: calc(var(--kipos-u) * 22);
+  width: calc(var(--kipos-u) * 222);
+  height: calc(var(--kipos-u) * 26);
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(60, 25, 10, 0.34), rgba(60, 25, 10, 0) 70%);
+  background:
+    radial-gradient(ellipse 46% 36% at 50% 40%, rgba(40, 22, 8, 0.5), rgba(40, 22, 8, 0) 100%),
+    radial-gradient(ellipse 50% 50% at 54% 50%, rgba(40, 22, 8, 0.2), rgba(40, 22, 8, 0) 100%);
 }
 
 .kipos-teneke__tin {
@@ -632,46 +705,39 @@
   cursor: pointer;
 }
 .kipos-teneke__tin:focus-visible { outline: none; }
-.kipos-teneke__tin:focus-visible .kipos-teneke__rim { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
+.kipos-teneke__tin:focus-visible .kipos-teneke__body { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
 
-.kipos-teneke .kipos-plant { bottom: calc(var(--kipos-u) * 160); }
-.kipos-teneke .kipos-pour { bottom: calc(var(--kipos-u) * 300); }
+.kipos-teneke .kipos-plant { bottom: calc(var(--kipos-u) * 156); }
+.kipos-teneke .kipos-plant__shadow { display: none; }
+.kipos-teneke .kipos-pour { bottom: calc(var(--kipos-u) * 290); }
 
 .kipos-teneke__soil {
   position: absolute;
-  left: calc(var(--kipos-u) * 36);
-  top: calc(var(--kipos-u) * 158);
-  width: calc(var(--kipos-u) * 168);
-  height: calc(var(--kipos-u) * 20);
+  left: calc(var(--kipos-u) * 34);
+  top: calc(var(--kipos-u) * 160);
+  width: calc(var(--kipos-u) * 172);
+  height: calc(var(--kipos-u) * 22);
   border-radius: 50%;
-  background: radial-gradient(ellipse,
-    color-mix(in oklab, #3c2416 calc(var(--wet) * 100%), #8a6a4e),
-    color-mix(in oklab, #4a2e1d calc(var(--wet) * 100%), #7a5c42) 80%);
-  transition: background 900ms ease;
+  background: var(--kipos-soil) 0 0 / calc(var(--kipos-u) * 120);
+  box-shadow: inset 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 5) rgba(16, 9, 3, 0.6);
+}
+.kipos-teneke__soil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(22, 12, 5, 0.55);
+  opacity: var(--wet);
+  transition: opacity 1200ms ease;
 }
 
 .kipos-teneke__body {
   position: absolute;
-  left: calc(var(--kipos-u) * 34);
-  top: calc(var(--kipos-u) * 168);
-  width: calc(var(--kipos-u) * 172);
-  height: calc(var(--kipos-u) * 150);
-  border-radius: calc(var(--kipos-u) * 4);
-  background:
-    radial-gradient(circle at 80% 84%, rgba(150, 80, 35, 0.42), rgba(150, 80, 35, 0) 26%),
-    radial-gradient(circle at 14% 22%, rgba(150, 80, 35, 0.22), rgba(150, 80, 35, 0) 12%),
-    linear-gradient(0deg, rgba(0, 0, 0, 0) 0 31%, rgba(120, 110, 95, 0.25) 31% 32.5%, rgba(0, 0, 0, 0) 32.5% 66%, rgba(120, 110, 95, 0.25) 66% 67.5%, rgba(0, 0, 0, 0) 67.5%),
-    linear-gradient(90deg, #dcd7cb, #fbfaf6 40%, #e3ded3 80%, #cfc9bc);
-}
-
-.kipos-teneke__rim {
-  position: absolute;
   left: calc(var(--kipos-u) * 30);
-  top: calc(var(--kipos-u) * 162);
+  top: calc(var(--kipos-u) * 164);
   width: calc(var(--kipos-u) * 180);
-  height: calc(var(--kipos-u) * 12);
-  border-radius: calc(var(--kipos-u) * 3);
-  background: linear-gradient(#f4f1ea, #cfc9bc);
+  height: calc(var(--kipos-u) * 160);
+  background: var(--kipos-teneke) 0 0 / 100% 100% no-repeat;
 }
 
 .kipos-teneke__pinch {
@@ -682,7 +748,7 @@
   padding: 4px 12px;
   border: 1px solid rgba(80, 50, 20, 0.2);
   border-radius: 999px;
-  background: #f4e8cc;
+  background: var(--kipos-paper) 0 0 / 120px;
   box-shadow: 0 2px 4px rgba(40, 20, 5, 0.2);
   font-size: 13px;
   cursor: pointer;
@@ -699,11 +765,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kipos-part,
+  .kipos-part--tomato::after,
   .kipos-packet,
+  .kipos-packet-shadow,
   .kipos-can,
-  .kipos-plot__soil,
-  .kipos-teneke__soil,
+  .kipos-can__shadow,
+  .kipos-plot__soil::before,
+  .kipos-plot__soil::after,
+  .kipos-teneke__soil::before,
   .kipos-plant,
+  .kipos-plant__shadow,
   .kipos-bed__scene,
   .kipos-teneke__scene { transition: none; }
   .kipos-pour { display: none; }

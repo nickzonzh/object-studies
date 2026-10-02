@@ -29,7 +29,10 @@ The stylesheet is a separate import so it can be bundled, ordered or overridden
 like any other CSS. Every rule is scoped to `kipos` classes.
 
 MIT. React 19. No runtime dependency beyond [`object-studies-core`](../core).
-Everything is drawn with DOM and CSS: no canvas, no WebGL.
+Everything is drawn with DOM, CSS and SVG: no canvas, no WebGL. The materials
+(soil, limestone, olive wood, galvanised steel, whitewash, paper) and the
+botanical drawings are SVG baked into `src/art.css` by `scripts/build-art.mjs`.
+Change the script and re-run it; never edit `art.css` by hand.
 
 ## How the garden keeps time
 
@@ -103,4 +106,5 @@ growing, lifting and pouring animations.
 npm run dev -w kipos               # the demo, with a fast-forward control
 npx vitest run packages/kipos      # engine, storage and SSR tests
 npm run build -w kipos
+node packages/kipos/scripts/build-art.mjs   # regenerate the art
 ```
