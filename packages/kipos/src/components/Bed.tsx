@@ -4,7 +4,9 @@ import { type BedDocument, bedStore, emptyBed, rescaleBed } from '../lib/documen
 import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { type KiposLabelOverrides, type KiposLabels, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
+import { seededRandom } from 'object-studies-core'
 import { Plant } from './Plant.js'
+import '../art.css'
 import '../styles.css'
 
 export type BedProps = {
@@ -135,17 +137,20 @@ export function Bed({
         {labels.bedInstructions}
       </p>
       <div className="kipos-bed__scene">
-        <div className="kipos-bed__shadow" />
-        <div className="kipos-bed__soil" />
+        <div className="kipos-bed__ground" aria-hidden="true" />
+        <div className="kipos-bed__back" aria-hidden="true" />
+        <div className="kipos-bed__soil" aria-hidden="true" />
         <div className="kipos-bed__face" aria-hidden="true">
-          {[5, 4, 5].map((count, row) => (
-            <span key={row} className="kipos-bed__course">
-              {Array.from({ length: count }, (_, i) => (
-                <i key={i} className="kipos-stone" style={{ flexGrow: 2 + ((row * 7 + i * 3) % 4) }} />
-              ))}
-            </span>
+          {STONES.map((stone, index) => (
+            <i key={index} className="kipos-stone" style={stone} />
           ))}
         </div>
+        <div className="kipos-bed__coping" aria-hidden="true">
+          {COPING.map((stone, index) => (
+            <i key={index} className="kipos-capstone" style={stone} />
+          ))}
+        </div>
+        <i className="kipos-trowel kipos-sprite--trowel" aria-hidden="true" />
 
         {bed.plots.map((planting, index) => {
           const state = planting ? readPlanting(planting, now, speed) : null
@@ -160,6 +165,15 @@ export function Bed({
               onClick={() => tendPlot(index)}
             >
               <span className="kipos-plot__soil" />
+              {!planting && (
+                // Last season's canes, left standing in the empty plot until something is sown.
+                <span className={`kipos-idle kipos-idle--${index % 3}`} aria-hidden="true">
+                  <i className="kipos-idle__cane kipos-sprite--cane" />
+                  <i className="kipos-idle__cane kipos-sprite--cane" />
+                  <i className="kipos-idle__cane kipos-sprite--cane" />
+                  <i className="kipos-idle__tie kipos-sprite--tie-cream" />
+                </span>
+              )}
               {planting && state && (
                 <Plant
                   crop={planting.crop}
@@ -185,13 +199,23 @@ export function Bed({
         )}
 
         <div className="kipos-tray" role="group" aria-label={labels.tray}>
-          <span className="kipos-tray__wood" aria-hidden="true" />
-          {BED_CROPS.map((crop, index) => (
+          <span className="kipos-tray__wood" aria-hidden="true">
+            <span className="kipos-tray__brand" lang="el">
+              ΚΗΠΟΣ · KIPOS
+            </span>
+          </span>
+          {BED_CROPS.map((crop, index) => [
+            <span
+              key={`${crop}-shadow`}
+              className="kipos-packet-shadow"
+              style={{ '--slot': index, '--tilt': TILTS[index] } as CSSProperties}
+              aria-hidden="true"
+            />,
             <button
               key={crop}
               type="button"
               className={`kipos-packet kipos-packet--${crop}`}
-              style={{ '--slot': index } as CSSProperties}
+              style={{ '--slot': index, '--tilt': TILTS[index] } as CSSProperties}
               aria-pressed={hand === crop}
               aria-label={fill(labels.seedPacket, cropSlots(labels, crop))}
               onClick={() => take(crop)}
@@ -206,8 +230,11 @@ export function Bed({
                 {LATIN[crop]} · σπόροι
               </span>
               <i className="kipos-packet__art" aria-hidden="true" />
-            </button>
-          ))}
+              <i className="kipos-packet__count" aria-hidden="true">
+                {PACKET_NO[crop]}
+              </i>
+            </button>,
+          ])}
           <button
             type="button"
             className="kipos-can"
@@ -215,11 +242,8 @@ export function Bed({
             aria-label={labels.wateringCan}
             onClick={() => take('can')}
           >
-            <i className="kipos-can__handle" />
-            <i className="kipos-can__spout" />
-            <i className="kipos-can__rose" />
-            <i className="kipos-can__body" />
-            <i className="kipos-can__lip" />
+            <i className="kipos-can__shadow" />
+            <i className="kipos-can__metal" />
           </button>
         </div>
       </div>
@@ -235,6 +259,66 @@ export function Bed({
     </div>
   )
 }
+
+// How each packet lies on the board.
+const TILTS = ['-4deg', '2.5deg', '-1.5deg']
+
+const PACKET_NO: Record<CropId, string> = {
+  tomato: 'Νο 12',
+  cucumber: 'Νο 7',
+  watermelon: 'Νο 31',
+  basil: 'Νο 3',
+  geranium: 'Νο 18',
+}
+
+// The bed's stonework, laid once from a fixed seed so every bed is built the same.
+const STONES: CSSProperties[] = (() => {
+  const random = seededRandom(1907)
+  const stones: CSSProperties[] = []
+  const courses = [
+    { top: 0, height: 50 },
+    { top: 54, height: 46 },
+  ]
+  for (const [row, course] of courses.entries()) {
+    let x = row ? -40 : 0
+    while (x < 908) {
+      const width = 88 + random() * 96
+      const left = Math.max(0, x)
+      const right = Math.min(908, x + width)
+      if (right - left > 24) {
+        const r = () => `${Math.round(6 + random() * 12)}%`
+        stones.push({
+          left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
+          top: `calc(var(--kipos-u) * ${(course.top + random() * 3).toFixed(1)})`,
+          width: `calc(var(--kipos-u) * ${(right - left).toFixed(1)})`,
+          height: `calc(var(--kipos-u) * ${(course.height - random() * 4).toFixed(1)})`,
+          borderRadius: `${r()} ${r()} ${r()} ${r()} / ${r()} ${r()} ${r()} ${r()}`,
+          backgroundPosition: `${Math.round(random() * 256)}px ${Math.round(random() * 256)}px`,
+          '--tone': (0.9 + random() * 0.14).toFixed(3),
+        } as CSSProperties)
+      }
+      x += width + 6
+    }
+  }
+  return stones
+})()
+
+const COPING: CSSProperties[] = (() => {
+  const random = seededRandom(311)
+  const stones: CSSProperties[] = []
+  let x = 0
+  while (x < 940) {
+    const width = Math.min(940 - x, 140 + random() * 70)
+    stones.push({
+      left: `calc(var(--kipos-u) * ${x.toFixed(1)})`,
+      width: `calc(var(--kipos-u) * ${(width - 4).toFixed(1)})`,
+      backgroundPosition: `0 0, ${Math.round(random() * 256)}px ${Math.round(random() * 256)}px`,
+      '--tone': (0.94 + random() * 0.1).toFixed(3),
+    } as CSSProperties)
+    x += width
+  }
+  return stones
+})()
 
 const GREEK: Record<CropId, string> = {
   tomato: 'ΝΤΟΜΑΤΑ',
