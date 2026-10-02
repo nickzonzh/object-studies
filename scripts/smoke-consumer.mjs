@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz']
+const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz', 'komboloi']
 const rootManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const dev = rootManifest.devDependencies
 const dir = mkdtempSync(join(tmpdir(), 'object-studies-consumer-'))
@@ -56,6 +56,7 @@ import { Frame, FrameImage, frameVariants } from 'korniza'
 import { Frame as ModernBlack } from 'korniza/modern-black'
 import { Vase } from 'keramos'
 import { CraftTable, CraftPaper, GooglyEye } from 'kollaz'
+import { Komboloi, MATERIAL_IDS } from 'komboloi'
 
 const checks = [
   ['melani', renderToString(h(Whiteboard, { persistence: { key: 'smoke' } }))],
@@ -65,6 +66,7 @@ const checks = [
   ['keramos', renderToString(h(Vase, { shape: 'amphora', vaseStyle: 'black-figure', seed: 3 }))],
   ['kollaz', renderToString(h(CraftTable))],
   ['kollaz', renderToString(h(CraftPaper, { torn: ['top'] }, h(GooglyEye, { size: 40 })))],
+  ...MATERIAL_IDS.map((material) => ['komboloi', renderToString(h(Komboloi, { material, beads: 21 }))]),
 ]
 for (const [name, html] of checks) {
   if (!html.includes('class="' + name) && !html.includes(' ' + name + ' ') && !html.includes('"' + name + ' ')) throw new Error(name + ' SSR output is missing its root class')
@@ -88,11 +90,14 @@ import 'korniza/style.css'
 import 'korniza/dark-walnut.css'
 import { Vase, SHAPES, type ShapeId, type VaseProps } from 'keramos'
 import { CraftTable, CraftPaper, GooglyEye, type Edge } from 'kollaz'
+import { Komboloi, MATERIALS, type MaterialId, type KomboloiProps } from 'komboloi'
 import 'keramos/style.css'
 import 'kollaz/style.css'
+import 'komboloi/style.css'
 
 const pieceMode: VaseProps['mode'] = 'still'
 const torn: Edge[] = ['top', 'left']
+const clack: KomboloiProps['onClack'] = (strength) => void strength
 
 export function Consumer({ variant }: { variant: FrameVariant }) {
   const whiteboard = useRef<WhiteboardHandle>(null)
@@ -110,6 +115,7 @@ export function Consumer({ variant }: { variant: FrameVariant }) {
       {(Object.keys(SHAPES) as ShapeId[]).map((shape) => <Vase key={shape} shape={shape} mode={pieceMode} />)}
       <CraftTable />
       <CraftPaper torn={torn}><GooglyEye track /></CraftPaper>
+      {(Object.keys(MATERIALS) as MaterialId[]).map((m) => <Komboloi key={m} material={m} beads={21} onClack={clack} />)}
     </>
   )
 }
@@ -140,15 +146,17 @@ import { Frame } from 'korniza'
 import { Frame as OakFrame } from 'korniza/carved-oak'
 import { Vase } from 'keramos'
 import { CraftTable } from 'kollaz'
+import { Komboloi } from 'komboloi'
 import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
 import 'korniza/carved-oak.css'
 import 'keramos/style.css'
 import 'kollaz/style.css'
+import 'komboloi/style.css'
 createRoot(document.getElementById('root')).render([
   h(Whiteboard, { key: 'a' }), h(Chalkboard, { key: 'k' }), h(Frame, { key: 'f', variant: 'carved-oak' }), h(OakFrame, { key: 'o' }),
-  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }),
+  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }), h(Komboloi, { key: 'b' }),
 ])
 `,
   )

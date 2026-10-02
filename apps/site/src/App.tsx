@@ -3,6 +3,7 @@ import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, type FrameMat, type FrameVariant, frameVariants } from 'korniza'
 import { Vase, type GreekPaletteId, type IkarosPaletteId, type ShapeId, type StyleId } from 'keramos'
 import { CraftTable } from 'kollaz'
+import { Komboloi, type MaterialId } from 'komboloi'
 import { type ReactNode, useState } from 'react'
 
 const repo = 'https://github.com/nickzonzh/object-studies'
@@ -33,6 +34,7 @@ export function App() {
             <a href="#wall">Gallery wall</a>
             <a href="#keramos">Keramos</a>
             <a href="#kollaz">Kollaz</a>
+            <a href="#komboloi">Komboloi</a>
           </nav>
         </header>
 
@@ -99,6 +101,17 @@ export function App() {
           <CraftTable />
         </Study>
 
+        <Study
+          id="komboloi"
+          number="06"
+          name="Komboloi"
+          greek="κομπολόι"
+          meaning="worry beads"
+          summary="Worry beads on a brass peg, in amber, olive wood, bone, mati glass and onyx. Lift a strand by any bead and let it swing. Tap a bead to flick it along the cord and hear it knock into the others."
+        >
+          <KomboloiRail />
+        </Study>
+
         <footer className="site-footer">
           <span>MIT licensed.</span>
           <a href={repo}>Source on GitHub</a>
@@ -109,7 +122,7 @@ export function App() {
 }
 
 type StudyProps = {
-  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz'
+  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz' | 'komboloi'
   number: string
   name: string
   greek: string
@@ -174,6 +187,31 @@ function KeramosBench() {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+const STRANDS: { material: MaterialId; beads: number; seed: number }[] = [
+  { material: 'amber', beads: 21, seed: 4 },
+  { material: 'olive-wood', beads: 17, seed: 9 },
+  { material: 'mati', beads: 23, seed: 2 },
+  { material: 'cherry-amber', beads: 19, seed: 11 },
+  { material: 'ox-bone', beads: 25, seed: 6 },
+]
+
+function KomboloiRail() {
+  const [sound, setSound] = useState(true)
+  return (
+    <div className="site-komboloi">
+      <div className="site-komboloi-rail" aria-hidden="true" />
+      <div className="site-komboloi-row">
+        {STRANDS.map((s) => (
+          <Komboloi key={s.material} material={s.material} beads={s.beads} seed={s.seed} sound={sound} />
+        ))}
+      </div>
+      <button type="button" className="site-button" aria-pressed={!sound} onClick={() => setSound((v) => !v)}>
+        {sound ? 'Mute the clicks' : 'Sound on'}
+      </button>
     </div>
   )
 }

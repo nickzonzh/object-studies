@@ -9,6 +9,7 @@ Open-source React components that behave like the physical things they are named
 | [`korniza`](packages/korniza) | κορνίζα, frame. Six dimensional gallery frames for images or any React content, with an optional mat and glazing. | `npm install korniza` |
 | [`keramos`](packages/keramos) | κέραμος, potter's clay. Hand-painted Greek pottery, glazed and lit by the pointer, where every seed paints a different piece. | `npm install keramos` |
 | [`kollaz`](packages/kollaz) | κολάζ, collage. A craft table with a glue stick, glitter, scissors, tape, pom poms and googly eyes. | `npm install kollaz` |
+| [`komboloi`](packages/komboloi) | κομπολόι, worry beads. A strand on a brass peg that swings, slides and clicks, in amber, olive wood, bone, glass or onyx. | `npm install komboloi` |
 
 Live demo: https://nickzonzh.github.io/object-studies/
 
@@ -34,6 +35,7 @@ packages/melani     whiteboard
 packages/korniza   gallery frames
 packages/keramos   painted pottery
 packages/kollaz    craft table
+packages/komboloi  worry beads
 apps/site          the demo site, built from the packages exactly as npm users get them
 ```
 
