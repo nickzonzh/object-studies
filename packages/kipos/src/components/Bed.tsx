@@ -168,9 +168,9 @@ export function Bed({
               {!planting && (
                 // Last season's canes, left standing in the empty plot until something is sown.
                 <span className={`kipos-idle kipos-idle--${index % 3}`} aria-hidden="true">
-                  <i className="kipos-idle__cane kipos-sprite--cane" />
-                  <i className="kipos-idle__cane kipos-sprite--cane" />
-                  <i className="kipos-idle__cane kipos-sprite--cane" />
+                  <i className="kipos-idle__cane kipos-cane" />
+                  <i className="kipos-idle__cane kipos-cane" />
+                  <i className="kipos-idle__cane kipos-cane" />
                   <i className="kipos-idle__tie kipos-sprite--tie-cream" />
                 </span>
               )}

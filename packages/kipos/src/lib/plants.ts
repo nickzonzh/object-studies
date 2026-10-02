@@ -25,6 +25,7 @@ export type PartKind =
   | 'cucumber'
   | 'melon'
   | 'runner'
+  | 'vine'
   | 'bloom'
 
 export type Part = {
@@ -45,6 +46,8 @@ export type Part = {
   ripeAt?: number
   /** Stems and runners stretch with growth instead of popping in. */
   grows?: boolean
+  /** Progress over which a growing part stretches from nothing to full length. */
+  span?: number
   /** Which drawing of several to use. */
   variant: number
   /** Drawn in front of lower values. */
@@ -61,6 +64,40 @@ const TOMATO_LEAF_BASE: [number, number] = [0.05, 0.53]
 const BASIL_LEAF_BASE: [number, number] = [0.06, 0.52]
 const facing = (base: [number, number], side: number): [number, number] => (side < 0 ? [1 - base[0], base[1]] : base)
 
+/**
+ * A stem through a list of points, as one growing segment per stretch, each
+ * starting to grow as the one below it finishes. A real stem never runs
+ * dead straight.
+ */
+function stem(points: [number, number][], width: number, from: number, to: number, z?: number): Part[] {
+  const top = points[points.length - 1][1]
+  return points.slice(0, -1).map(([x, y], i) => {
+    const [nx, ny] = points[i + 1]
+    const length = Math.hypot(nx - x, ny - y)
+    return part({
+      kind: 'stem',
+      x,
+      y,
+      w: width * (1 - (i / points.length) * 0.35),
+      h: length + width * 0.6,
+      r: (Math.atan2(nx - x, ny - y) * 180) / Math.PI,
+      at: from + (to - from) * (y / top),
+      span: Math.max(0.02, (to - from) * ((ny - y) / top)),
+      grows: true,
+      z,
+    })
+  })
+}
+
+/** Where a stem through these points crosses height y. */
+function stemX(points: [number, number][], y: number) {
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x0, y0] = points[i], [x1, y1] = points[i + 1]
+    if (y <= y1) return x0 + ((x1 - x0) * (y - y0)) / Math.max(1, y1 - y0)
+  }
+  return points[points.length - 1][0]
+}
+
 // Cotyledons: the first pair of seed leaves every plant shows.
 const seedLeaves = (y = 4): Part[] => [
   part({ kind: 'cotyledon', x: -2, y, w: 26, h: 12, anchor: [0.95, 0.5], r: 18, side: -1, at: 0.07 }),
@@ -74,8 +111,9 @@ function tomato(random: () => number): Part[] {
     part({ kind: 'cane', x: -40, y: -6, w: 9, h: 330, r: -3, at: 0 }),
     part({ kind: 'cane', x: 38, y: -6, w: 9, h: 338, r: 4, at: 0 }),
     ...seedLeaves(),
-    part({ kind: 'stem', x: 0, y: 0, w: 6, h: 296, at: 0.07, grows: true }),
   ]
+  const spine: [number, number][] = [[0, 0], [3, 50], [-4, 104], [4, 158], [-3, 212], [3, 258], [-1, 296]]
+  parts.push(...stem(spine, 6.5, 0.07, 0.78))
   for (let i = 0; i < 13; i++) {
     const side = i % 2 === 0 ? -1 : 1
     const y = 24 + i * 21 + jitter(8)
@@ -83,7 +121,7 @@ function tomato(random: () => number): Part[] {
     parts.push(
       part({
         kind: 'leaf',
-        x: side * 2,
+        x: stemX(spine, y) + side * 2,
         y,
         w,
         h: w * 0.53,
@@ -136,7 +174,9 @@ function cucumber(random: () => number): Part[] {
     parts.push(part({ kind: 'twine', x: 0, y, w: half * 2, h: 1.6, anchor: [0.5, 0.5], at: 0 }))
   }
   parts.push(...seedLeaves())
-  parts.push(part({ kind: 'stem', x: 0, y: 0, w: 4, h: 292, at: 0.07, grows: true }))
+  // The vine winds up through the twine, tendrils and all.
+  const vine: [number, number][] = [[0, 0], [-5, 44], [5, 92], [-6, 140], [5, 188], [-4, 236], [2, 292]]
+  parts.push(...stem(vine, 4.5, 0.07, 0.78))
   for (let i = 0; i < 12; i++) {
     const side = i % 2 === 0 ? -1 : 1
     const y = 16 + i * 24 + jitter(8)
@@ -145,7 +185,7 @@ function cucumber(random: () => number): Part[] {
     parts.push(
       part({
         kind: 'vine-leaf',
-        x: side * (reach * 0.5 + jitter(8)),
+        x: stemX(vine, y) + side * (reach * 0.42 + jitter(8)),
         y,
         w: size,
         h: size,
@@ -170,8 +210,8 @@ function watermelon(random: () => number): Part[] {
   const jitter = (n: number) => (random() - 0.5) * n
   const parts: Part[] = [...seedLeaves()]
   // The vine sprawls along the soil and over the front edge of the bed.
-  parts.push(part({ kind: 'runner', x: 4, y: 6, w: 138, h: 4, anchor: [0, 0.5], r: 2, at: 0.25, grows: true }))
-  parts.push(part({ kind: 'runner', x: 136, y: 2, w: 4, h: 150, anchor: [0.5, 0], at: 0.52, grows: true, z: 3 }))
+  // The vine trails out along the soil and over the front edge, unrolling as it grows.
+  parts.push(part({ kind: 'vine', x: 2, y: 8, w: 170, h: 180, anchor: [0.01, 0.06], at: 0.25, span: 0.45, grows: true, z: 3 }))
   const leaves: [number, number, -1 | 0 | 1][] = [
     [-6, 12, 0], [-48, 6, -1], [36, 10, 1], [-90, 2, -1], [78, 8, 1], [-124, 0, -1], [114, 6, 1], [8, 30, 0], [-30, 26, -1], [52, 28, 1],
   ]
@@ -192,8 +232,8 @@ function watermelon(random: () => number): Part[] {
       }),
     )
   })
-  for (const [y, r] of [[-36, 70], [-104, 100]] as const)
-    parts.push(part({ kind: 'melon-leaf', x: 140, y, w: 58, h: 46, anchor: [0.2, 0.5], r, side: 1, at: 0.6, variant: 1, z: 3 }))
+  for (const [x, y, r] of [[154, -34, 70], [150, -112, 104]] as const)
+    parts.push(part({ kind: 'melon-leaf', x, y, w: 58, h: 46, anchor: [0.15, 0.5], r, side: 1, at: 0.62, variant: 1, z: 4 }))
   parts.push(part({ kind: 'flower', x: 24, y: 40, w: 20, h: 20, anchor: [0.5, 0.5], at: 0.5, z: 1 }))
   parts.push(part({ kind: 'melon', x: -26, y: -8, w: 132, h: 86, anchor: [0.5, 0.94], r: -2, at: 0.62, ripeAt: 1, z: 2 }))
   return parts
