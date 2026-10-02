@@ -173,6 +173,15 @@
   pointer-events: none;
 }
 
+/* A bamboo cane: internodes tiled up from the soil, darkened where it went in. */
+.kipos-cane {
+  border-radius: 45% 45% calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1) / calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) 0 0;
+  background:
+    linear-gradient(rgba(59, 38, 22, 0) calc(100% - var(--kipos-u) * 26), rgba(59, 38, 22, 0.75)),
+    var(--kipos-cane) 0 100% / 100% calc(var(--kipos-u) * 72) repeat-y;
+  box-shadow: inset 0 calc(var(--kipos-u) * 2) 0 rgba(110, 85, 48, 0.9);
+}
+
 /* ---------- Plots ---------- */
 
 .kipos-plot {
@@ -318,6 +327,13 @@
 }
 .kipos-part--across { transform: rotate(var(--r, 0deg)) scaleX(var(--grow, 1)); }
 
+/* A trailing vine unrolls from its root rather than stretching. */
+.kipos-part--vine {
+  transform: rotate(var(--r, 0deg));
+  clip-path: inset(0 calc((1 - var(--grow, 1)) * 100%) calc((1 - var(--grow, 1)) * 100%) 0);
+  transition: clip-path 1200ms ease;
+}
+
 /* Fruit and flowers swell from a bud to full size, and hang a little lower when it's dry. */
 .kipos-part--tomato,
 .kipos-part--cucumber,
@@ -332,6 +348,12 @@
 .kipos-part--cane,
 .kipos-part--tie,
 .kipos-part--twine { transform: rotate(var(--r, 0deg)); }
+
+.kipos-part--leaf,
+.kipos-part--vine-leaf,
+.kipos-part--melon-leaf,
+.kipos-part--basil-leaf,
+.kipos-part--round-leaf { filter: brightness(var(--shade, 1)); }
 
 .kipos-part--cane { filter: drop-shadow(calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1.5) rgba(30, 20, 8, 0.3)); }
 

@@ -41,7 +41,7 @@ function smooth(points, tension = 1) {
 
 const uri = (w, h, body) =>
   `url("data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'>${body}</svg>`,
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}' preserveAspectRatio='none'>${body}</svg>`,
   ).replace(/'/g, '%27')}")`
 
 const rules = []
@@ -66,24 +66,24 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
 {
   const r = rng(11)
   let grit = ''
-  for (let i = 0; i < 70; i++) {
-    const x = 6 + r() * 228, y = 6 + r() * 228, s = 0.8 + r() * 2.6
+  for (let i = 0; i < 150; i++) {
+    const x = 6 + r() * 348, y = 6 + r() * 348, s = 0.6 + r() * 2.2
     const tone = r() < 0.5 ? '#b08a68' : '#2a190f'
     grit += `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * (0.6 + r() * 0.4))}' fill='${tone}' opacity='${f(0.35 + r() * 0.4)}'/>`
   }
-  for (let i = 0; i < 9; i++) {
-    const x = 14 + r() * 212, y = 14 + r() * 212, s = 3 + r() * 4
+  for (let i = 0; i < 11; i++) {
+    const x = 14 + r() * 332, y = 14 + r() * 332, s = 2.2 + r() * 3.6
     grit += `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * 0.7)}' fill='url(#pebble)' transform='rotate(${f(r() * 180)} ${f(x)} ${f(y)})'/>`
   }
   variable(
     'kipos-soil',
-    uri(240, 240, `
+    uri(360, 360, `
       <defs>${relief('s', { freq: 0.2, octaves: 5, scale: 6.5, seed: 4, light: '#ffe2c4', elevation: 40 })}
         <radialGradient id='pebble' cx='.35' cy='.3' r='.8'><stop offset='0' stop-color='#d8c4a6'/><stop offset='.6' stop-color='#9c8264'/><stop offset='1' stop-color='#5b4634'/></radialGradient>
         <filter id='loam' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='2' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .12  0 0 0 0 .07  0 0 0 0 .04  0 0 0 -2.2 1.25'/></filter>
       </defs>
-      <rect width='240' height='240' fill='#6a4630' filter='url(#s)'/>
-      <rect width='240' height='240' filter='url(#loam)' opacity='.55'/>
+      <rect width='360' height='360' fill='#6a4630' filter='url(#s)'/>
+      <rect width='360' height='360' filter='url(#loam)' opacity='.55'/>
       ${grit}`),
   )
 }
@@ -242,11 +242,15 @@ variable(
         <linearGradient id='shade' x1='0' x2='1'><stop offset='0' stop-color='#3a3226' stop-opacity='.32'/><stop offset='.22' stop-color='#3a3226' stop-opacity='0'/><stop offset='.55' stop-color='#fff' stop-opacity='.16'/><stop offset='.8' stop-color='#3a3226' stop-opacity='.05'/><stop offset='1' stop-color='#3a3226' stop-opacity='.36'/></linearGradient>
         <filter id='lime' x='0' y='0' width='100%' height='100%'>
           <feTurbulence type='fractalNoise' baseFrequency='.018 .04' numOctaves='4' seed='5' result='brush'/>
-          <feColorMatrix in='brush' values='0 0 0 0 .97  0 0 0 0 .955  0 0 0 0 .93  0 0 0 -7 5.4' result='coat'/>
+          <feColorMatrix in='brush' values='0 0 0 0 .965  0 0 0 0 .952  0 0 0 0 .925  0 0 0 -6 6.2' result='coat'/>
           <feTurbulence type='fractalNoise' baseFrequency='.5' numOctaves='3' seed='2' result='tooth'/>
-          <feDiffuseLighting in='tooth' surfaceScale='.55' lighting-color='#fff' result='lit'><feDistantLight azimuth='225' elevation='60'/></feDiffuseLighting>
+          <feDiffuseLighting in='tooth' surfaceScale='.3' lighting-color='#fff' result='lit'><feDistantLight azimuth='225' elevation='60'/></feDiffuseLighting>
           <feComposite in='lit' in2='coat' operator='in' result='litcoat'/>
           <feBlend in='litcoat' in2='coat' mode='multiply'/>
+        </filter>
+        <filter id='chips' x='0' y='0' width='100%' height='100%'>
+          <feTurbulence type='fractalNoise' baseFrequency='.11' numOctaves='2' seed='23'/>
+          <feColorMatrix values='0 0 0 0 .55  0 0 0 0 .56  0 0 0 0 .52  0 0 0 -22 8.1'/>
         </filter>
         <filter id='rust' x='0' y='0' width='100%' height='100%'>
           <feTurbulence type='fractalNoise' baseFrequency='.03 .006' numOctaves='3' seed='17'/>
@@ -257,7 +261,14 @@ variable(
       </defs>
       <rect x='4' y='6' width='172' height='152' rx='3' fill='url(#tin)'/>
       <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#lime)'/>
-      <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#rust)' opacity='.45'/>
+      <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#chips)' opacity='.75'/>
+      <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#rust)' opacity='.3'/>
+      <!-- the oil company's print, ghosting through the lime -->
+      <g opacity='.16' font-family='Georgia, serif' text-anchor='middle'>
+        <rect x='34' y='70' width='112' height='28' rx='3' fill='none' stroke='#1f4f8f' stroke-width='2'/>
+        <text x='90' y='89' font-size='15' letter-spacing='1.5' fill='#1f4f8f'>ΕΛΑΙΟΛΑΔΟ</text>
+        <text x='90' y='120' font-size='9' letter-spacing='3' fill='#a8312a'>ΚΡΗΤΗΣ · 17 KG</text>
+      </g>
       <!-- rust weeping from the rim and the base seam -->
       <path d='M30 10 q2 18 -1 34 q-2 8 1 12' stroke='#8a4a22' stroke-opacity='.22' stroke-width='2.4' fill='none' stroke-linecap='round'/>
       <path d='M131 10 q-1 12 2 22' stroke='#8a4a22' stroke-opacity='.18' stroke-width='2' fill='none' stroke-linecap='round'/>
@@ -436,10 +447,11 @@ for (let v = 0; v < 2; v++) {
   for (const a of [-Math.PI / 2, -Math.PI / 2 - 2.09, -Math.PI / 2 + 2.09, -Math.PI / 2 - 1.05, -Math.PI / 2 + 1.05]) {
     veins += `<path d='M${cx} ${cy} L${f(cx + Math.cos(a) * R * 0.78 * 1.08)} ${f(cy + Math.sin(a) * R * 0.78 * 0.82)}' stroke='#dfe8cc' stroke-width='.9' stroke-opacity='.65'/>`
   }
-  sprite(`melon-leaf-${v}`, W, H, leafDefs('m', '#9ab47c', '#4d6e3c', { hair: 0.25 }), `
-    <path d='${smooth(outline.filter((_, i) => i % 2 === 0), 0.6)}' fill='url(#m)' stroke='#3b5a2c' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${smooth(outline.filter((_, i) => i % 2 === 0), 0.6)}' fill='#fff' filter='url(#mh)' opacity='.3'/>
-    ${veins}`)
+  const blade = smooth(outline.filter((_, i) => i % 2 === 0), 0.6)
+  sprite(`melon-leaf-${v}`, W, H, leafDefs('m', '#9ab47c', '#4d6e3c', { hair: 0.25 }) + `<clipPath id='blade'><path d='${blade}'/></clipPath>`, `
+    <path d='${blade}' fill='url(#m)' stroke='#3b5a2c' stroke-width='.6' stroke-opacity='.5'/>
+    <path d='${blade}' fill='#fff' filter='url(#mh)' opacity='.3'/>
+    <g clip-path='url(#blade)'>${veins}</g>`)
 }
 
 // Basil: ovate, cupped and glossy, with arched side veins.
@@ -547,36 +559,43 @@ single('squash-flower', 28, 28, `<radialGradient id='p' cx='.5' cy='.5' r='.55'>
     <circle cx='11' cy='69' r='1.6' fill='#d9c66a' opacity='.8'/>`)
 }
 
-// Watermelon: irregular dark stripes over pale green, a yellow ground spot and
-// a dull bloom across the rind.
+// Watermelon: dark green bands running pole to pole, their edges torn into
+// the jagged flames of a Crimson Sweet by displacing them with noise, over a
+// pale rind with a dull bloom and the yellow spot it lay on.
 {
-  const r = rng(700)
   const W = 132, H = 86, cx = 66, cy = 44, rx = 62, ry = 39
   let stripes = ''
-  for (let k = -6; k <= 6; k++) {
-    const offset = (k / 6.4) * ry
-    const wobble = (x) => Math.sin(x * 0.09 + k * 1.7) * 2.4 + Math.sin(x * 0.23 + k) * 0.8
+  for (let k = -7; k <= 7; k++) {
+    // Each band follows a line of longitude: squeezed together near the poles.
+    const offset = (k / 7.2) * ry
     const top = [], bottom = []
-    for (let x = 0; x <= W; x += 3) {
-      const curve = offset * Math.sqrt(Math.max(0, 1 - Math.pow((x - cx) / rx, 2)))
-      const width = (1.9 + Math.sin(x * 0.13 + k) * 0.7 + r() * 0.9) * (0.5 + 0.5 * Math.sqrt(Math.max(0, 1 - Math.pow((x - cx) / rx, 2))))
-      top.push([x, cy + curve + wobble(x) - width])
-      bottom.push([x, cy + curve + wobble(x) + width])
+    for (let x = cx - rx - 4; x <= cx + rx + 4; x += 2) {
+      const lat = Math.sqrt(Math.max(0, 1 - Math.pow((x - cx) / rx, 2)))
+      const width = 1.55 * (0.3 + 0.7 * lat)
+      top.push([x, cy + offset * lat - width])
+      bottom.push([x, cy + offset * lat + width])
     }
-    stripes += `<path d='M${pts(top)} L${pts(bottom.reverse())}Z' fill='#1f4a1b'/>`
+    stripes += `<path d='M${pts(top)} L${pts(bottom.reverse())}Z'/>`
   }
   single('melon', W, H, `
     <clipPath id='e'><ellipse cx='${cx}' cy='${cy}' rx='${rx}' ry='${ry}'/></clipPath>
-    <radialGradient id='shade' cx='.38' cy='.3' r='.85'><stop offset='0' stop-color='#fff' stop-opacity='.28'/><stop offset='.45' stop-color='#fff' stop-opacity='0'/><stop offset='.8' stop-color='#0b1d08' stop-opacity='.25'/><stop offset='1' stop-color='#0b1d08' stop-opacity='.5'/></radialGradient>
-    <filter id='bloom' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.06' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .8  0 0 0 0 .86  0 0 0 0 .72  0 0 0 -2 1.1'/></filter>`, `
+    <filter id='flame' x='-5%' y='-5%' width='110%' height='110%'>
+      <feTurbulence type='fractalNoise' baseFrequency='.09 .35' numOctaves='3' seed='12' result='n'/>
+      <feDisplacementMap in='SourceGraphic' in2='n' scale='4.5' xChannelSelector='R' yChannelSelector='G'/>
+    </filter>
+    <radialGradient id='shade' cx='.36' cy='.28' r='.86'><stop offset='0' stop-color='#fff' stop-opacity='.3'/><stop offset='.42' stop-color='#fff' stop-opacity='0'/><stop offset='.78' stop-color='#0b1d08' stop-opacity='.28'/><stop offset='1' stop-color='#0b1d08' stop-opacity='.55'/></radialGradient>
+    <filter id='bloom' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .82  0 0 0 0 .87  0 0 0 0 .74  0 0 0 -2 1.1'/></filter>
+    <filter id='speck' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='6'/><feColorMatrix values='0 0 0 0 .1  0 0 0 0 .22  0 0 0 0 .08  0 0 0 -9 4.4'/></filter>`, `
     <g clip-path='url(#e)'>
-      <rect width='${W}' height='${H}' fill='#7fa95a'/>
-      ${stripes}
-      <rect width='${W}' height='${H}' filter='url(#bloom)' opacity='.35'/>
-      <ellipse cx='${cx + 8}' cy='${cy + ry - 4}' rx='26' ry='8' fill='#e8d27a' opacity='.75'/>
+      <rect width='${W}' height='${H}' fill='#9cc274'/>
+      <g fill='#1e4719' filter='url(#flame)'>${stripes}</g>
+      <rect width='${W}' height='${H}' filter='url(#speck)' opacity='.35'/>
+      <rect width='${W}' height='${H}' filter='url(#bloom)' opacity='.32'/>
+      <ellipse cx='${cx + 10}' cy='${cy + ry - 3}' rx='30' ry='9' fill='#e2cc78' opacity='.7' filter='url(#flame)'/>
       <rect width='${W}' height='${H}' fill='url(#shade)'/>
     </g>
-    <ellipse cx='${cx - 22}' cy='${cy - 20}' rx='16' ry='6' fill='#fff' opacity='.18' transform='rotate(-14 ${cx - 22} ${cy - 20})'/>`)
+    <ellipse cx='${cx - 22}' cy='${cy - 21}' rx='18' ry='6' fill='#fff' opacity='.2' transform='rotate(-12 ${cx - 22} ${cy - 21})'/>
+    <path d='M${cx + rx - 3} ${cy - 3} q5 -1 7 -6' stroke='#5b7a34' stroke-width='2' fill='none' stroke-linecap='round'/>`)
 }
 
 // Geranium umbel: a dome of five-petalled florets in coral and scarlet, with a few buds.
@@ -604,23 +623,30 @@ single('squash-flower', 28, 28, `<radialGradient id='p' cx='.5' cy='.5' r='.55'>
   single('bloom', W, H, '', `<ellipse cx='32' cy='36' rx='20' ry='12' fill='#5a1810' opacity='.25'/>${florets}`)
 }
 
-// Bamboo cane: tapered, with nodes, fibre lines and soil at the foot.
-{
-  const W = 14, H = 420
-  let nodes = ''
-  for (let y = 46; y < H - 20; y += 68 + (y % 7)) {
-    nodes += `<rect x='0' y='${y}' width='${W}' height='3.2' rx='1.4' fill='url(#node)'/><rect x='1' y='${y + 3.2}' width='${W - 2}' height='1.2' fill='#fff' opacity='.35'/>`
-  }
-  single('cane', W, H, `
+// Bamboo cane: one internode, node at the foot, tiled up the cane so nodes
+// stay evenly spaced however long the cane is drawn.
+variable('kipos-cane', uri(14, 72, `
+  <defs>
     <linearGradient id='c' x1='0' x2='1'><stop offset='0' stop-color='#8f7442'/><stop offset='.28' stop-color='#d9c189'/><stop offset='.42' stop-color='#efdeaf'/><stop offset='.7' stop-color='#bfa064'/><stop offset='1' stop-color='#7d6337'/></linearGradient>
-    <linearGradient id='node' x1='0' x2='1'><stop offset='0' stop-color='#6e5530'/><stop offset='.4' stop-color='#a88a50'/><stop offset='1' stop-color='#5f4828'/></linearGradient>
-    <linearGradient id='foot' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#3b2616' stop-opacity='0'/><stop offset='1' stop-color='#3b2616' stop-opacity='.75'/></linearGradient>`, `
-    <path d='M2 2 Q7 0 12 2 L13 ${H} L1 ${H}Z' fill='url(#c)'/>
-    <path d='M4.5 4 L4 ${H} M9.5 4 L10 ${H}' stroke='#7a6136' stroke-width='.4' opacity='.35'/>
-    ${nodes}
-    <rect x='0' y='${H - 26}' width='${W}' height='26' fill='url(#foot)'/>
-    <ellipse cx='7' cy='3' rx='5' ry='1.6' fill='#6e5530'/>`)
-}
+    <linearGradient id='node' x1='0' x2='1'><stop offset='0' stop-color='#6e5530'/><stop offset='.4' stop-color='#b49558'/><stop offset='1' stop-color='#5f4828'/></linearGradient>
+    <linearGradient id='swell' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#000' stop-opacity='0'/><stop offset='.86' stop-color='#000' stop-opacity='0'/><stop offset='.93' stop-color='#3a2a14' stop-opacity='.18'/><stop offset='1' stop-color='#000' stop-opacity='0'/></linearGradient>
+  </defs>
+  <rect width='14' height='72' fill='url(#c)'/>
+  <path d='M4.5 0 L4.3 72 M9.5 0 L9.7 72' stroke='#7a6136' stroke-width='.4' opacity='.3'/>
+  <rect width='14' height='72' fill='url(#swell)'/>
+  <rect x='0' y='66' width='14' height='3.4' rx='1.4' fill='url(#node)'/>
+  <rect x='1' y='69.4' width='12' height='1.1' fill='#fff' opacity='.32'/>`))
+
+// A watermelon vine trailing along the soil and over the front of the bed,
+// with curling tendrils. Drawn from its root at the top left.
+single('melon-vine', 170, 180, `
+  <linearGradient id='v' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#7aa257'/><stop offset='1' stop-color='#4c7535'/></linearGradient>`, `
+  <path d='M2 10 C40 6 80 16 118 14 C146 13 156 22 154 44 C152 70 146 92 150 118 C153 140 148 160 152 178' stroke='#3f6a2c' stroke-width='5.2' fill='none' stroke-linecap='round'/>
+  <path d='M2 10 C40 6 80 16 118 14 C146 13 156 22 154 44 C152 70 146 92 150 118 C153 140 148 160 152 178' stroke='url(#v)' stroke-width='3.6' fill='none' stroke-linecap='round'/>
+  <path d='M3 9 C40 5 80 15 118 13' stroke='#c4dd9e' stroke-width='.8' fill='none' opacity='.6'/>
+  <path d='M86 14 c4 -10 14 -10 14 -2 c0 6 -8 6 -7 0' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>
+  <path d='M152 62 c10 2 12 12 4 14 c-5 1 -6 -5 -1 -6' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>
+  <path d='M149 128 c-10 0 -12 10 -5 12 c5 1 6 -4 1 -5' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>`)
 
 // Rag ties: strips of old cotton knotted round the cane.
 single('tie-cream', 26, 14, '', `

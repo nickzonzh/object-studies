@@ -22,7 +22,7 @@ function spriteFor(part: Part, crop: CropId): string {
   const dir = part.side < 0 ? 'l' : 'r'
   switch (part.kind) {
     case 'cane':
-      return 'kipos-sprite--cane'
+      return 'kipos-cane'
     case 'tie':
       return part.variant ? 'kipos-sprite--tie-blue' : 'kipos-sprite--tie-cream'
     case 'cotyledon':
@@ -47,12 +47,16 @@ function spriteFor(part: Part, crop: CropId): string {
       return 'kipos-sprite--melon'
     case 'bloom':
       return 'kipos-sprite--bloom'
+    case 'vine':
+      return 'kipos-sprite--melon-vine'
     default:
       return ''
   }
 }
 
-function partStyle(part: Part, progress: number): CSSProperties | null {
+const LEAVES = new Set(['leaf', 'vine-leaf', 'melon-leaf', 'basil-leaf', 'round-leaf'])
+
+function partStyle(part: Part, progress: number, index: number): CSSProperties | null {
   if (progress < part.at) return null
   const [ax, ay] = part.anchor
   const style: Record<string, string | number> = {
@@ -65,11 +69,14 @@ function partStyle(part: Part, progress: number): CSSProperties | null {
     '--side': part.side,
   }
   if (part.grows) {
-    style['--grow'] = Math.max(0.04, step((progress - part.at) / Math.max(0.05, 0.78 - part.at)))
+    const span = part.span ?? Math.max(0.05, 0.78 - part.at)
+    style['--grow'] = Math.max(0.04, step((progress - part.at) / span))
   } else {
     // Parts set at sowing (canes, twine) are simply there.
     style['--s'] = part.at === 0 ? 1 : step((progress - part.at) / 0.06)
   }
+  // Leaves further back sit in each other's shade; no two quite match.
+  if (LEAVES.has(part.kind)) style['--shade'] = (0.84 + ((index * 53) % 17) / 100 + (part.z ? 0.07 : 0)).toFixed(2)
   if (part.ripeAt !== undefined) {
     const span = Math.max(0.01, part.ripeAt - part.at)
     style['--size'] = 0.3 + 0.7 * step((progress - part.at) / span)
@@ -86,9 +93,9 @@ export const Plant = memo(function Plant({ crop, progress, wilted, seed }: Plant
       <i className="kipos-plant__shadow" style={{ '--spread': step(progress) } as CSSProperties} />
       <i className="kipos-plant__mound" />
       {parts.map((part, index) => {
-        const style = partStyle(part, progress)
+        const style = partStyle(part, progress, index)
         if (!style) return null
-        const across = part.grows && part.w > part.h ? ' kipos-part--across' : ''
+        const across = part.grows && part.kind !== 'vine' && part.w > part.h ? ' kipos-part--across' : ''
         return <i key={index} className={`kipos-part kipos-part--${part.kind}${across} ${spriteFor(part, crop)}`} style={style} />
       })}
     </span>
