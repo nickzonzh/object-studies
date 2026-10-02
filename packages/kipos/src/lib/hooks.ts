@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** The time an action happens. Kept out of render so a render never reads the clock. */
 export const actionTime = () => Date.now()
@@ -54,9 +54,10 @@ export function useStoredDocument<T>(store: Persistence<T> | null, initial: () =
     dirty.current = false
     store?.save(value)
   }, [store, value])
-  const update = (next: (current: T) => T) => {
+  // Stable, so effects can depend on it.
+  const update = useCallback((next: (current: T) => T) => {
     dirty.current = true
     setValue(next)
-  }
+  }, [])
   return [value, update] as const
 }

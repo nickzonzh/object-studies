@@ -1,6 +1,6 @@
 import { type CSSProperties, type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { type CropId, gardenHours, harvest, readPlanting, sow, water } from '../lib/garden.js'
-import { type BedDocument, bedStore, emptyBed } from '../lib/documents.js'
+import { type BedDocument, bedStore, emptyBed, rescaleBed } from '../lib/documents.js'
 import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { type KiposLabelOverrides, type KiposLabels, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
@@ -55,6 +55,8 @@ export function Bed({
   const store = useMemo(() => (key === null ? null : bedStore(key)), [key])
   const [bed, update] = useStoredDocument(store, emptyBed)
   const now = useGardenClock(speed)
+  // Times are kept at the speed they ran at; a new speed keeps the garden hours already passed.
+  useEffect(() => update((current) => rescaleBed(current, actionTime(), speed)), [bed.speed, speed, update])
   const [hand, setHand] = useState<Hand>(null)
   const [message, setMessage] = useState('')
   const [pouring, setPouring] = useState<{ plot: number; id: number } | null>(null)
@@ -77,6 +79,7 @@ export function Bed({
     const planting = bed.plots[index]
     const setPlot = (next: (typeof bed.plots)[number], picked = 0) =>
       update((current) => ({
+        ...current,
         startedAt: current.startedAt ?? t,
         plots: current.plots.map((p, i) => (i === index ? next : p)),
         picked: current.picked + picked,

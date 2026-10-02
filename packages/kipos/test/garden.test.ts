@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { CROPS, MOIST_HOURS, harvest, readPlanting, sow, stageFor, water } from '../src/lib/garden.js'
-import { bedStore, emptyBed, tenekeStore } from '../src/lib/documents.js'
+import { CROPS, MOIST_HOURS, harvest, readPlanting, rescale, sow, stageFor, water } from '../src/lib/garden.js'
+import { bedStore, emptyBed, rescaleBed, tenekeStore } from '../src/lib/documents.js'
 import type { StorageLike } from 'object-studies-core'
 
 const HOUR = 3_600_000
@@ -57,7 +57,47 @@ test('winding the clock back neither grows nor shrinks a plant', () => {
   const planting = water(sow('tomato', T0), T0 + 10 * HOUR)
   const before = readPlanting(planting, T0 + 10 * HOUR).progress
   assert.equal(readPlanting(planting, T0 - 50 * HOUR).progress, before)
-  assert.equal(water(planting, T0), planting)
+})
+
+test('watering still works after the clock is corrected back past the last watering', () => {
+  // Watered while the clock ran a month fast, then the clock was fixed.
+  const fast = T0 + 30 * 24 * HOUR
+  const planting = water(sow('tomato', T0), fast)
+  const banked = readPlanting(planting, fast).progress
+  const corrected = T0 + 2 * HOUR
+  const rewatered = water(planting, corrected)
+  assert.equal(rewatered.wateredAt, corrected)
+  assert.ok(rewatered.plantedAt <= rewatered.wateredAt, 'stays a valid document')
+  assert.equal(readPlanting(rewatered, corrected).progress, banked, 'nothing banked for future time')
+  assert.ok(readPlanting(rewatered, corrected + 10 * HOUR).progress > banked, 'and it grows again')
+})
+
+test('changing speed keeps the garden hours already passed', () => {
+  // Thirty real seconds at a day a minute is twelve garden hours.
+  const planting = sow('tomato', T0)
+  const at = T0 + 30_000
+  const before = readPlanting(planting, at, 1440)
+  const slowed = rescale(planting, at, 1440, 1)
+  const after = readPlanting(slowed, at, 1)
+  assert.ok(Math.abs(after.progress - before.progress) < 1e-6)
+  assert.ok(Math.abs(after.moisture - before.moisture) < 1e-6)
+  // And from there it runs at the new speed.
+  assert.ok(Math.abs(readPlanting(slowed, at + HOUR, 1).progress - (13 / CROPS.tomato.growHours)) < 1e-6)
+})
+
+test('a bed rescales its day count with its plots', () => {
+  const at = T0 + 60_000
+  const bed = { ...emptyBed(), startedAt: T0, plots: [sow('tomato', T0), null, null], speed: 1440 }
+  const slowed = rescaleBed(bed, at, 1)
+  assert.equal(slowed.speed, 1)
+  assert.equal(slowed.startedAt, at - 24 * HOUR)
+  assert.equal(rescaleBed(slowed, at, 1), slowed)
+})
+
+test('documents saved before speed was stored load at real time', () => {
+  const storage = memoryStorage()
+  storage.data.set('bed', JSON.stringify({ version: 1, startedAt: null, plots: [null, null, null], picked: 0 }))
+  assert.equal(createBedStore(storage).load().value?.speed, 1)
 })
 
 test('stages follow progress', () => {
@@ -104,7 +144,7 @@ const memoryStorage = (): StorageLike & { data: Map<string, string> } => {
 
 test('a bed round-trips through storage', () => {
   const storage = memoryStorage()
-  const bed = { ...emptyBed(), startedAt: T0, plots: [sow('tomato', T0), null, sow('watermelon', T0)], picked: 3 }
+  const bed = { ...emptyBed(), startedAt: T0, plots: [sow('tomato', T0), null, sow('watermelon', T0)], picked: 3, speed: 60 }
   const persisted = createBedStore(storage)
   assert.equal(persisted.save(bed), 'saved')
   assert.deepEqual(persisted.load(), { value: bed, status: 'saved' })
@@ -131,7 +171,7 @@ test('a teneke only takes its own plants', () => {
   const persisted = tenekeStore('tin', () => storage)
   storage.data.set('tin', JSON.stringify({ version: 1, planting: { crop: 'tomato', plantedAt: T0, wateredAt: T0, growth: 0 }, picked: 0 }))
   assert.equal(persisted.load().status, 'invalid')
-  const basil = { planting: sow('basil', T0), picked: 1 }
+  const basil = { planting: sow('basil', T0), picked: 1, speed: 1 }
   persisted.save(basil)
   assert.deepEqual(persisted.load().value, basil)
 })
