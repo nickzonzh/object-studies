@@ -1,6 +1,6 @@
 # Object Studies
 
-An open-source npm monorepo of React 19 components that behave like the physical objects they're named after. The packages are kimolia (chalkboard), melani (whiteboard), korniza (gallery frames), keramos (painted pottery) and kollaz (craft table). They share an engine, `object-studies-core`, which handles tool motion, gesture history, persistence, seeded randomness and cooperative scheduling. A demo site lives in `apps/site` and deploys to GitHub Pages.
+An open-source npm monorepo of React 19 components that behave like the physical objects they're named after. The packages are kimolia (chalkboard), melani (whiteboard), korniza (gallery frames), keramos (painted pottery), kollaz (craft table) and kipos (garden bed). They share an engine, `object-studies-core`, which handles tool motion, gesture history, persistence, seeded randomness and cooperative scheduling. A demo site lives in `apps/site` and deploys to GitHub Pages.
 
 The standalone `kimolia`, `korniza`, `Aspro`, `keramos` and `aspro-craft` repos are predecessors. New work happens here.
 

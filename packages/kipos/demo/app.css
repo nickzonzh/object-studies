@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=GFS+Didot&display=swap');
+
+:root {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #3a2e22;
+  background: #efe8db;
+  color-scheme: light;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 28% 18%, #f8f4eb 0%, rgba(248, 244, 235, 0) 45%),
+    radial-gradient(ellipse at 78% 80%, #e6ddcc 0%, rgba(230, 221, 204, 0) 50%),
+    #efe8db;
+}
+
+.app-shell {
+  width: min(1040px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 80px;
+}
+
+.app-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.14em; color: #8a7358; }
+h1, h2 { margin: 0; font-family: 'GFS Didot', Georgia, serif; font-weight: 400; }
+h1 { font-size: clamp(30px, 5vw, 46px); }
+h2 { font-size: 28px; }
+.app-note { max-width: 420px; margin: 0; font-size: 15px; line-height: 1.5; color: #6b5a47; }
+
+.controls { display: flex; gap: 16px; margin-bottom: 20px; font-size: 14px; color: #6b5a47; }
+.controls label { display: flex; align-items: center; gap: 8px; }
+.controls select { min-height: 36px; padding: 4px 8px; font: inherit; border: 1px solid #c9b99c; border-radius: 6px; background: #f8f3ea; }
+
+.tins { margin-top: 64px; }
+.tins__row { display: flex; gap: 48px; margin-top: 24px; flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .app-header { flex-direction: column; align-items: start; }
+}
