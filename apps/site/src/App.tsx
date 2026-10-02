@@ -3,6 +3,7 @@ import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, type FrameMat, type FrameVariant, frameVariants } from 'korniza'
 import { Vase, type GreekPaletteId, type IkarosPaletteId, type ShapeId, type StyleId } from 'keramos'
 import { CraftTable } from 'kollaz'
+import { Bed, Teneke } from 'kipos'
 import { type ReactNode, useState } from 'react'
 
 const repo = 'https://github.com/nickzonzh/object-studies'
@@ -33,6 +34,7 @@ export function App() {
             <a href="#wall">Gallery wall</a>
             <a href="#keramos">Keramos</a>
             <a href="#kollaz">Kollaz</a>
+            <a href="#kipos">Kipos</a>
           </nav>
         </header>
 
@@ -99,6 +101,23 @@ export function App() {
           <CraftTable />
         </Study>
 
+        <Study
+          id="kipos"
+          number="06"
+          name="Kipos"
+          greek="κήπος"
+          meaning="garden"
+          summary="A raised stone bed in yiayia's yard, and whitewashed oil tins for the windowsill. Plants grow over real days while their soil is wet, wilt when you forget them and perk up when you water. Come back tomorrow."
+        >
+          <div className="site-kipos">
+            <Bed persistence={{ key: 'object-studies:kipos' }} />
+            <div className="site-kipos-tins">
+              <Teneke plant="basil" showStatus persistence={{ key: 'object-studies:kipos:basil' }} />
+              <Teneke plant="geranium" showStatus persistence={{ key: 'object-studies:kipos:geranium' }} />
+            </div>
+          </div>
+        </Study>
+
         <footer className="site-footer">
           <span>MIT licensed.</span>
           <a href={repo}>Source on GitHub</a>
@@ -109,7 +128,7 @@ export function App() {
 }
 
 type StudyProps = {
-  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz'
+  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz' | 'kipos'
   number: string
   name: string
   greek: string
