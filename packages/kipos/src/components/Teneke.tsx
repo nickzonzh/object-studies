@@ -1,6 +1,6 @@
 import { type CSSProperties, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { harvest, readPlanting, sow, water } from '../lib/garden.js'
-import { emptyTeneke, tenekeStore } from '../lib/documents.js'
+import { emptyTeneke, rescaleTeneke, tenekeStore } from '../lib/documents.js'
 import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { type KiposLabelOverrides, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
@@ -47,6 +47,8 @@ export function Teneke({
   const store = useMemo(() => (key === null ? null : tenekeStore(key)), [key])
   const [tin, update] = useStoredDocument(store, emptyTeneke)
   const now = useGardenClock(speed)
+  // Times are kept at the speed they ran at; a new speed keeps the garden hours already passed.
+  useEffect(() => update((current) => rescaleTeneke(current, actionTime(), speed)), [tin.speed, speed, update])
   const [message, setMessage] = useState('')
   const [pourId, setPourId] = useState<number | null>(null)
   const pourTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -79,7 +81,7 @@ export function Teneke({
     if (!planting) return
     const kept = harvest(planting, actionTime(), speed)
     if (kept === planting) return
-    update((current) => ({ planting: kept, picked: current.picked + 1 }))
+    update((current) => ({ ...current, planting: kept, picked: current.picked + 1 }))
     setMessage(labels.pinched)
   }
 

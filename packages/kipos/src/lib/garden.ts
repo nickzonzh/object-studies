@@ -79,11 +79,36 @@ export function sow(crop: CropId, now: number): Planting {
   return { crop, plantedAt: now, wateredAt: now, growth: 0 }
 }
 
-/** Banks the wet time since the last watering and wets the soil again. */
+/**
+ * Banks the wet time since the last watering and wets the soil again. A last
+ * watering stamped in the future (the clock was set forward, then corrected)
+ * banks nothing but still moves the stamp to now, so watering keeps working.
+ */
 export function water(planting: Planting, now: number, speed = 1): Planting {
-  if (now <= planting.wateredAt) return planting
-  return { ...planting, growth: planting.growth + wetHours(planting, now, speed), wateredAt: now }
+  if (now === planting.wateredAt) return planting
+  return {
+    ...planting,
+    growth: planting.growth + wetHours(planting, now, speed),
+    plantedAt: Math.min(planting.plantedAt, now),
+    wateredAt: now,
+  }
 }
+
+/**
+ * Re-expresses a planting kept at one speed for another, so the garden hours
+ * already elapsed stay the same. Without it, switching speed would replay the
+ * time since the last watering at the new rate and lose (or invent) growth.
+ */
+export function rescale(planting: Planting, now: number, from: number, to: number): Planting {
+  if (from === to) return planting
+  const wateredAt = rescaleTime(planting.wateredAt, now, from, to)
+  return { ...planting, wateredAt, plantedAt: Math.min(rescaleTime(planting.plantedAt, now, from, to), wateredAt) }
+}
+
+/** The instant that is as many garden hours before `now` at speed `to` as `time` was at speed `from`. */
+export const rescaleTime = (time: number, now: number, from: number, to: number) =>
+  // Never earlier than 2000, the oldest instant a stored document may hold.
+  time >= now ? time : Math.max(946_684_800_000, Math.round(now - ((now - time) * from) / to))
 
 export function stageFor(progress: number): Stage {
   if (progress >= 1) return 'ripe'
