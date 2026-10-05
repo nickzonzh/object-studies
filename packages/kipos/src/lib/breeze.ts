@@ -11,10 +11,12 @@ export type Swing = 'gust' | 'brush' | 'shiver'
  * animation on the compositor; when it ends nothing is left running.
  */
 export function sway(holder: HTMLElement, swing: Swing, delay = 0) {
-  if (reducedMotion()) return
-  holder.style.setProperty('--sway-delay', `${delay}ms`)
+  const plant = holder.querySelector<HTMLElement>('.kipos-plant')
+  if (!plant || reducedMotion()) return
+  // Set on the plant itself, and not as a custom property, so nothing else is restyled.
+  plant.style.animationDelay = `${delay}ms`
   // Each swing has two identical copies; switching to the other restarts it.
-  holder.dataset.sway = `${swing}-${holder.dataset.sway?.endsWith('-a') ? 'b' : 'a'}`
+  plant.dataset.sway = `${swing}-${plant.dataset.sway?.endsWith('-a') ? 'b' : 'a'}`
 }
 
 /**

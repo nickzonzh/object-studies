@@ -4,7 +4,9 @@
  * Every rule is scoped to kipos classes; nothing here styles the page. Sizes are
  * in garden units (--kipos-u): a thousandth of a bed's width, or a 240th of a
  * tin's, so the whole object scales with the width it is given. The materials
- * and drawings themselves are baked SVG in art.css.
+ * and drawings themselves are in art.css, which sets each textured element's
+ * background-image; the rules here set only its size and position, so they
+ * use background longhands rather than the shorthand.
  */
 
 .kipos {
@@ -84,10 +86,15 @@
   width: calc(var(--kipos-u) * 920);
   height: calc(var(--kipos-u) * 18);
   border-radius: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) 0 0;
-  background:
-    linear-gradient(rgba(255, 250, 238, 0.45), rgba(255, 250, 238, 0) 40%, rgba(40, 28, 14, 0.25)),
-    var(--kipos-limestone) 0 0 / calc(var(--kipos-u) * 920);
+  background-size: calc(var(--kipos-u) * 920);
   filter: brightness(0.9);
+}
+.kipos-bed__back::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(255, 250, 238, 0.45), rgba(255, 250, 238, 0) 40%, rgba(40, 28, 14, 0.25));
 }
 
 .kipos-bed__soil {
@@ -96,7 +103,7 @@
   top: calc(var(--kipos-u) * 356);
   width: calc(var(--kipos-u) * 908);
   height: calc(var(--kipos-u) * 56);
-  background: var(--kipos-soil) 0 0 / calc(var(--kipos-u) * 200);
+  background-size: calc(var(--kipos-u) * 200);
   /* The walls shade the soil along the back and the ends. */
   box-shadow:
     inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(18, 10, 4, 0.55),
@@ -113,23 +120,27 @@
   height: calc(var(--kipos-u) * 104);
   overflow: hidden;
   border-radius: 0 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 4);
-  background: var(--kipos-mortar) 0 0 / calc(var(--kipos-u) * 160);
+  background-size: calc(var(--kipos-u) * 160);
   box-shadow: inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(20, 12, 4, 0.45);
 }
 
 .kipos-stone {
   position: absolute;
   background-color: #dccfb5;
-  background-image:
-    radial-gradient(ellipse 80% 70% at 30% 25%, rgba(255, 252, 242, 0.32), rgba(255, 252, 242, 0) 70%),
-    var(--kipos-limestone);
-  background-size: 100% 100%, calc(var(--kipos-u) * 360);
+  background-size: calc(var(--kipos-u) * 360);
   filter: brightness(var(--tone, 1));
   /* Lit from the upper left; each stone sits slightly proud of the mortar. */
   box-shadow:
     inset calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 2) rgba(255, 251, 240, 0.55),
     inset calc(var(--kipos-u) * -3) calc(var(--kipos-u) * -5) calc(var(--kipos-u) * 6) rgba(70, 52, 30, 0.38),
     calc(var(--kipos-u) * 1.5) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) rgba(30, 20, 8, 0.4);
+}
+.kipos-stone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 80% 70% at 30% 25%, rgba(255, 252, 242, 0.32), rgba(255, 252, 242, 0) 70%);
 }
 
 /* Capstones along the front edge, a little proud of the face below. */
@@ -140,7 +151,7 @@
   width: calc(var(--kipos-u) * 940);
   height: calc(var(--kipos-u) * 34);
   /* Mortar in the joints between capstones. */
-  background: var(--kipos-mortar) 0 0 / calc(var(--kipos-u) * 160);
+  background-size: calc(var(--kipos-u) * 160);
   border-radius: calc(var(--kipos-u) * 4);
 }
 
@@ -150,16 +161,20 @@
   height: 100%;
   border-radius: calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3);
   background-color: #e0d4bb;
-  background-image:
-    /* worn top face catching the light, then the front face turning away */
-    linear-gradient(rgba(255, 252, 244, 0.6) 0, rgba(255, 252, 244, 0.25) 28%, rgba(60, 42, 20, 0) 34%, rgba(60, 42, 20, 0.04) 60%, rgba(60, 42, 20, 0.2) 100%),
-    var(--kipos-limestone);
-  background-size: 100% 100%, calc(var(--kipos-u) * 360);
+  background-size: calc(var(--kipos-u) * 360);
   filter: brightness(var(--tone, 1));
   box-shadow:
     inset 0 calc(var(--kipos-u) * 1.5) 0 rgba(255, 255, 250, 0.7),
     inset calc(var(--kipos-u) * -2) 0 calc(var(--kipos-u) * 3) rgba(60, 42, 20, 0.25),
     0 calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) rgba(20, 12, 4, 0.45);
+}
+/* The worn top face catching the light, then the front face turning away. */
+.kipos-capstone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(255, 252, 244, 0.6) 0, rgba(255, 252, 244, 0.25) 28%, rgba(60, 42, 20, 0) 34%, rgba(60, 42, 20, 0.04) 60%, rgba(60, 42, 20, 0.2) 100%);
 }
 
 .kipos-trowel {
@@ -176,10 +191,17 @@
 /* A bamboo cane: internodes tiled up from the soil, darkened where it went in. */
 .kipos-cane {
   border-radius: 45% 45% calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1) / calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) 0 0;
-  background:
-    linear-gradient(rgba(59, 38, 22, 0) calc(100% - var(--kipos-u) * 26), rgba(59, 38, 22, 0.75)),
-    var(--kipos-cane) 0 100% / 100% calc(var(--kipos-u) * 72) repeat-y;
+  background-position: 0 100%;
+  background-size: 100% calc(var(--kipos-u) * 72);
+  background-repeat: repeat-y;
   box-shadow: inset 0 calc(var(--kipos-u) * 2) 0 rgba(110, 85, 48, 0.9);
+}
+.kipos-cane::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(59, 38, 22, 0) calc(100% - var(--kipos-u) * 26), rgba(59, 38, 22, 0.75));
 }
 
 /* ---------- Plots ---------- */
@@ -197,6 +219,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 .kipos-plot:focus-visible { outline: none; }
+/* The plot is the button; what is drawn in it never takes the pointer. Its own
+   cursor keeps a change to the plot's cursor from restyling the whole plant. */
+.kipos-plot > * { pointer-events: none; cursor: default; }
 
 /* Wet soil darkens from where the water lands; dry soil goes dusty. */
 .kipos-plot__soil {
@@ -232,7 +257,7 @@
 @media (hover: hover) {
   .kipos-bed--holding .kipos-plot:hover .kipos-plot__soil,
   .kipos-plot--ripe:hover .kipos-plot__soil {
-    box-shadow: 0 0 0 calc(var(--kipos-u) * 3) rgba(255, 244, 214, 0.5);
+    box-shadow: 0 0 calc(var(--kipos-u) * 18) calc(var(--kipos-u) * 4) rgba(255, 238, 200, 0.28);
   }
 }
 
@@ -304,18 +329,17 @@
 /* A breeze: the plant leans and swings back, its tip travelling furthest. A
    gust is the full swing; a plant brushed in passing, or watered, swings less.
    The keyframes hold plain numbers so the swing runs on the compositor. */
-[data-sway] > .kipos-plant {
+.kipos-plant[data-sway] {
   animation-duration: 3.8s;
   animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
-  animation-delay: var(--sway-delay, 0ms);
   animation-fill-mode: both;
 }
-[data-sway='gust-a'] > .kipos-plant { animation-name: kipos-sway-gust-a; }
-[data-sway='gust-b'] > .kipos-plant { animation-name: kipos-sway-gust-b; }
-[data-sway='brush-a'] > .kipos-plant { animation-name: kipos-sway-brush-a; }
-[data-sway='brush-b'] > .kipos-plant { animation-name: kipos-sway-brush-b; }
-[data-sway='shiver-a'] > .kipos-plant { animation-name: kipos-sway-shiver-a; }
-[data-sway='shiver-b'] > .kipos-plant { animation-name: kipos-sway-shiver-b; }
+.kipos-plant[data-sway='gust-a'] { animation-name: kipos-sway-gust-a; }
+.kipos-plant[data-sway='gust-b'] { animation-name: kipos-sway-gust-b; }
+.kipos-plant[data-sway='brush-a'] { animation-name: kipos-sway-brush-a; }
+.kipos-plant[data-sway='brush-b'] { animation-name: kipos-sway-brush-b; }
+.kipos-plant[data-sway='shiver-a'] { animation-name: kipos-sway-shiver-a; }
+.kipos-plant[data-sway='shiver-b'] { animation-name: kipos-sway-shiver-b; }
 @keyframes kipos-sway-gust-a {
   0%, 100% { transform: none; }
   16% { transform: skewX(-2.6deg); }
@@ -428,10 +452,15 @@
   width: calc(var(--kipos-u) * 52);
   height: calc(var(--kipos-u) * 13);
   border-radius: 50% 50% 46% 46%;
-  background:
-    radial-gradient(ellipse 60% 70% at 40% 25%, rgba(255, 220, 180, 0.22), rgba(255, 220, 180, 0) 70%),
-    var(--kipos-soil) 0 0 / calc(var(--kipos-u) * 120);
+  background-size: calc(var(--kipos-u) * 120);
   box-shadow: 0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) rgba(16, 9, 3, 0.4);
+}
+.kipos-plant__mound::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 60% 70% at 40% 25%, rgba(255, 220, 180, 0.22), rgba(255, 220, 180, 0) 70%);
 }
 
 .kipos-part {
@@ -491,7 +520,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--kipos-tomato-red) 0 0 / 100% 100% no-repeat;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
   opacity: var(--ripe, 0);
   transition: opacity 1200ms ease;
 }
@@ -510,18 +540,44 @@
 .kipos-pour i {
   position: absolute;
   top: 0;
-  width: calc(var(--kipos-u) * 4);
-  height: calc(var(--kipos-u) * 16);
+  width: calc(var(--kipos-u) * 5);
+  height: calc(var(--kipos-u) * 20);
   border-radius: 50%;
-  background: linear-gradient(rgba(220, 238, 250, 0), rgba(200, 228, 246, 0.85) 70%, rgba(255, 255, 255, 0.95));
+  /* A drop catching the light: clear, with a darker edge so it reads against pale ground. */
+  background: linear-gradient(rgba(170, 205, 228, 0), rgba(150, 192, 222, 0.75) 62%, rgba(255, 255, 255, 0.95) 88%, rgba(120, 165, 195, 0.8));
   opacity: 0;
   animation: kipos-drop 620ms cubic-bezier(0.5, 0, 0.9, 0.6) 2;
 }
-.kipos-pour i:nth-child(1) { left: calc(var(--kipos-u) * -40); animation-delay: 0ms; }
-.kipos-pour i:nth-child(2) { left: calc(var(--kipos-u) * -16); animation-delay: 140ms; }
-.kipos-pour i:nth-child(3) { left: calc(var(--kipos-u) * 6); animation-delay: 60ms; }
-.kipos-pour i:nth-child(4) { left: calc(var(--kipos-u) * 26); animation-delay: 200ms; }
-.kipos-pour i:nth-child(5) { left: calc(var(--kipos-u) * 44); animation-delay: 100ms; }
+/* The first drops leave the rose as the can tips over the plant. */
+.kipos-pour i:nth-child(1) { left: calc(var(--kipos-u) * -40); animation-delay: 220ms; }
+.kipos-pour i:nth-child(2) { left: calc(var(--kipos-u) * -16); animation-delay: 360ms; }
+.kipos-pour i:nth-child(3) { left: calc(var(--kipos-u) * 6); animation-delay: 280ms; }
+.kipos-pour i:nth-child(4) { left: calc(var(--kipos-u) * 26); animation-delay: 420ms; }
+.kipos-pour i:nth-child(5) { left: calc(var(--kipos-u) * 44); animation-delay: 320ms; }
+.kipos-pour i:nth-child(6) { left: calc(var(--kipos-u) * -28); animation-delay: 480ms; }
+.kipos-pour i:nth-child(7) { left: calc(var(--kipos-u) * 16); animation-delay: 250ms; }
+.kipos-pour i:nth-child(8) { left: calc(var(--kipos-u) * 34); animation-delay: 540ms; }
+
+/* Seed tipped from a packet: a few pale seeds dropping a short way to the soil. */
+.kipos-pour--seeds { bottom: calc(var(--kipos-u) * 92); }
+.kipos-pour--seeds i {
+  width: calc(var(--kipos-u) * 3.4);
+  height: calc(var(--kipos-u) * 4.6);
+  background: radial-gradient(circle at 35% 30%, #f4e7c4, #c8ad78 70%);
+  animation-name: kipos-seed;
+  animation-iteration-count: 1;
+}
+.kipos-pour--seeds i:nth-child(1) { left: calc(var(--kipos-u) * -10); }
+.kipos-pour--seeds i:nth-child(2) { left: calc(var(--kipos-u) * -4); }
+.kipos-pour--seeds i:nth-child(3) { left: calc(var(--kipos-u) * 2); }
+.kipos-pour--seeds i:nth-child(4) { left: calc(var(--kipos-u) * 7); }
+.kipos-pour--seeds i:nth-child(5) { left: calc(var(--kipos-u) * -1); }
+.kipos-pour--seeds i:nth-child(n + 6) { display: none; }
+@keyframes kipos-seed {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: 1; }
+  100% { opacity: 0.6; transform: translateY(calc(var(--kipos-u) * 64)); }
+}
 
 @keyframes kipos-drop {
   0% { opacity: 0; transform: translateY(0); }
@@ -540,12 +596,14 @@
   gap: calc(var(--kipos-u) * 1);
   padding: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 7) calc(var(--kipos-u) * 22);
   border-radius: calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 3);
-  background:
-    linear-gradient(rgba(255, 240, 210, 0.25), rgba(90, 60, 20, 0.12)),
-    var(--kipos-paper) 0 0 / calc(var(--kipos-u) * 160);
+  background-size: calc(var(--kipos-u) * 160);
   background-color: #cfae78;
-  background-blend-mode: normal, multiply;
-  box-shadow: 0 calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) rgba(40, 24, 8, 0.4);
+  background-blend-mode: multiply;
+  /* Light catching the top of the card, the bottom turning away. */
+  box-shadow:
+    inset 0 calc(var(--kipos-u) * 7) calc(var(--kipos-u) * 8) rgba(255, 240, 210, 0.22),
+    inset 0 calc(var(--kipos-u) * -6) calc(var(--kipos-u) * 8) rgba(90, 60, 20, 0.14),
+    0 calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) rgba(40, 24, 8, 0.4);
   transform: rotate(-5deg);
   transform-origin: 6% 50%;
   font-family: 'Courier New', ui-monospace, monospace;
@@ -609,13 +667,20 @@
   height: calc(var(--kipos-u) * 88);
   border-radius: calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 14);
   pointer-events: none;
-  background:
-    linear-gradient(rgba(255, 236, 200, 0.28), rgba(255, 236, 200, 0) 12%, rgba(0, 0, 0, 0) 70%, rgba(48, 26, 8, 0.1) 74%, rgba(255, 230, 190, 0.18) 78%, rgba(48, 26, 8, 0.3) 92%, rgba(30, 16, 4, 0.5) 100%),
-    var(--kipos-olive) 0 0 / calc(var(--kipos-u) * 900) calc(var(--kipos-u) * 280);
+  background-size: calc(var(--kipos-u) * 900) calc(var(--kipos-u) * 280);
   box-shadow:
     inset 0 calc(var(--kipos-u) * 1.5) 0 rgba(255, 240, 210, 0.55),
     0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 2) rgba(30, 16, 4, 0.4),
     0 calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 16) rgba(30, 16, 4, 0.25);
+}
+
+/* The board's top face, its rounded front edge catching the light, and the shadow under it. */
+.kipos-tray__wood::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(255, 236, 200, 0.28), rgba(255, 236, 200, 0) 12%, rgba(0, 0, 0, 0) 70%, rgba(48, 26, 8, 0.1) 74%, rgba(255, 230, 190, 0.18) 78%, rgba(48, 26, 8, 0.3) 92%, rgba(30, 16, 4, 0.5) 100%);
 }
 
 .kipos-tray__brand {
@@ -631,6 +696,8 @@
   white-space: nowrap;
 }
 
+/* The packet's place on the board: a button that stays put while the packet
+   itself is in hand. */
 .kipos-packet {
   position: absolute;
   left: calc(var(--kipos-u) * (112 + var(--slot) * 140));
@@ -638,42 +705,43 @@
   width: calc(var(--kipos-u) * 120);
   height: calc(var(--kipos-u) * 88);
   padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+/* The packet: uncoated paper with a crimped top edge, as a packet is sealed. It
+   turns about the middle of its top, where it is held. */
+.kipos-packet__face {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   text-align: left;
-  border: 0;
   border-radius: calc(var(--kipos-u) * 1.5);
-  background: var(--kipos-paper) 0 0 / calc(var(--kipos-u) * 160);
+  background-size: calc(var(--kipos-u) * 160);
   background-color: #f3e7cb;
-  /* Crimped top edge, as a packet is sealed. */
   mask:
     conic-gradient(from 135deg at 50% 0, #0000 90deg, #000 0) 0 0 / calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 2) repeat-x,
     linear-gradient(#000 0 0) 0 calc(var(--kipos-u) * 2) / 100% 100% no-repeat;
   box-shadow: inset 0 0 calc(var(--kipos-u) * 6) rgba(120, 86, 40, 0.25);
-  transform: rotate(var(--tilt));
-  transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1);
-  cursor: pointer;
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: 50% 8%;
 }
-/* The packet's shadow on the board, a sibling of the paper so the crimp mask can't clip it. */
+.kipos-packet__parked {
+  position: absolute;
+  inset: 0;
+}
+/* The packet's shadow on the board. */
 .kipos-packet-shadow {
   position: absolute;
-  left: calc(var(--kipos-u) * (114 + var(--slot) * 140));
-  top: calc(var(--kipos-u) * 556);
-  width: calc(var(--kipos-u) * 120);
-  height: calc(var(--kipos-u) * 88);
+  left: calc(var(--kipos-u) * 2);
+  top: calc(var(--kipos-u) * 4);
+  width: 100%;
+  height: 100%;
   border-radius: calc(var(--kipos-u) * 3);
   background: rgba(30, 16, 4, 0.34);
   filter: blur(calc(var(--kipos-u) * 3));
   transform: rotate(var(--tilt));
-  transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1), opacity 240ms ease;
-  pointer-events: none;
-}
-.kipos-packet[aria-pressed='true'] {
-  transform: translateY(calc(var(--kipos-u) * -34)) rotate(0deg) scale(1.06);
-}
-.kipos-packet-shadow:has(+ .kipos-packet[aria-pressed='true']) {
-  transform: translate(calc(var(--kipos-u) * 6), calc(var(--kipos-u) * 4)) rotate(0deg) scale(1.02);
-  opacity: 0.45;
-  filter: blur(calc(var(--kipos-u) * 8));
+  transform-origin: 50% 8%;
 }
 .kipos-packet:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
 
@@ -732,23 +800,24 @@
   mix-blend-mode: multiply;
 }
 /* Paper tooth over everything printed. */
-.kipos-packet::after {
+.kipos-packet__face::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--kipos-grain) 0 0 / calc(var(--kipos-u) * 64);
+  background-size: calc(var(--kipos-u) * 64);
   mix-blend-mode: soft-light;
   opacity: 0.6;
   pointer-events: none;
 }
 
 .kipos-packet--tomato { --band: #b8402a; }
-.kipos-packet--tomato .kipos-packet__art { background-image: var(--kipos-art-tomato); }
 .kipos-packet--cucumber { --band: #3a6630; }
-.kipos-packet--cucumber .kipos-packet__art { background-image: var(--kipos-art-cucumber); }
 .kipos-packet--watermelon { --band: #ad3f52; }
-.kipos-packet--watermelon .kipos-packet__art { background-image: var(--kipos-art-watermelon); }
 
+.kipos-can__art {
+  position: absolute;
+  inset: 0;
+}
 .kipos-can {
   position: absolute;
   left: calc(var(--kipos-u) * 650);
@@ -759,13 +828,12 @@
   border: 0;
   background: none;
   cursor: pointer;
-  transform-origin: 62% 80%;
-  transition: transform 280ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .kipos-can__metal {
   position: absolute;
   inset: 0;
-  background: var(--kipos-can) 0 0 / 100% 100% no-repeat;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 .kipos-can__shadow {
   position: absolute;
@@ -775,16 +843,53 @@
   height: calc(var(--kipos-u) * 16);
   border-radius: 50%;
   background: radial-gradient(ellipse, rgba(30, 16, 4, 0.55), rgba(30, 16, 4, 0) 70%);
-  transition: transform 280ms ease, opacity 280ms ease;
-}
-.kipos-can[aria-pressed='true'] {
-  transform: translate(calc(var(--kipos-u) * -16), calc(var(--kipos-u) * -40)) rotate(-14deg);
-}
-.kipos-can[aria-pressed='true'] .kipos-can__shadow {
-  transform: translate(calc(var(--kipos-u) * 30), calc(var(--kipos-u) * 36)) rotate(14deg) scale(1.15);
-  opacity: 0.5;
 }
 .kipos-can:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 2px; border-radius: calc(var(--kipos-u) * 12); }
+
+/* ---------- In hand ----------
+   The flying copies of the can and packets. Each is placed by its grip, the
+   point that follows the pointer: the outer element carries the position,
+   the inner one turns and scales about the grip. */
+
+.kipos-hand {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.kipos-flight {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.kipos-flight__turn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.kipos-flight__body {
+  position: absolute;
+  filter: drop-shadow(calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 8) rgba(30, 16, 4, 0.32));
+}
+.kipos-flight--can .kipos-flight__body {
+  left: calc(var(--kipos-u) * 250 * -0.069);
+  top: calc(var(--kipos-u) * 152 * -0.227);
+  width: calc(var(--kipos-u) * 250);
+  height: calc(var(--kipos-u) * 152);
+}
+.kipos-flight--packet .kipos-flight__body {
+  left: calc(var(--kipos-u) * -60);
+  top: calc(var(--kipos-u) * 88 * -0.08);
+  width: calc(var(--kipos-u) * 120);
+  height: calc(var(--kipos-u) * 88);
+}
+.kipos-flight .kipos-can__metal { position: absolute; inset: 0; }
+/* While a tool follows the pointer, it is the pointer. Only the elements that
+   set a cursor of their own are named, so the switch restyles nothing else. */
+.kipos-bed__scene[data-carrying],
+.kipos-bed__scene[data-carrying] .kipos-plot,
+.kipos-bed__scene[data-carrying] .kipos-packet,
+.kipos-bed__scene[data-carrying] .kipos-can { cursor: none; }
 
 .kipos-hint {
   margin: 10px 0 0;
@@ -818,7 +923,7 @@
 .kipos-teneke__shadow {
   position: absolute;
   left: calc(var(--kipos-u) * 14);
-  top: calc(var(--kipos-u) * 306);
+  top: calc(var(--kipos-u) * 310);
   width: calc(var(--kipos-u) * 222);
   height: calc(var(--kipos-u) * 26);
   border-radius: 50%;
@@ -838,19 +943,34 @@
 .kipos-teneke__tin:focus-visible { outline: none; }
 .kipos-teneke__tin:focus-visible .kipos-teneke__body { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
 
-.kipos-teneke .kipos-plant { bottom: calc(var(--kipos-u) * 156); }
+.kipos-teneke .kipos-plant { bottom: calc(var(--kipos-u) * 162); }
 .kipos-teneke .kipos-plant__shadow { display: none; }
 .kipos-teneke .kipos-pour { bottom: calc(var(--kipos-u) * 290); }
 
+/* The mouth of the tin: the far half of the rolled rim and the shadowed wall
+   inside it. The near half of the rim is on the front drawing. */
+.kipos-teneke__mouth {
+  position: absolute;
+  left: calc(var(--kipos-u) * 30);
+  top: calc(var(--kipos-u) * 151);
+  width: calc(var(--kipos-u) * 180);
+  height: calc(var(--kipos-u) * 26);
+  border: calc(var(--kipos-u) * 3) solid #d8d3c6;
+  border-radius: 50%;
+  background: linear-gradient(#2e291f 15%, #5b5545);
+  box-shadow: inset 0 calc(var(--kipos-u) * 1.2) 0 rgba(255, 255, 250, 0.7);
+}
+
+/* Soil filled almost to the rim, in the shade of the far wall. */
 .kipos-teneke__soil {
   position: absolute;
-  left: calc(var(--kipos-u) * 34);
-  top: calc(var(--kipos-u) * 160);
-  width: calc(var(--kipos-u) * 172);
-  height: calc(var(--kipos-u) * 22);
+  left: calc(var(--kipos-u) * 37);
+  top: calc(var(--kipos-u) * 158);
+  width: calc(var(--kipos-u) * 166);
+  height: calc(var(--kipos-u) * 19);
   border-radius: 50%;
-  background: var(--kipos-soil) 0 0 / calc(var(--kipos-u) * 120);
-  box-shadow: inset 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 5) rgba(16, 9, 3, 0.6);
+  background-size: calc(var(--kipos-u) * 120);
+  box-shadow: inset 0 calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) rgba(16, 9, 3, 0.65);
 }
 .kipos-teneke__soil::before {
   content: '';
@@ -865,10 +985,11 @@
 .kipos-teneke__body {
   position: absolute;
   left: calc(var(--kipos-u) * 30);
-  top: calc(var(--kipos-u) * 164);
+  top: calc(var(--kipos-u) * 151);
   width: calc(var(--kipos-u) * 180);
-  height: calc(var(--kipos-u) * 160);
-  background: var(--kipos-teneke) 0 0 / 100% 100% no-repeat;
+  height: calc(var(--kipos-u) * 178);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 
 .kipos-teneke__pinch {
@@ -878,8 +999,9 @@
   min-height: 32px;
   padding: 4px 12px;
   border: 1px solid rgba(80, 50, 20, 0.2);
-  border-radius: 999px;
-  background: var(--kipos-paper) 0 0 / 120px;
+  border-radius: 3px;
+  background-color: #f3e7cb;
+  background-size: 120px;
   box-shadow: 0 2px 4px rgba(40, 20, 5, 0.2);
   font-size: 13px;
   cursor: pointer;
@@ -897,10 +1019,6 @@
 @media (prefers-reduced-motion: reduce) {
   .kipos-part,
   .kipos-part--tomato::after,
-  .kipos-packet,
-  .kipos-packet-shadow,
-  .kipos-can,
-  .kipos-can__shadow,
   .kipos-plot__soil::before,
   .kipos-plot__soil::after,
   .kipos-teneke__soil::before,
@@ -911,5 +1029,5 @@
   .kipos-bed__scene,
   .kipos-teneke__scene { transition: none; }
   .kipos-pour { display: none; }
-  [data-sway] > .kipos-plant { animation: none; }
+  .kipos-plant[data-sway] { animation: none; }
 }

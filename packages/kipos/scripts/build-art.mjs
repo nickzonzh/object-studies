@@ -75,8 +75,30 @@ async function bake({ svg, w, h, scale, quality }) {
 
 const rules = []
 const rule = (selector, declarations) => rules.push(`${selector} {\n${declarations.map((d) => `  ${d};`).join('\n')}\n}`)
-const vars = []
-const variable = (name, value) => vars.push(`  --${name}: ${value};`)
+// Where each material is laid. Each is written straight into the rules that
+// show it, not passed down as a custom property: a browser re-reads a custom
+// property's value, the whole data URI, every time an element using it is
+// restyled. styles.css sets each element's background size and position.
+const PLACES = {
+  'kipos-soil': ['.kipos-bed__soil', '.kipos-plant__mound', '.kipos-teneke__soil'],
+  'kipos-limestone': ['.kipos-bed__back', '.kipos-stone', '.kipos-capstone'],
+  'kipos-mortar': ['.kipos-bed__face', '.kipos-bed__coping'],
+  'kipos-olive': ['.kipos-tray__wood'],
+  'kipos-paper': ['.kipos-tag', '.kipos-packet__face', '.kipos-teneke__pinch'],
+  'kipos-grain': ['.kipos-packet__face::after'],
+  'kipos-can': ['.kipos-can__metal'],
+  'kipos-teneke': ['.kipos-teneke__body'],
+  'kipos-art-tomato': ['.kipos-packet--tomato .kipos-packet__art'],
+  'kipos-art-cucumber': ['.kipos-packet--cucumber .kipos-packet__art'],
+  'kipos-art-watermelon': ['.kipos-packet--watermelon .kipos-packet__art'],
+  'kipos-tomato-red': ['.kipos-part--tomato::after'],
+  'kipos-cane': ['.kipos-cane'],
+}
+const materials = []
+const material = (name, value) => {
+  if (!PLACES[name]) throw new Error(`No place for ${name}`)
+  materials.push(`${PLACES[name].join(',\n')} {\n  background-image: ${value};\n}`)
+}
 
 // ─── Materials ───────────────────────────────────────────────────────────────
 
@@ -104,7 +126,7 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
     const x = 14 + r() * 332, y = 14 + r() * 332, s = 2.2 + r() * 3.6
     grit += `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * 0.7)}' fill='url(#pebble)' transform='rotate(${f(r() * 180)} ${f(x)} ${f(y)})'/>`
   }
-  variable(
+  material(
     'kipos-soil',
     uri(360, 360, `
       <defs>${relief('s', { freq: 0.2, octaves: 5, scale: 6.5, seed: 4, light: '#ffe2c4', elevation: 40 })}
@@ -125,7 +147,7 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
     const x = r() * 256, y = r() * 256
     flecks += `<circle cx='${f(x)}' cy='${f(y)}' r='${f(0.5 + r() * 1.5)}' fill='${r() < 0.6 ? '#9d8d70' : '#fbf6ea'}' opacity='${f(0.3 + r() * 0.5)}'/>`
   }
-  variable(
+  material(
     'kipos-limestone',
     uri(256, 256, `
       <defs>${relief('l', { freq: 0.07, octaves: 5, scale: 1.6, seed: 7, light: '#fffaf0', elevation: 60 })}
@@ -138,7 +160,7 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
 }
 
 // Lime mortar, gritty, with moss creeping in.
-variable(
+material(
   'kipos-mortar',
   uri(160, 160, `
     <defs>${relief('m', { freq: 0.6, octaves: 3, scale: 3, seed: 5, elevation: 50 })}
@@ -149,7 +171,7 @@ variable(
 )
 
 // Olive wood: warm figured grain, warped so it swirls round the knots.
-variable(
+material(
   'kipos-olive',
   uri(640, 200, `
     <defs>
@@ -178,7 +200,7 @@ variable(
     const x = r() * 160, y = r() * 160, a = r() * Math.PI, l = 4 + r() * 10
     fibres += `<path d='M${f(x)} ${f(y)}q${f(Math.cos(a) * l * 0.5 + 2)} ${f(Math.sin(a) * l * 0.5 - 2)} ${f(Math.cos(a) * l)} ${f(Math.sin(a) * l)}' stroke='#a68b5c' stroke-width='.4' fill='none' opacity='.45'/>`
   }
-  variable(
+  material(
     'kipos-paper',
     uri(160, 160, `
       <defs>${relief('p', { freq: 0.9, octaves: 3, scale: 0.5, seed: 12, elevation: 72 })}</defs>
@@ -187,7 +209,7 @@ variable(
 }
 
 // A fine grain for anything printed or painted, laid over with soft-light.
-variable(
+material(
   'kipos-grain',
   uri(128, 128, `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='128' height='128' filter='url(#n)' opacity='.5'/>`, { scale: 1 }),
 )
@@ -223,7 +245,7 @@ variable(
     }
   const bodyX = 112, bodyW = 150, bodyTop = 56, bodyBottom = 166
   const body = `M${bodyX} ${bodyTop}h${bodyW}v${bodyBottom - bodyTop - 8}q0 8 -8 8h${-(bodyW - 16)}q-8 0 -8 -8Z`
-  variable(
+  material(
     'kipos-can',
     uri(W, H, `
       <defs>${spangle}${metal('body')}${metal('tube', 0, 0)}
@@ -267,14 +289,20 @@ variable(
 
 // ─── The teneke: a whitewashed olive oil tin ─────────────────────────────────
 
+// The front of the tin, seen a little from above like the bed: its top edge is
+// the near half of the round mouth, its foot a curve. The far half of the rim
+// and the soil inside are plain CSS behind the plant.
 {
-  const W = 180, H = 160
-  variable(
+  const W = 180, H = 178, RY = 13, TOP = 13, FOOT = 165
+  const face = `M0 ${TOP} A90 ${RY} 0 0 0 180 ${TOP} L180 ${FOOT} A90 ${RY} 0 0 1 0 ${FOOT} Z`
+  const ring = (y) => `M0 ${y} A90 ${RY} 0 0 0 180 ${y}`
+  material(
     'kipos-teneke',
     uri(W, H, `
       <defs>
-        <linearGradient id='tin' x1='0' x2='1'><stop offset='0' stop-color='#7d7f78'/><stop offset='.3' stop-color='#b8b9b1'/><stop offset='.62' stop-color='#9a9b93'/><stop offset='1' stop-color='#6b6c66'/></linearGradient>
-        <linearGradient id='shade' x1='0' x2='1'><stop offset='0' stop-color='#3a3226' stop-opacity='.32'/><stop offset='.22' stop-color='#3a3226' stop-opacity='0'/><stop offset='.55' stop-color='#fff' stop-opacity='.16'/><stop offset='.8' stop-color='#3a3226' stop-opacity='.05'/><stop offset='1' stop-color='#3a3226' stop-opacity='.36'/></linearGradient>
+        <clipPath id='face'><path d='${face}'/></clipPath>
+        <linearGradient id='tin' x1='0' x2='1'><stop offset='0' stop-color='#5d5f59'/><stop offset='.14' stop-color='#8f9189'/><stop offset='.33' stop-color='#cfd0c8'/><stop offset='.42' stop-color='#d9dad2'/><stop offset='.64' stop-color='#a4a59d'/><stop offset='.86' stop-color='#7c7d76'/><stop offset='1' stop-color='#55564f'/></linearGradient>
+        <linearGradient id='shade' x1='0' x2='1'><stop offset='0' stop-color='#2e281e' stop-opacity='.5'/><stop offset='.16' stop-color='#2e281e' stop-opacity='.08'/><stop offset='.36' stop-color='#fff' stop-opacity='.22'/><stop offset='.46' stop-color='#fff' stop-opacity='.06'/><stop offset='.78' stop-color='#2e281e' stop-opacity='.12'/><stop offset='1' stop-color='#2e281e' stop-opacity='.55'/></linearGradient>
         <filter id='lime' x='0' y='0' width='100%' height='100%'>
           <feTurbulence type='fractalNoise' baseFrequency='.018 .04' numOctaves='4' seed='5' result='brush'/>
           <feColorMatrix in='brush' values='0 0 0 0 .965  0 0 0 0 .952  0 0 0 0 .925  0 0 0 -6 6.2' result='coat'/>
@@ -291,33 +319,39 @@ variable(
           <feTurbulence type='fractalNoise' baseFrequency='.03 .006' numOctaves='3' seed='17'/>
           <feColorMatrix values='0 0 0 0 .52  0 0 0 0 .25  0 0 0 0 .1  0 0 0 -7 3.3'/>
         </filter>
-        <linearGradient id='ridge' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#3b3328' stop-opacity='.28'/><stop offset='.45' stop-color='#3b3328' stop-opacity='0'/><stop offset='.55' stop-color='#fff' stop-opacity='.55'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></linearGradient>
-        <linearGradient id='rim' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#f6f3ec'/><stop offset='.5' stop-color='#d8d3c7'/><stop offset='1' stop-color='#8d887c'/></linearGradient>
+        <linearGradient id='rim' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fbf9f3'/><stop offset='.5' stop-color='#dcd7cb'/><stop offset='1' stop-color='#8b8679'/></linearGradient>
       </defs>
-      <rect x='4' y='6' width='172' height='152' rx='3' fill='url(#tin)'/>
-      <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#lime)'/>
-      <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#chips)' opacity='.75'/>
-      <rect x='4' y='6' width='172' height='152' rx='3' filter='url(#rust)' opacity='.3'/>
-      <!-- the oil company's print, ghosting through the lime -->
-      <g opacity='.16' font-family='Georgia, serif' text-anchor='middle'>
-        <rect x='34' y='70' width='112' height='28' rx='3' fill='none' stroke='#1f4f8f' stroke-width='2'/>
-        <text x='90' y='89' font-size='15' letter-spacing='1.5' fill='#1f4f8f'>ΕΛΑΙΟΛΑΔΟ</text>
-        <text x='90' y='120' font-size='9' letter-spacing='3' fill='#a8312a'>ΚΡΗΤΗΣ · 17 KG</text>
+      <g clip-path='url(#face)'>
+        <rect width='${W}' height='${H}' fill='url(#tin)'/>
+        <rect width='${W}' height='${H}' filter='url(#lime)'/>
+        <rect width='${W}' height='${H}' filter='url(#chips)' opacity='.75'/>
+        <rect width='${W}' height='${H}' filter='url(#rust)' opacity='.3'/>
+        <!-- the oil company's print, ghosting through the lime -->
+        <g opacity='.3' font-family='Georgia, serif' text-anchor='middle'>
+          <rect x='38' y='80' width='104' height='27' rx='3' fill='none' stroke='#1f4f8f' stroke-width='2'/>
+          <text x='90' y='99' font-size='14' letter-spacing='1.5' fill='#1f4f8f'>ΕΛΑΙΟΛΑΔΟ</text>
+          <text x='90' y='128' font-size='8.5' letter-spacing='3' fill='#a8312a'>ΚΡΗΤΗΣ · 17 KG</text>
+        </g>
+        <!-- rust weeping from the rim and gathered at the foot -->
+        <path d='M30 22 q2 18 -1 34 q-2 8 1 12' stroke='#8a4a22' stroke-opacity='.24' stroke-width='2.4' fill='none' stroke-linecap='round'/>
+        <path d='M131 25 q-1 12 2 22' stroke='#8a4a22' stroke-opacity='.2' stroke-width='2' fill='none' stroke-linecap='round'/>
+        <path d='${ring(FOOT - 8)} L180 ${H} L0 ${H} Z' fill='#7a3f1c' opacity='.28'/>
+        <!-- pressed ridges, curving round the tin -->
+        <path d='${ring(60)}' stroke='#3b3328' stroke-opacity='.3' stroke-width='3' fill='none'/>
+        <path d='${ring(63)}' stroke='#fff' stroke-opacity='.5' stroke-width='2' fill='none'/>
+        <path d='${ring(118)}' stroke='#3b3328' stroke-opacity='.3' stroke-width='3' fill='none'/>
+        <path d='${ring(121)}' stroke='#fff' stroke-opacity='.5' stroke-width='2' fill='none'/>
+        <rect width='${W}' height='${H}' fill='url(#shade)'/>
+        <!-- a soft dent -->
+        <ellipse cx='128' cy='92' rx='18' ry='12' fill='#3b3328' opacity='.08'/>
+        <ellipse cx='123' cy='88' rx='11' ry='6' fill='#fff' opacity='.18'/>
+        <!-- the foot sits in its own shadow -->
+        <path d='${ring(FOOT - 2)} L180 ${H} L0 ${H} Z' fill='#2a2318' opacity='.25'/>
       </g>
-      <!-- rust weeping from the rim and the base seam -->
-      <path d='M30 10 q2 18 -1 34 q-2 8 1 12' stroke='#8a4a22' stroke-opacity='.22' stroke-width='2.4' fill='none' stroke-linecap='round'/>
-      <path d='M131 10 q-1 12 2 22' stroke='#8a4a22' stroke-opacity='.18' stroke-width='2' fill='none' stroke-linecap='round'/>
-      <rect x='4' y='146' width='172' height='12' fill='#7a3f1c' opacity='.28'/>
-      <!-- pressed ridges -->
-      <rect x='4' y='52' width='172' height='6' fill='url(#ridge)'/>
-      <rect x='4' y='104' width='172' height='6' fill='url(#ridge)'/>
-      <rect x='4' y='6' width='172' height='152' rx='3' fill='url(#shade)'/>
-      <!-- a soft dent -->
-      <ellipse cx='126' cy='82' rx='18' ry='12' fill='#3b3328' opacity='.08'/>
-      <ellipse cx='121' cy='78' rx='11' ry='6' fill='#fff' opacity='.18'/>
-      <!-- rolled rim -->
-      <rect x='0' y='0' width='180' height='11' rx='4' fill='url(#rim)'/>
-      <rect x='3' y='1.5' width='174' height='2' rx='1' fill='#fff' opacity='.7'/>`),
+      <!-- the near half of the rolled rim -->
+      <path d='${ring(TOP)}' stroke='#6f6a5e' stroke-width='7' fill='none' stroke-linecap='round'/>
+      <path d='${ring(TOP)}' stroke='url(#rim)' stroke-width='5' fill='none' stroke-linecap='round'/>
+      <path d='M6 ${TOP + 1} A86 ${RY - 1} 0 0 0 174 ${TOP + 1}' stroke='#fff' stroke-opacity='.7' stroke-width='1.2' fill='none'/>`),
   )
 }
 
@@ -334,14 +368,14 @@ const printed = (art) => `<g id='art'>${art}</g><mask id='ink'><use href='#art' 
     <circle cx='${x}' cy='${y}' r='${r}' fill='#d23c22'/>
     <path d='M${x - r * 0.62} ${y - r * 0.55} A${r} ${r} 0 0 1 ${x + r * 0.3} ${y - r * 0.92}' stroke='#f58a6a' stroke-width='${f(r * 0.28)}' fill='none' stroke-linecap='round' opacity='.85'/>
     <path d='M${x} ${y - r + 2} l-${r * 0.45} -2 l${r * 0.3} 3 l-${r * 0.2} 4 l${r * 0.35} -3 l${r * 0.35} 3 l-${r * 0.15} -4 l${r * 0.3} -3 Z' fill='#3c6a28'/>`
-  variable(
+  material(
     'kipos-art-tomato',
     uri(64, 56, `<defs>${halftone}</defs>${printed(`
       <path d='M8 6 C24 2 40 6 58 4' stroke='#5b8a3a' stroke-width='2' fill='none'/>
       ${leaf(14, 8, 20, 0.8)}${leaf(44, 6, 150, 0.7)}
       ${tomato(22, 32, 14)}${tomato(44, 38, 12)}${tomato(36, 18, 8)}`)}`),
   )
-  variable(
+  material(
     'kipos-art-cucumber',
     uri(64, 56, `<defs>${halftone}<linearGradient id='c' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='#6d9a4a'/><stop offset='.4' stop-color='#3e6b2a'/><stop offset='1' stop-color='#22421a'/></linearGradient></defs>${printed(`
       ${leaf(10, 14, -10, 0.9)}
@@ -350,7 +384,7 @@ const printed = (art) => `<g id='art'>${art}</g><mask id='ink'><use href='#art' 
       <path d='M14 50 C22 38 40 32 58 36 C59 41 57 43 52 43 C38 41 24 46 18 54 C13 56 12 53 14 50Z' fill='url(#c)'/>
       <circle cx='40' cy='12' r='5' fill='#f2c42e'/><circle cx='40' cy='12' r='1.8' fill='#c98a10'/>`)}`),
   )
-  variable(
+  material(
     'kipos-art-watermelon',
     uri(64, 56, `<defs>${halftone}</defs>${printed(`
       <ellipse cx='26' cy='24' rx='22' ry='15' fill='#4f8a3c'/>
@@ -537,7 +571,7 @@ for (let v = 0; v < 2; v++) {
     <path d='${d}' fill='url(#gh)'/>
     ${Array.from({ length: 7 }, (_, k) => {
       const a = Math.PI / 2 + Math.PI * 0.2 + (k / 6) * Math.PI * 1.6
-      return `<path d='M${cx} ${cy + 6} L${f(cx + Math.cos(a) * R * 0.92)} ${f(cy + Math.sin(a) * R * 0.85)}' stroke='#b9d38e' stroke-width='.7' stroke-opacity='.55'/>`
+      return `<path d='M${cx} ${f(cy + R * 0.58)} Q${f(cx + Math.cos(a) * R * 0.4)} ${f(cy + R * 0.3 + Math.sin(a) * R * 0.4)} ${f(cx + Math.cos(a) * R * 0.9)} ${f(cy + Math.sin(a) * R * 0.84)}' stroke='#b9d38e' stroke-width='.7' fill='none' stroke-opacity='.55'/>`
     }).join('')}`)
 }
 
@@ -580,7 +614,7 @@ single('squash-flower', 28, 28, `<radialGradient id='p' cx='.5' cy='.5' r='.55'>
   single('tomato-green', W, H, fruit('t', '#c9dd86', '#8ab04a', '#4e7a2a') + extras, draw('t'))
   single('tomato-red', W, H, fruit('t', '#ff8f6a', '#e0391c', '#94200d') + extras, draw('t'))
   // The ripe drawing is also a variable, so a green tomato can cross-fade into it.
-  variable('kipos-tomato-red', uri(W, H, `<defs>${fruit('t', '#ff8f6a', '#e0391c', '#94200d') + extras}</defs>${draw('t')}`))
+  material('kipos-tomato-red', uri(W, H, `<defs>${fruit('t', '#ff8f6a', '#e0391c', '#94200d') + extras}</defs>${draw('t')}`))
 }
 
 // Cucumber: long, slightly curved, dark with pale stripes from the blossom end,
@@ -670,7 +704,7 @@ single('squash-flower', 28, 28, `<radialGradient id='p' cx='.5' cy='.5' r='.55'>
 
 // Bamboo cane: one internode, node at the foot, tiled up the cane so nodes
 // stay evenly spaced however long the cane is drawn.
-variable('kipos-cane', uri(14, 72, `
+material('kipos-cane', uri(14, 72, `
   <defs>
     <linearGradient id='c' x1='0' x2='1'><stop offset='0' stop-color='#8f7442'/><stop offset='.28' stop-color='#d9c189'/><stop offset='.42' stop-color='#efdeaf'/><stop offset='.7' stop-color='#bfa064'/><stop offset='1' stop-color='#7d6337'/></linearGradient>
     <linearGradient id='node' x1='0' x2='1'><stop offset='0' stop-color='#6e5530'/><stop offset='.4' stop-color='#b49558'/><stop offset='1' stop-color='#5f4828'/></linearGradient>
@@ -719,13 +753,11 @@ const css = `/*
  * and run \`node packages/kipos/scripts/build-art.mjs\`.
  */
 
-:where(.kipos) {
-${vars.join('\n')}
-}
+${materials.join('\n\n')}
 
 ${rules.join('\n\n')}
 `
 let baked = css
 for (const job of bakes) baked = baked.replace(job.token, await bake(job))
 writeFileSync(OUT, baked)
-console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB, ${rules.length} sprites, ${vars.length} materials, ${bakes.length} baked`)
+console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB, ${rules.length} sprites, ${materials.length} materials, ${bakes.length} baked`)

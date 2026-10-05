@@ -4,6 +4,7 @@ import { type BedDocument, bedStore, emptyBed, rescaleBed } from '../lib/documen
 import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { sway, useBreeze } from '../lib/breeze.js'
+import { type Tool, createHand } from '../lib/hand.js'
 import { type KiposLabelOverrides, type KiposLabels, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
 import { seededRandom } from 'object-studies-core'
 import { Plant } from './Plant.js'
@@ -26,7 +27,8 @@ export type BedProps = {
 }
 
 const BED_CROPS: CropId[] = ['tomato', 'cucumber', 'watermelon']
-type Hand = CropId | 'can' | null
+const TOOLS: Tool[] = [...BED_CROPS, 'can']
+type Hand = Tool | null
 
 const POUR_MS = 1400
 
@@ -63,20 +65,42 @@ export function Bed({
   useEffect(() => update((current) => rescaleBed(current, actionTime(), speed)), [bed.speed, speed, update])
   const [hand, setHand] = useState<Hand>(null)
   const [message, setMessage] = useState('')
-  const [pouring, setPouring] = useState<{ plot: number; id: number } | null>(null)
+  const [pouring, setPouring] = useState<{ plot: number; id: number; seeds: boolean } | null>(null)
   const pourTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(pourTimer.current), [])
   const scene = useRef<HTMLDivElement>(null)
   useBreeze(scene, '.kipos-plot')
+  // The can and packets travel with the pointer (or to a plot, from the keyboard).
+  const handLayer = useRef<HTMLDivElement>(null)
+  const carrier = useRef<ReturnType<typeof createHand>>(null)
+  useEffect(() => {
+    const created = createHand(scene.current!, handLayer.current!, TOOLS)
+    carrier.current = created
+    return () => {
+      created.destroy()
+      carrier.current = null
+    }
+  }, [])
+  useEffect(() => carrier.current?.take(hand), [hand])
+
+  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch' || !hand) return
+    const box = event.currentTarget.getBoundingClientRect()
+    const plot = (event.target as Element).closest<HTMLElement>('.kipos-plot')
+    carrier.current?.point(
+      { x: event.clientX - box.left, y: event.clientY - box.top, angle: 0 },
+      plot ? Number(plot.dataset.plot) : null,
+    )
+  }
 
   const take = (next: Hand) => {
     setHand((current) => (current === next ? null : next))
     setMessage('')
   }
 
-  const pour = (plot: number, target: HTMLElement) => {
+  const pour = (plot: number, target: HTMLElement, seeds = false) => {
     clearTimeout(pourTimer.current)
-    setPouring({ plot, id: actionTime() })
+    setPouring({ plot, id: actionTime(), seeds })
     pourTimer.current = setTimeout(() => setPouring(null), POUR_MS)
     // The leaves shiver as the water lands.
     sway(target, 'shiver', 350)
@@ -102,13 +126,15 @@ export function Bed({
       if (!planting) return setMessage(labels.nothingToWater)
       const wasWilted = readPlanting(planting, t, speed).wilted
       setPlot(water(planting, t, speed))
+      carrier.current?.work(index, 'pour', POUR_MS - 150, 'stay')
       pour(index, target)
       return setMessage(wasWilted ? fill(labels.revived, cropSlots(labels, planting.crop)) : labels.watered)
     }
     if (hand) {
       if (planting) return setMessage(labels.plotTaken)
       setPlot(sow(hand, t))
-      pour(index, target)
+      carrier.current?.work(index, 'sow', 900, 'dock')
+      pour(index, target, true)
       setHand(null)
       return setMessage(fill(labels.sown, cropSlots(labels, hand)))
     }
@@ -147,7 +173,12 @@ export function Bed({
       <p id={instructionsId} className="kipos-sr-only">
         {labels.bedInstructions}
       </p>
-      <div className="kipos-bed__scene" ref={scene}>
+      <div
+        className="kipos-bed__scene"
+        ref={scene}
+        onPointerMove={onPointerMove}
+        onPointerLeave={() => carrier.current?.point(null)}
+      >
         <div className="kipos-bed__ground" aria-hidden="true" />
         <div className="kipos-bed__back" aria-hidden="true" />
         <div className="kipos-bed__soil" aria-hidden="true" />
@@ -172,6 +203,7 @@ export function Bed({
               type="button"
               className={`kipos-plot${state?.ripe && !hand ? ' kipos-plot--ripe' : ''}`}
               style={{ '--plot': index } as CSSProperties}
+              data-plot={index}
               aria-label={plotLabel(labels, index, bed, now, speed)}
               onClick={(event) => tendPlot(index, event.currentTarget)}
               onPointerEnter={(event) => brush(event, Boolean(planting))}
@@ -196,8 +228,8 @@ export function Bed({
                 />
               )}
               {pouring?.plot === index && (
-                <span key={pouring.id} className="kipos-pour" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
+                <span key={pouring.id} className={`kipos-pour${pouring.seeds ? ' kipos-pour--seeds' : ''}`} aria-hidden="true">
+                  <i /><i /><i /><i /><i /><i /><i /><i />
                 </span>
               )}
             </button>
@@ -217,47 +249,58 @@ export function Bed({
               ΚΗΠΟΣ · KIPOS
             </span>
           </span>
-          {BED_CROPS.map((crop, index) => [
-            <span
-              key={`${crop}-shadow`}
-              className="kipos-packet-shadow"
-              style={{ '--slot': index, '--tilt': TILTS[index] } as CSSProperties}
-              aria-hidden="true"
-            />,
+          {BED_CROPS.map((crop, index) => (
             <button
               key={crop}
               type="button"
               className={`kipos-packet kipos-packet--${crop}`}
               style={{ '--slot': index, '--tilt': TILTS[index] } as CSSProperties}
+              data-kipos-tool={crop}
               aria-pressed={hand === crop}
               aria-label={fill(labels.seedPacket, cropSlots(labels, crop))}
               onClick={() => take(crop)}
             >
-              <span className="kipos-packet__band" lang="el" aria-hidden="true">
-                {GREEK[crop]}
+              {/* The shadow sits beside the paper, where the crimp mask can't clip it, and leaves with it. */}
+              <span className="kipos-packet__parked" data-kipos-parked="" aria-hidden="true">
+                <span className="kipos-packet-shadow" />
+                <span className="kipos-packet__face">
+                  <PacketPrint crop={crop} name={labels.crops[crop]} />
+                </span>
               </span>
-              <span className="kipos-packet__name" aria-hidden="true">
-                {labels.crops[crop]}
-              </span>
-              <span className="kipos-packet__sub" aria-hidden="true">
-                {LATIN[crop]} · σπόροι
-              </span>
-              <i className="kipos-packet__art" aria-hidden="true" />
-              <i className="kipos-packet__count" aria-hidden="true">
-                {PACKET_NO[crop]}
-              </i>
-            </button>,
-          ])}
+            </button>
+          ))}
           <button
             type="button"
             className="kipos-can"
+            data-kipos-tool="can"
             aria-pressed={hand === 'can'}
             aria-label={labels.wateringCan}
             onClick={() => take('can')}
           >
-            <i className="kipos-can__shadow" />
-            <i className="kipos-can__metal" />
+            <span className="kipos-can__art" data-kipos-parked="" aria-hidden="true">
+              <i className="kipos-can__shadow" />
+              <i className="kipos-can__metal" />
+            </span>
           </button>
+        </div>
+
+        {/* The tools in hand: copies that fly while the tray keeps its buttons. */}
+        <div className="kipos-hand" ref={handLayer} aria-hidden="true">
+          {TOOLS.map((tool) => (
+            <span key={tool} className={`kipos-flight kipos-flight--${tool === 'can' ? 'can' : 'packet'}`} data-kipos-flight={tool} hidden>
+              <span className="kipos-flight__turn">
+                <span className="kipos-flight__body">
+                  {tool === 'can' ? (
+                    <i className="kipos-can__metal" />
+                  ) : (
+                    <span className={`kipos-packet__face kipos-packet--${tool}`}>
+                      <PacketPrint crop={tool} name={labels.crops[tool]} />
+                    </span>
+                  )}
+                </span>
+              </span>
+            </span>
+          ))}
         </div>
       </div>
       {showHint ? (
@@ -270,6 +313,21 @@ export function Bed({
         </p>
       )}
     </div>
+  )
+}
+
+/** What is printed on a seed packet: the crop in Greek, its name, and a little picture. */
+function PacketPrint({ crop, name }: { crop: CropId; name: string }) {
+  return (
+    <>
+      <span className="kipos-packet__band" lang="el">
+        {GREEK[crop]}
+      </span>
+      <span className="kipos-packet__name">{name}</span>
+      <span className="kipos-packet__sub">{LATIN[crop]} · σπόροι</span>
+      <i className="kipos-packet__art" />
+      <i className="kipos-packet__count">{PACKET_NO[crop]}</i>
+    </>
   )
 }
 
@@ -314,7 +372,7 @@ const STONES: CSSProperties[] = (() => {
           width: `calc(var(--kipos-u) * ${(right - left).toFixed(1)})`,
           height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
           borderRadius: `${r()} ${r()} ${r()} ${r()} / ${r()} ${r()} ${r()} ${r()}`,
-          backgroundPosition: `0 0, ${stoneCut(random(), right - left)} ${stoneCut(random(), height)}`,
+          backgroundPosition: `${stoneCut(random(), right - left)} ${stoneCut(random(), height)}`,
           '--tone': (0.9 + random() * 0.14).toFixed(3),
         } as CSSProperties)
       }
@@ -333,7 +391,7 @@ const COPING: CSSProperties[] = (() => {
     stones.push({
       left: `calc(var(--kipos-u) * ${x.toFixed(1)})`,
       width: `calc(var(--kipos-u) * ${(width - 4).toFixed(1)})`,
-      backgroundPosition: `0 0, ${stoneCut(random(), width - 4)} ${stoneCut(random(), 34)}`,
+      backgroundPosition: `${stoneCut(random(), width - 4)} ${stoneCut(random(), 34)}`,
       '--tone': (0.94 + random() * 0.1).toFixed(3),
     } as CSSProperties)
     x += width

@@ -4,6 +4,47 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export const actionTime = () => Date.now()
 import type { Persistence } from 'object-studies-core'
 
+type Ticker = { listeners: Set<(now: number) => void>; timer?: ReturnType<typeof setInterval> }
+
+// One timer per refresh rate, shared by every bed and tin on the page, so they
+// all move on the same tick and render together.
+const tickers = new Map<number, Ticker>()
+
+function startTicker(interval: number, ticker: Ticker) {
+  if (ticker.timer !== undefined) return
+  const tick = () => {
+    const now = Date.now()
+    ticker.listeners.forEach((listener) => listener(now))
+  }
+  tick()
+  ticker.timer = setInterval(tick, interval)
+}
+
+function stopTicker(ticker: Ticker) {
+  clearInterval(ticker.timer)
+  ticker.timer = undefined
+}
+
+function subscribe(interval: number, listener: (now: number) => void) {
+  let ticker = tickers.get(interval)
+  if (!ticker) tickers.set(interval, (ticker = { listeners: new Set() }))
+  const shared = ticker
+  shared.listeners.add(listener)
+  const onVisibility = () => (document.visibilityState === 'hidden' ? stopTicker(shared) : startTicker(interval, shared))
+  document.addEventListener('visibilitychange', onVisibility)
+  if (document.visibilityState === 'hidden') listener(Date.now())
+  else if (shared.timer === undefined) startTicker(interval, shared)
+  else listener(Date.now())
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibility)
+    shared.listeners.delete(listener)
+    if (shared.listeners.size === 0) {
+      stopTicker(shared)
+      tickers.delete(interval)
+    }
+  }
+}
+
 /**
  * The current time, refreshed often enough for growth to look continuous at
  * the given speed: once a minute in real time, faster when sped up. Zero on
@@ -12,26 +53,7 @@ import type { Persistence } from 'object-studies-core'
  */
 export function useGardenClock(speed: number) {
   const [now, setNow] = useState(0)
-  useEffect(() => {
-    const interval = Math.min(60_000, Math.max(250, 60_000 / Math.max(speed, 0.001)))
-    let timer: ReturnType<typeof setInterval> | undefined
-    const tick = () => setNow(Date.now())
-    const start = () => {
-      tick()
-      if (timer === undefined) timer = setInterval(tick, interval)
-    }
-    const stop = () => {
-      clearInterval(timer)
-      timer = undefined
-    }
-    const onVisibility = () => (document.visibilityState === 'hidden' ? stop() : start())
-    start()
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      stop()
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [speed])
+  useEffect(() => subscribe(Math.min(60_000, Math.max(250, 60_000 / Math.max(speed, 0.001))), setNow), [speed])
   return now
 }
 

@@ -29,10 +29,12 @@ The stylesheet is a separate import so it can be bundled, ordered or overridden
 like any other CSS. Every rule is scoped to `kipos` classes.
 
 MIT. React 19. No runtime dependency beyond [`object-studies-core`](../core).
-Everything is drawn with DOM, CSS and SVG: no canvas, no WebGL. The materials
-(soil, limestone, olive wood, galvanised steel, whitewash, paper) and the
-botanical drawings are SVG baked into `src/art.css` by `scripts/build-art.mjs`.
-Change the script and re-run it; never edit `art.css` by hand.
+Everything is drawn with DOM, CSS and images: no canvas, no WebGL. The
+materials (soil, limestone, olive wood, galvanised steel, whitewash, paper) and
+the botanical drawings are drawn as SVG by `scripts/build-art.mjs` and baked
+into `src/art.css`. Anything grown from noise is baked to a small AVIF image,
+because browsers re-run SVG noise filters on every repaint. Change the script
+and re-run it; never edit `art.css` by hand.
 
 ## How the garden keeps time
 
@@ -59,8 +61,11 @@ server. It lives in that browser only.
 
 Three plots, a tray with tomato, cucumber and watermelon seed packets, and a
 galvanised watering can. Pick up a packet and choose an empty plot to sow it.
-Pick up the can and choose plots to water. With nothing in hand, choose a ripe
-plant to pick it. Escape puts things back. A kraft tag on the bed counts the
+Pick up the can and choose plots to water. With a mouse or pen the tool in hand
+follows the pointer; from the keyboard or by touch it flies to the plot you
+choose and back. With nothing in hand, choose a ripe plant to pick it. Escape
+puts things back. Now and then a breeze crosses the bed, and a plant rustles
+when the pointer brushes it. A kraft tag on the bed counts the
 days since the first sowing, and everything picked.
 
 | Prop | Type | Default | |
@@ -98,7 +103,7 @@ The engine is exported for anyone who wants their own garden: `sow`, `water`,
 Every plot, packet, tin and the can is a real button with a name that says what
 it holds and how it is doing ("Plot 1: Tomato, flowering, soil drying out").
 What happens after each action is announced. Reduced motion turns off the
-growing, lifting and pouring animations.
+growing, swaying and pouring animations, and tools jump to where they go.
 
 ## Development
 

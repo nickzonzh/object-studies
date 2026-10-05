@@ -118,6 +118,7 @@ export function Teneke({
             if (planting && event.pointerType !== 'touch') sway(event.currentTarget, 'brush')
           }}
         >
+          <span className="kipos-teneke__mouth" />
           <span className="kipos-teneke__soil" style={{ '--wet': state ? Math.round(state.moisture * 20) / 20 : 0.15 } as CSSProperties} />
           {planting && state && (
             <Plant crop={plant} progress={plantProgress(state.progress)} wilted={state.wilted} seed={planting.plantedAt % 100_000} />
@@ -125,7 +126,7 @@ export function Teneke({
           <span className="kipos-teneke__body" aria-hidden="true" />
           {pourId !== null && (
             <span key={pourId} className="kipos-pour" aria-hidden="true">
-              <i /><i /><i /><i /><i />
+              <i /><i /><i /><i /><i /><i /><i /><i />
             </span>
           )}
         </button>
