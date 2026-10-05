@@ -185,12 +185,12 @@ export function Bed({
         <div className="kipos-bed__soil" aria-hidden="true" />
         <div className="kipos-bed__face" aria-hidden="true">
           {STONES.map((stone, index) => (
-            <i key={index} className="kipos-stone" style={stone} />
+            <i key={index} className={`kipos-stone kipos-stone--${stone.variant}`} style={stone.style} />
           ))}
         </div>
         <div className="kipos-bed__coping" aria-hidden="true">
           {COPING.map((stone, index) => (
-            <i key={index} className="kipos-capstone" style={stone} />
+            <i key={index} className={`kipos-capstone kipos-capstone--${stone.variant}`} style={stone.style} />
           ))}
         </div>
         <i className="kipos-trowel kipos-sprite--trowel" aria-hidden="true" />
@@ -339,38 +339,43 @@ const PACKET_NO: Record<CropId, string> = {
   geranium: 'Νο 18',
 }
 
-// Where a stone is cut from the limestone: anywhere, so long as it fits inside
-// one tile. A baked texture shows a faint seam where it wraps.
-const LIMESTONE_TILE = 360
-const stoneCut = (random: number, size: number) =>
-  `calc(var(--kipos-u) * ${(-random * Math.max(0, LIMESTONE_TILE - size)).toFixed(1)})`
+// The lengths the lit blocks and capstones are drawn at, two of each, as in
+// scripts/build-art.mjs. Each stone takes the nearest and stretches to fit.
+const STONE_LENGTHS = [40, 80, 110, 140, 170, 200]
+const CAPSTONE_LENGTHS = [150, 185, 220]
+const nearest = (lengths: number[], length: number, random: number) => {
+  const i = lengths.reduce((best, l, k) => (Math.abs(l - length) < Math.abs(lengths[best] - length) ? k : best), 0)
+  return i * 2 + (random < 0.5 ? 0 : 1)
+}
+
+type Laid = { variant: number; style: CSSProperties }
 
 // The bed's stonework, laid once from a fixed seed so every bed is built the
 // same. Dressed limestone laid by hand: no two stones the same height or quite
 // level, some warmer and some greyer, lichen on the odd face.
-const STONES: CSSProperties[] = (() => {
+const STONES: Laid[] = (() => {
   const random = seededRandom(1907)
-  const stones: CSSProperties[] = []
+  const stones: Laid[] = []
   const courses = [
     { top: 0, height: 50 },
     { top: 54, height: 46 },
   ]
   const lay = (left: number, top: number, width: number, height: number) => {
-    const r = () => `${Math.round(6 + random() * 12)}%`
     stones.push({
-      left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
-      top: `calc(var(--kipos-u) * ${top.toFixed(1)})`,
-      width: `calc(var(--kipos-u) * ${width.toFixed(1)})`,
-      height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
-      borderRadius: `${r()} ${r()} ${r()} ${r()} / ${r()} ${r()} ${r()} ${r()}`,
-      backgroundPosition: `${stoneCut(random(), width)} ${stoneCut(random(), height)}`,
-      transform: `rotate(${((random() - 0.5) * 2.2).toFixed(2)}deg)`,
-      '--tone': (0.88 + random() * 0.18).toFixed(3),
-      '--warm': (random() * 0.3).toFixed(2),
-      '--lichen': random() < 0.22 ? 1 : 0,
-      '--lx': `${Math.round(random() * 100)}%`,
-      '--ly': `${Math.round(30 + random() * 60)}%`,
-    } as CSSProperties)
+      variant: nearest(STONE_LENGTHS, width, random()),
+      style: {
+        left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
+        top: `calc(var(--kipos-u) * ${top.toFixed(1)})`,
+        width: `calc(var(--kipos-u) * ${width.toFixed(1)})`,
+        height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
+        transform: `rotate(${((random() - 0.5) * 2.2).toFixed(2)}deg)`,
+        '--tone': (0.88 + random() * 0.18).toFixed(3),
+        '--warm': (random() * 0.3).toFixed(2),
+        '--lichen': random() < 0.22 ? 1 : 0,
+        '--lx': `${Math.round(random() * 100)}%`,
+        '--ly': `${Math.round(30 + random() * 60)}%`,
+      } as CSSProperties,
+    })
   }
   for (const [row, course] of courses.entries()) {
     let x = row ? -40 : 0
@@ -387,18 +392,20 @@ const STONES: CSSProperties[] = (() => {
   return stones
 })()
 
-const COPING: CSSProperties[] = (() => {
+const COPING: Laid[] = (() => {
   const random = seededRandom(311)
-  const stones: CSSProperties[] = []
+  const stones: Laid[] = []
   let x = 0
   while (x < 940) {
     const width = Math.min(940 - x, 140 + random() * 70)
     stones.push({
-      left: `calc(var(--kipos-u) * ${x.toFixed(1)})`,
-      width: `calc(var(--kipos-u) * ${(width - 4).toFixed(1)})`,
-      backgroundPosition: `${stoneCut(random(), width - 4)} ${stoneCut(random(), 34)}`,
-      '--tone': (0.94 + random() * 0.1).toFixed(3),
-    } as CSSProperties)
+      variant: nearest(CAPSTONE_LENGTHS, width - 4, random()),
+      style: {
+        left: `calc(var(--kipos-u) * ${x.toFixed(1)})`,
+        width: `calc(var(--kipos-u) * ${(width - 4).toFixed(1)})`,
+        '--tone': (0.94 + random() * 0.1).toFixed(3),
+      } as CSSProperties,
+    })
     x += width
   }
   return stones

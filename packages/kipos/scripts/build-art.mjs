@@ -83,10 +83,12 @@ const rule = (selector, declarations) => rules.push(`${selector} {\n${declaratio
 // restyled. styles.css sets each element's background size and position.
 const PLACES = {
   'kipos-soil': ['.kipos-bed__soil', '.kipos-plant__mound', '.kipos-teneke__soil'],
-  'kipos-limestone': ['.kipos-bed__back', '.kipos-stone', '.kipos-capstone'],
+  'kipos-limestone': ['.kipos-bed__back'],
   'kipos-mortar': ['.kipos-bed__face', '.kipos-bed__coping'],
   'kipos-olive': ['.kipos-tray__wood'],
-  'kipos-paper': ['.kipos-tag', '.kipos-packet__face', '.kipos-teneke__pinch'],
+  'kipos-paper': ['.kipos-packet__face'],
+  'kipos-kraft': ['.kipos-tag'],
+  'kipos-card': ['.kipos-teneke__pinch'],
   'kipos-grain': ['.kipos-packet__face::after'],
   'kipos-can': ['.kipos-can__metal'],
   'kipos-teneke': ['.kipos-teneke__body'],
@@ -380,6 +382,155 @@ const printed = (art) => `<g id='art'>${art}</g><mask id='ink'><use href='#art' 
       <g fill='#2a1a12' transform='rotate(-8 42 52)'><ellipse cx='36' cy='46' rx='.9' ry='1.5'/><ellipse cx='42' cy='42' rx='.9' ry='1.5'/><ellipse cx='48' cy='46' rx='.9' ry='1.5'/><ellipse cx='42' cy='48' rx='.9' ry='1.5'/></g>`)}`),
   )
 }
+
+// ─── The stonework, lit ──────────────────────────────────────────────────────
+//
+// Dressed limestone blocks for the bed's face, lit as surfaces like the
+// plants: each block is pillowed, its arrises rounded and here and there
+// knocked off, its face pitted and crossed by the odd run of chisel marks,
+// and it throws a tight shadow onto the mortar below and to the right. Several
+// lengths and two of each, so neighbours rarely match; Bed.tsx picks the
+// nearest length for each block and stretches it the last little way.
+
+/** An irregular block outline inside w × h: a rounded rectangle, hand-dressed, with a chipped corner or two. */
+function blockOutline(r, w, h) {
+  // Each corner rounds by its own amount; a chipped one is knocked well back.
+  const radii = [0, 1, 2, 3].map(() => (5 + r() * 3) * (r() < 0.35 ? 2 + r() * 0.8 : 1))
+  const points = []
+  const corner = (cx, cy, rad, from) => {
+    for (let k = 0; k <= 4; k++) {
+      const a = from + (k / 4) * (Math.PI / 2)
+      points.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad])
+    }
+  }
+  const edge = (x0, y0, x1, y1) => {
+    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 9))
+    for (let k = 1; k < n; k++) {
+      const t = k / n
+      points.push([x0 + (x1 - x0) * t + (r() - 0.5) * 1.2, y0 + (y1 - y0) * t + (r() - 0.5) * 1.2])
+    }
+  }
+  const [a, b, c, d] = radii
+  corner(a, a, a, Math.PI)
+  edge(a, 0, w - b, 0)
+  corner(w - b, b, b, -Math.PI / 2)
+  edge(w, b, w, h - c)
+  corner(w - c, h - c, c, 0)
+  edge(w - c, h, d, h)
+  corner(d, h - d, d, Math.PI / 2)
+  edge(0, h - d, 0, a)
+  return smooth(points, 0.7)
+}
+
+const limestoneColour = (seed, w, h, top = 0) => {
+  const r = rng(seed)
+  let flecks = ''
+  for (let i = 0; i < (w * h) / 90; i++)
+    flecks += `<circle cx='${f(r() * w)}' cy='${f(r() * h)}' r='${f(0.4 + r() * 1.1)}' fill='${r() < 0.6 ? '#9d8d70' : '#fbf6ea'}' opacity='${f(0.25 + r() * 0.45)}'/>`
+  return `<defs>
+      <filter id='drift' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.02' numOctaves='3' seed='${seed % 97}'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .47  0 0 0 0 .33  0 0 0 -1.6 .95'/></filter>
+      <linearGradient id='weather' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fbf5e6' stop-opacity='.55'/><stop offset='${top}' stop-color='#fbf5e6' stop-opacity='0'/></linearGradient>
+    </defs>
+    <rect width='${w}' height='${h}' fill='#dccfb3'/>
+    <rect width='${w}' height='${h}' filter='url(#drift)' opacity='.55'/>
+    ${top ? `<rect width='${w}' height='${h}' fill='url(#weather)'/>` : ''}
+    ${flecks}`
+}
+
+const stoneMaterial = { bump: 1, ambient: 0.4, spec: 0.05, shine: 8, rim: 0, rimColour: [0, 0, 0], occlusion: 0.45 }
+
+/** The lengths the face's blocks are drawn at; Bed.tsx keeps the same list. */
+const STONE_LENGTHS = [40, 80, 110, 140, 170, 200]
+STONE_LENGTHS.forEach((length, i) => {
+  for (let v = 0; v < 2; v++) {
+    const seed = 1100 + i * 10 + v
+    const r = rng(seed)
+    const W = length, H = 50
+    // Room at the right and foot for the shadow the block throws.
+    const outline = blockOutline(r, W - 3, H - 4)
+    const marks = Array.from({ length: 6 }, (_, k) => {
+      const x = 10 + r() * (W - 30), y = 8 + r() * 26
+      return `M${f(x + k * 0.1)} ${f(y)} l${f(5 + r() * 4)} ${f(6 + r() * 3)}`
+    }).join(' ')
+    rule(`.kipos-stone--${i * 2 + v}`, [
+      `background-image: ${lit(W, H, {
+        body: `<defs><clipPath id='s'><path d='${outline}'/></clipPath></defs><g clip-path='url(#s)'>${limestoneColour(seed, W, H)}</g>`,
+        material: stoneMaterial,
+        shadow: { x: 1.6, y: 2.6, blur: 1.6, opacity: 0.5 },
+        height(api) {
+          api.dome(outline, { blur: 5, amount: 7 })
+          // Broad undulations from the dressing, fine tooth, and the odd pit.
+          api.grain(seed, 7, 2.6)
+          api.grain(seed + 1, 0.8, 0.25)
+          api.bumps(Array.from({ length: 7 }, () => [6 + r() * (W - 14), 6 + r() * (H - 14), 0.7 + r() * 1.1, -0.9]), 0.5)
+          api.groove(marks, { width: 0.9, blur: 0.5, amount: 0.5 })
+        },
+      })}`,
+    ])
+  }
+})
+
+/** Capstone lengths, as above. */
+const CAPSTONE_LENGTHS = [150, 185, 220]
+CAPSTONE_LENGTHS.forEach((length, i) => {
+  for (let v = 0; v < 2; v++) {
+    const seed = 1200 + i * 10 + v
+    const W = length, H = 34
+    // The worn top face tilts up to the light; the rounded front arris turns
+    // to face you; the front face drops into shade at its foot.
+    const profile = (y) => {
+      if (y < 12) return 1.5 * y
+      if (y < 18) {
+        const t = (y - 12) / 6
+        return 18 + 1.5 * 6 * (t - (t * t) / 2)
+      }
+      if (y < 29) return 22.5
+      return 22.5 * Math.sqrt(Math.max(0, 1 - ((y - 29) / 5) ** 2))
+    }
+    const ends = (x) => Math.min(1, Math.min(x, W - x) / 5)
+    rule(`.kipos-capstone--${i * 2 + v}`, [
+      `background-image: ${lit(W, H, {
+        body: limestoneColour(seed, W, H, 0.35),
+        material: stoneMaterial,
+        height(api) {
+          api.surface((x, y) => profile(y) * (0.4 + 0.6 * ends(x)))
+          api.grain(seed, 7, 2.2)
+          api.grain(seed + 1, 0.8, 0.22)
+        },
+      })}`,
+    ])
+  }
+})
+
+// Card: the kraft tag on the bed and the paper label on a tin, lit like the
+// packets. Fibrous stock with a slight curl from the weather, softened edges,
+// a crease from being handled and the odd darker fibre.
+function card(name, colour, fibreDark, fibreLight, seed) {
+  const W = 120, H = 44
+  const r = rng(seed)
+  let fibres = ''
+  for (let i = 0; i < 60; i++) {
+    const x = r() * W, y = r() * H, a = (r() - 0.5) * 0.8, l = 3 + r() * 9
+    fibres += `<path d='M${f(x)} ${f(y)} l${f(Math.cos(a) * l)} ${f(Math.sin(a) * l)}' stroke='${r() < 0.6 ? fibreDark : fibreLight}' stroke-width='${f(0.3 + r() * 0.4)}' opacity='${f(0.2 + r() * 0.35)}'/>`
+  }
+  material(
+    name,
+    lit(W, H, {
+      body: `<defs><filter id='mottle' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.06' numOctaves='3' seed='${seed % 89}'/><feColorMatrix values='0 0 0 0 .4  0 0 0 0 .28  0 0 0 0 .14  0 0 0 -1.2 .7'/></filter></defs>
+        <rect width='${W}' height='${H}' fill='${colour}'/><rect width='${W}' height='${H}' filter='url(#mottle)' opacity='.35'/>${fibres}`,
+      material: { bump: 1, ambient: 0.5, spec: 0.04, shine: 8, rim: 0, rimColour: [0, 0, 0], occlusion: 0.3 },
+      height(api) {
+        // A gentle curl across the card, and its edges softened by handling.
+        api.cylinder({ left: -40, right: W + 40, amount: 10 })
+        api.dome(`M0 0 H${W} V${H} H0Z`, { blur: 2.4, amount: 2 })
+        api.groove(`M${f(W * 0.62)} -2 L${f(W * 0.56)} ${H + 2}`, { width: 1.6, blur: 1.2, amount: 0.8 })
+        api.grain(seed, 0.9, 0.35)
+      },
+    }),
+  )
+}
+card('kipos-kraft', '#c9a46c', '#7a5428', '#e8cf9e', 1301)
+card('kipos-card', '#efe2c3', '#a88a5c', '#fbf4e2', 1302)
 
 // ─── Botanicals ──────────────────────────────────────────────────────────────
 //
