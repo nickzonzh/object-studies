@@ -10,6 +10,7 @@
       "korniza": ["../../packages/korniza/src/index.ts"],
       "keramos": ["../../packages/keramos/src/index.ts"],
       "kollaz": ["../../packages/kollaz/src/index.ts"],
+      "komboloi": ["../../packages/komboloi/src/index.ts"],
       "kipos": ["../../packages/kipos/src/index.ts"]
     }
   },
