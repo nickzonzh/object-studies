@@ -5,7 +5,7 @@
 //   3. bundle a browser consumer (JS + every stylesheet) with Vite.
 // Run after `npm run build`. Exits non-zero on the first failure.
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
@@ -171,7 +171,15 @@ createRoot(document.getElementById('root')).render([
 `,
   )
   run(process.execPath, [join(root, 'node_modules/vite/bin/vite.js'), 'build', '--logLevel', 'error'])
-  console.log('bundle: vite consumer build ok')
+  // kipos links its art as image files beside its stylesheet: the bundler must
+  // have found every one, emitting it as an asset or inlining it.
+  const assets = readdirSync(join(dir, 'dist/assets'))
+  const css = assets.filter((name) => name.endsWith('.css')).map((name) => readFileSync(join(dir, 'dist/assets', name), 'utf8')).join('')
+  if (css.includes('./art/')) throw new Error('kipos art was left unresolved in the consumer stylesheet')
+  const images = assets.filter((name) => name.endsWith('.avif')).length + (css.match(/data:image\/avif/g) ?? []).length
+  const shipped = readdirSync(join(dir, 'node_modules/kipos/dist/art')).length
+  if (images < shipped) throw new Error('kipos ships ' + shipped + ' images but the consumer bundle has ' + images)
+  console.log('bundle: vite consumer build ok (' + images + ' kipos images)')
 } finally {
   if (!process.env.KEEP_SMOKE) rmSync(dir, { recursive: true, force: true })
   else console.log('kept ' + dir)

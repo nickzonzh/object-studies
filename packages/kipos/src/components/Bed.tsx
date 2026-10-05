@@ -10,7 +10,6 @@ import { COPING, STONES } from '../lib/stonework.js'
 import { Plant } from './Plant.js'
 import { Pour } from './Pour.js'
 import { plantProgress } from '../lib/plants.js'
-import '../art.css'
 import '../styles.css'
 
 export type BedProps = {

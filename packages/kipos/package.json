@@ -39,7 +39,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "build": "vite build && node scripts/bundle-art.mjs && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "check:package": "publint --strict && attw --pack --profile esm-only"
   },

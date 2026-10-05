@@ -8,7 +8,6 @@ import { type KiposLabelOverrides, cropSlots, fill, mergeLabels, stageName } fro
 import { Plant } from './Plant.js'
 import { Pour } from './Pour.js'
 import { plantProgress } from '../lib/plants.js'
-import '../art.css'
 import '../styles.css'
 
 export type TenekePlant = 'basil' | 'geranium'

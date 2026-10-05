@@ -88,6 +88,7 @@
   border-radius: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) 0 0;
   /* The lit far wall from art.css, in the near wall's shade. */
   background-size: 100% 100%;
+  background-color: #bcae90;
   filter: brightness(0.92);
 }
 
@@ -97,6 +98,7 @@
   top: calc(var(--kipos-u) * 356);
   width: calc(var(--kipos-u) * 908);
   height: calc(var(--kipos-u) * 56);
+  background-color: #4e2e1b;
   background-size: calc(var(--kipos-u) * 200);
   /* The walls shade the soil along the back and the ends. */
   box-shadow:
@@ -114,6 +116,7 @@
   height: calc(var(--kipos-u) * 104);
   overflow: hidden;
   border-radius: 0 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 4);
+  background-color: #8c7d63;
   background-size: calc(var(--kipos-u) * 160);
   box-shadow: inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(20, 12, 4, 0.45);
 }
@@ -144,6 +147,7 @@
   width: calc(var(--kipos-u) * 940);
   height: calc(var(--kipos-u) * 34);
   /* Mortar in the joints between capstones. */
+  background-color: #8c7d63;
   background-size: calc(var(--kipos-u) * 160);
   border-radius: calc(var(--kipos-u) * 4);
 }
@@ -155,6 +159,7 @@
   border-radius: calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3);
   /* The lit capstone from art.css: worn top face, rounded arris, front face. */
   background-size: 100% 100%;
+  background-color: #d3c6a9;
   filter: brightness(var(--tone, 1));
   /* The overhang's shadow on the wall below. */
   box-shadow: 0 calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) rgba(20, 12, 4, 0.45);
@@ -632,6 +637,7 @@
   border-radius: calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 3);
   /* The lit kraft card from art.css. */
   background-size: 100% 100%;
+  background-color: #c4a068;
   box-shadow:
     0 calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1) rgba(40, 24, 8, 0.35),
     calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 5) rgba(40, 24, 8, 0.3);
@@ -740,6 +746,7 @@
   pointer-events: none;
   /* The lit board, drawn at this size, from art.css. */
   background-size: 100% 100%;
+  background-color: #a8784a;
   box-shadow:
     0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 2) rgba(30, 16, 4, 0.4),
     0 calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 16) rgba(30, 16, 4, 0.25);
@@ -1075,6 +1082,7 @@
   border-radius: 3px;
   /* The lit paper label from art.css, with the word printed on it. */
   background-size: 100% 100%;
+  background-color: #ece0c2;
   box-shadow:
     0 1px 1px rgba(40, 20, 5, 0.3),
     1px 3px 5px rgba(40, 20, 5, 0.22);

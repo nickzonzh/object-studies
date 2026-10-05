@@ -26,16 +26,22 @@ export function Yard() {
 ```
 
 The stylesheet is a separate import so it can be bundled, ordered or overridden
-like any other CSS. Every rule is scoped to `kipos` classes.
+like any other CSS. Every rule is scoped to `kipos` classes. It is small (about
+8 KB gzipped) and links its art as image files in `kipos/dist/art/`, which your
+bundler picks up from the stylesheet like any other `url()`: a page draws
+without waiting for the art, and fetches only the art it shows. Each surface
+has a matching base colour until its image arrives.
 
 MIT. React 19. No runtime dependency beyond [`object-studies-core`](../core).
 Everything is drawn with DOM, CSS and images: no canvas, no WebGL. The
 materials (soil, limestone, olive wood, galvanised steel, whitewash, paper) and
-the botanical drawings are drawn as SVG by `scripts/build-art.mjs` and baked
-into `src/art.css`. The plants, the can and the tins are lit as surfaces by
-`scripts/relief.mjs` (each drawing has a colour layer and a height layer, lit
-from one upper-left sun) and baked to small AVIF images, as is anything grown
-from noise. Change the scripts and re-run them; never edit `art.css` by hand.
+the botanical drawings are drawn as SVG by `scripts/build-art.mjs`, which
+writes `src/art.css` and the images in `src/art/`. The plants, the can and the
+tins are lit as surfaces by `scripts/relief.mjs` (each drawing has a colour
+layer and a height layer, lit from one upper-left sun) and baked to AVIF, small
+drawings packed onto a sheet per crop. The build joins `art.css` to the
+published stylesheet and copies the images beside it (`scripts/bundle-art.mjs`).
+Change the scripts and re-run them; never edit `art.css` or `src/art/` by hand.
 
 ## How the garden keeps time
 

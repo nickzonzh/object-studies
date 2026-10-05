@@ -1,21 +1,30 @@
-// Bakes Kipos's materials and botanical sprites into src/art.css.
+// Bakes Kipos's materials and botanical sprites into src/art.css and the
+// images it links to in src/art/.
 //
 //   node packages/kipos/scripts/build-art.mjs
 //
-// Drawings are SVG data URIs. Anything grown from noise (feTurbulence) is
-// baked here into a small AVIF instead: a browser re-runs an SVG filter every
-// time anything over it repaints, which made the garden expensive to touch.
-// The plants are lit as surfaces by scripts/relief.mjs and baked the same way.
+// Small vector drawings stay inline as SVG data URIs. Anything grown from
+// noise (feTurbulence) is baked here into a small AVIF instead: a browser
+// re-runs an SVG filter every time anything over it repaints, which made the
+// garden expensive to touch. The plants are lit as surfaces by
+// scripts/relief.mjs and baked the same way. Baked images are files in
+// src/art/, named by their content, so the stylesheet stays small, a page
+// fetches only the art it shows, and each image caches on its own. Small
+// drawings are packed into a sheet per crop (and one for the wall, one for
+// pieces every plant shares): a handful of requests instead of dozens, and
+// each sheet too big for a consumer's bundler to inline back into its CSS.
 // The output is generated; change this script and re-run it rather than
 // editing art.css by hand. Everything is seeded, so the same script always
 // draws the same garden.
 
-import { writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
-import { MATERIALS, relief as litDrawing } from './relief.mjs'
+import { MATERIALS, litCanvas, relief as litDrawing } from './relief.mjs'
 
 const OUT = fileURLToPath(new URL('../src/art.css', import.meta.url))
+const ART = fileURLToPath(new URL('../src/art/', import.meta.url))
 const STONEWORK = fileURLToPath(new URL('../src/lib/stonework.ts', import.meta.url))
 
 // mulberry32, the same generator object-studies-core exports as seededRandom.
@@ -72,8 +81,7 @@ async function bake({ svg, w, h, scale, quality }) {
   const image = await loadImage(Buffer.from(svg.replace(`width='${w}' height='${h}'`, `width='${width}' height='${height}'`)))
   const canvas = createCanvas(width, height)
   canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
-  const avif = canvas.toBuffer('image/avif', { quality, speed: 2 })
-  return `url("data:image/avif;base64,${avif.toString('base64')}")`
+  return canvas.toBuffer('image/avif', { quality, speed: 2 })
 }
 
 const rules = []
@@ -588,6 +596,7 @@ STONE_LENGTHS.forEach((length, i) => {
     }).join(' ')
     rule(`.kipos-stone--${i * 2 + v}`, [
       `background-image: ${lit(W, H, {
+        sheet: 'wall',
         body: `<defs><clipPath id='s'><path d='${outline}'/></clipPath></defs><g clip-path='url(#s)'>${limestoneColour(seed, W, H)}</g>`,
         material: stoneMaterial,
         shadow: { x: 1.6, y: 2.6, blur: 1.6, opacity: 0.5 },
@@ -623,6 +632,7 @@ CAPSTONE_LENGTHS.forEach((length, i) => {
     const ends = (x) => Math.min(1, Math.min(x, W - x) / 5)
     rule(`.kipos-capstone--${i * 2 + v}`, [
       `background-image: ${lit(W, H, {
+        sheet: 'wall',
         body: limestoneColour(seed, W, H, 0.35),
         material: stoneMaterial,
         height(api) {
@@ -710,22 +720,31 @@ function hairs(seed, w, h, count, opacity) {
 }
 
 /** A lit drawing, baked at the end of the run. */
-function lit(w, h, { body, height, material, scale = 2, mirror = false, quality, shadow, tile }) {
+/** A lit drawing, baked at the end of the run: alone, or onto `sheet` with the others that go with it. */
+function lit(w, h, { body, height, material, scale = 2, mirror = false, quality, shadow, tile, sheet }) {
   const token = `@@bake-${bakes.length}@@`
-  bakes.push({
-    token,
-    run: () =>
-      litDrawing({ w, h, scale, mirror, shadow, tile, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material, quality }),
-  })
+  const drawing = () => ({ w, h, scale, mirror, shadow, tile, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material })
+  bakes.push({ token, sheet, run: () => litDrawing({ ...drawing(), quality }), draw: () => litCanvas(drawing()) })
   return token
+}
+
+/** Which sheet a sprite is packed onto: the crop it belongs to, or the pieces every plant shares. */
+function sheetFor(name) {
+  if (/^(tomato|tie)-/.test(name)) return 'tomato'
+  if (/^(cucumber|tendril)/.test(name)) return 'cucumber'
+  if (/^melon/.test(name)) return 'melon'
+  if (/^basil/.test(name)) return 'basil'
+  if (/^(geranium|bloom)/.test(name)) return 'geranium'
+  return 'common'
 }
 
 /** A sprite class for both orientations: `-r` grows right, `-l` left. The sun stays at the upper left on both. */
 function litSprite(name, w, h, drawing) {
-  rule(`.kipos-sprite--${name}-r`, [`background-image: ${lit(w, h, drawing)}`])
-  rule(`.kipos-sprite--${name}-l`, [`background-image: ${lit(w, h, { ...drawing, mirror: true })}`])
+  const sheet = sheetFor(name)
+  rule(`.kipos-sprite--${name}-r`, [`background-image: ${lit(w, h, { sheet, ...drawing })}`])
+  rule(`.kipos-sprite--${name}-l`, [`background-image: ${lit(w, h, { sheet, ...drawing, mirror: true })}`])
 }
-const litSingle = (name, w, h, drawing) => rule(`.kipos-sprite--${name}`, [`background-image: ${lit(w, h, drawing)}`])
+const litSingle = (name, w, h, drawing) => rule(`.kipos-sprite--${name}`, [`background-image: ${lit(w, h, { sheet: sheetFor(name), ...drawing })}`])
 
 // Tomato: a compound leaf. Rachis from the stem at the left, toothed leaflets
 // in pairs, small leaflets between them, and a terminal leaflet. Each leaflet
@@ -1016,7 +1035,7 @@ function rotateAbout(x, y, deg) {
   }
   const shadow = { x: 1.2, y: 1.8, blur: 1.4, opacity: 0.42 }
   litSingle('tomato-green', W, H, { scale: 3, shadow, body: fruit('#8eb24c', '#c5d681'), material: { ...MATERIALS.waxyFruit, spec: 0.6 }, height })
-  const red = lit(W, H, { scale: 3, shadow, body: fruit('#d9361b', '#e8742c'), material: 'waxyFruit', height })
+  const red = lit(W, H, { scale: 3, shadow, sheet: 'tomato', body: fruit('#d9361b', '#e8742c'), material: 'waxyFruit', height })
   rule('.kipos-sprite--tomato-red', [`background-image: ${red}`])
   // The ripe drawing is also laid over a green tomato, so it can cross-fade into it.
   material('kipos-tomato-red', red)
@@ -1254,6 +1273,7 @@ for (const [name, cloth, fold] of [['tie-cream', '#ece3cf', '#cfc4ab'], ['tie-bl
   }
   rule('.kipos-sprite--trowel', [
     `background-image: ${lit(W, H, {
+      sheet: 'wall',
       scale: 3,
       body: `<defs>
           <clipPath id='blade'><path d='${blade}'/></clipPath>
@@ -1372,8 +1392,67 @@ ${materials.join('\n\n')}
 
 ${rules.join('\n\n')}
 `
+mkdirSync(ART, { recursive: true })
+// Images are named by their content, so an unchanged one is rewritten in place;
+// only images nothing uses any more are removed, once the new ones are written.
+const written = new Set()
 let baked = css
-// A drawing used in two places shares one token, so replace every use.
-for (const job of bakes) baked = baked.replaceAll(job.token, job.run ? await job.run() : await bake(job))
+let bytes = 0
+const save = (image, prefix = '') => {
+  const name = `${prefix}${createHash('sha256').update(image).digest('hex').slice(0, 12)}.avif`
+  writeFileSync(ART + name, image)
+  written.add(name)
+  bytes += image.length
+  return name
+}
+const sheets = new Map()
+for (const job of bakes) {
+  if (job.sheet) {
+    if (!sheets.has(job.sheet)) sheets.set(job.sheet, [])
+    sheets.get(job.sheet).push(job)
+    continue
+  }
+  const name = save(job.run ? await job.run() : await bake(job))
+  // A drawing used in two places shares one token, so replace every use.
+  baked = baked.replaceAll(job.token, `url("./art/${name}")`)
+}
+
+// Each sheet is packed in shelves, tallest drawings first, with a clear gutter
+// round every drawing so scaling one never picks up a neighbour's edge. A
+// drawing is shown by scaling the sheet so it fills the element and sliding
+// the sheet to it, in percentages, so it still stretches with its element.
+const GUTTER = 6, SHEET_WIDTH = 1200
+const pct = (n) => `${Math.round(n * 10000) / 10000}%`
+for (const [sheet, jobs] of sheets) {
+  const drawn = []
+  for (const job of jobs) drawn.push({ job, canvas: await job.draw() })
+  const order = [...drawn].sort((a, b) => b.canvas.height - a.canvas.height)
+  let x = GUTTER, y = GUTTER, shelf = 0, width = 0
+  for (const item of order) {
+    if (x + item.canvas.width + GUTTER > SHEET_WIDTH && x > GUTTER) {
+      x = GUTTER
+      y += shelf + GUTTER
+      shelf = 0
+    }
+    item.x = x
+    item.y = y
+    x += item.canvas.width + GUTTER
+    shelf = Math.max(shelf, item.canvas.height)
+    width = Math.max(width, x)
+  }
+  const height = y + shelf + GUTTER
+  const page = createCanvas(width, height)
+  const ctx = page.getContext('2d')
+  for (const item of drawn) ctx.drawImage(item.canvas, item.x, item.y)
+  const name = save(page.toBuffer('image/avif', { quality: 12, speed: 2 }), `${sheet}-`)
+  for (const { job, canvas, x: sx, y: sy } of drawn) {
+    const along = (offset, size, whole) => (whole === size ? '0%' : pct((offset / (whole - size)) * 100))
+    baked = baked.replaceAll(
+      job.token,
+      `url("./art/${name}"); background-size: ${pct((width / canvas.width) * 100)} ${pct((height / canvas.height) * 100)}; background-position: ${along(sx, canvas.width, width)} ${along(sy, canvas.height, height)}; background-repeat: no-repeat`,
+    )
+  }
+}
+for (const name of readdirSync(ART)) if (!written.has(name)) rmSync(ART + name)
 writeFileSync(OUT, baked)
-console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB, ${rules.length} sprites, ${materials.length} materials, ${bakes.length} baked`)
+console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB of CSS, ${rules.length} sprites, ${materials.length} materials, ${bakes.length} images (${(bytes / 1024).toFixed(0)} KB)`)
