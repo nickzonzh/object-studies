@@ -1,0 +1,54 @@
+{
+  "name": "komboloi",
+  "version": "0.0.0",
+  "description": "Greek worry beads for React: a komboloi on a brass peg that you can lift, swing and click, with simulated cord physics and synthesised clacks.",
+  "license": "MIT",
+  "author": "Nick <nick@zonnioshunt.com.au>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickzonzh/object-studies.git",
+    "directory": "packages/komboloi"
+  },
+  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/komboloi#readme",
+  "bugs": "https://github.com/nickzonzh/object-studies/issues",
+  "keywords": [
+    "react",
+    "canvas",
+    "physics",
+    "worry-beads",
+    "fidget",
+    "skeuomorphic",
+    "component"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "types": "./dist/style.css.d.ts",
+      "default": "./dist/style.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc -p tsconfig.build.json && node ../../scripts/finalize-declarations.mjs",
+    "build:page": "node scripts/build-page.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:package": "publint --strict && attw --pack --profile esm-only"
+  },
+  "dependencies": {
+    "object-studies-core": "^0.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
