@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz', 'kipos']
+const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz', 'komboloi', 'kipos']
 const rootManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const dev = rootManifest.devDependencies
 const dir = mkdtempSync(join(tmpdir(), 'object-studies-consumer-'))
@@ -56,6 +56,7 @@ import { Frame, FrameImage, frameVariants } from 'korniza'
 import { Frame as ModernBlack } from 'korniza/modern-black'
 import { Vase } from 'keramos'
 import { CraftTable, CraftPaper, GooglyEye } from 'kollaz'
+import { Komboloi } from 'komboloi'
 import { Bed, Teneke } from 'kipos'
 
 const checks = [
@@ -66,6 +67,7 @@ const checks = [
   ['keramos', renderToString(h(Vase, { shape: 'amphora', vaseStyle: 'black-figure', seed: 3 }))],
   ['kollaz', renderToString(h(CraftTable))],
   ['kollaz', renderToString(h(CraftPaper, { torn: ['top'] }, h(GooglyEye, { size: 40 })))],
+  ['komboloi', renderToString(h(Komboloi, { material: 'mati', beads: 23, seed: 2 }))],
   ['kipos', renderToString(h(Bed, { persistence: { key: 'smoke' } }))],
   ['kipos', renderToString(h(Teneke, { plant: 'geranium' }))],
 ]
@@ -91,9 +93,11 @@ import 'korniza/style.css'
 import 'korniza/dark-walnut.css'
 import { Vase, SHAPES, type ShapeId, type VaseProps } from 'keramos'
 import { CraftTable, CraftPaper, GooglyEye, type Edge } from 'kollaz'
+import { Komboloi, MATERIALS, type MaterialId } from 'komboloi'
 import { Bed, Teneke, type Light, type TenekePlant } from 'kipos'
 import 'keramos/style.css'
 import 'kollaz/style.css'
+import 'komboloi/style.css'
 import 'kipos/style.css'
 
 const pieceMode: VaseProps['mode'] = 'still'
@@ -117,6 +121,7 @@ export function Consumer({ variant }: { variant: FrameVariant }) {
       {(Object.keys(SHAPES) as ShapeId[]).map((shape) => <Vase key={shape} shape={shape} mode={pieceMode} />)}
       <CraftTable />
       <CraftPaper torn={torn}><GooglyEye track /></CraftPaper>
+      {(Object.keys(MATERIALS) as MaterialId[]).map((material) => <Komboloi key={material} material={material} beads={21} onClack={(strength: number) => strength} />)}
       <Bed light={dusk} speed={60} persistence={false} labels={{ crops: { tomato: 'Ντομάτα' } }} />
       <Teneke plant={herb} persistence={{ key: 'tin' }} />
     </>
@@ -149,6 +154,7 @@ import { Frame } from 'korniza'
 import { Frame as OakFrame } from 'korniza/carved-oak'
 import { Vase } from 'keramos'
 import { CraftTable } from 'kollaz'
+import { Komboloi } from 'komboloi'
 import { Bed, Teneke } from 'kipos'
 import 'melani/style.css'
 import 'kimolia/style.css'
@@ -156,10 +162,11 @@ import 'korniza/style.css'
 import 'korniza/carved-oak.css'
 import 'keramos/style.css'
 import 'kollaz/style.css'
+import 'komboloi/style.css'
 import 'kipos/style.css'
 createRoot(document.getElementById('root')).render([
   h(Whiteboard, { key: 'a' }), h(Chalkboard, { key: 'k' }), h(Frame, { key: 'f', variant: 'carved-oak' }), h(OakFrame, { key: 'o' }),
-  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }), h(Bed, { key: 'b' }), h(Teneke, { key: 't' }),
+  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }), h(Komboloi, { key: 'm' }), h(Bed, { key: 'b' }), h(Teneke, { key: 't' }),
 ])
 `,
   )
