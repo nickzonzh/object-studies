@@ -419,15 +419,16 @@ function leaflet(length, width, teeth, r, { tip = 1, blunt = 0 } = {}) {
 function stipple(hair) {
   const r = rng(3)
   let dots = ''
-  for (let i = 0; i < 6; i++)
-    dots += `<circle cx='${f(r() * 6)}' cy='${f(r() * 6)}' r='${f(0.25 + r() * 0.25)}' fill='#fffbe6' opacity='${f(hair * (0.5 + r() * 0.6))}'/>`
+  // A wide tile of uneven dots, so no grid shows.
+  for (let i = 0; i < 22; i++)
+    dots += `<circle cx='${f(r() * 12)}' cy='${f(r() * 12)}' r='${f(0.16 + r() * 0.22)}' fill='#f2f6e0' opacity='${f(hair * (0.3 + r() * 0.5))}'/>`
   return dots
 }
 
 const leafDefs = (id, light, dark, { gloss = 0, hair = 0 } = {}) => `
   <linearGradient id='${id}' x1='0' y1='0' x2='.35' y2='1'><stop offset='0' stop-color='${light}'/><stop offset='1' stop-color='${dark}'/></linearGradient>
   ${gloss ? `<radialGradient id='${id}g' cx='.35' cy='.3' r='.55'><stop offset='0' stop-color='#fff' stop-opacity='${gloss}'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></radialGradient>` : ''}
-  ${hair ? `<pattern id='${id}h' width='6' height='6' patternUnits='userSpaceOnUse'>${stipple(hair)}</pattern>` : ''}`
+  ${hair ? `<pattern id='${id}h' width='12' height='12' patternUnits='userSpaceOnUse'>${stipple(hair)}</pattern>` : ''}`
 
 const mirrorX = (w, body) => `<g transform='translate(${w} 0) scale(-1 1)'>${body}</g>`
 
@@ -726,6 +727,19 @@ single('melon-vine', 170, 180, `
   <path d='M86 14 c4 -10 14 -10 14 -2 c0 6 -8 6 -7 0' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>
   <path d='M152 62 c10 2 12 12 4 14 c-5 1 -6 -5 -1 -6' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>
   <path d='M149 128 c-10 0 -12 10 -5 12 c5 1 6 -4 1 -5' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>`)
+
+// Tendril: a fine shoot that reaches out from the vine, then coils tight.
+{
+  const cx = 29, cy = 12
+  let d = 'M2 34 C9 29 15 20 22 13'
+  let angle = Math.PI, radius = 7
+  for (let k = 0; k < 30; k++) {
+    angle += 0.42
+    radius *= 0.93
+    d += ` L${f(cx + Math.cos(angle) * radius)} ${f(cy + Math.sin(angle) * radius)}`
+  }
+  sprite('tendril', 40, 36, '', `<path d='${d}' stroke='#557f36' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='${d}' stroke='#9fc57a' stroke-width='.5' fill='none' stroke-opacity='.7' transform='translate(-.3 -.3)'/>`)
+}
 
 // Rag ties: strips of old cotton knotted round the cane.
 single('tie-cream', 26, 14, '', `

@@ -49,6 +49,8 @@ function spriteFor(part: Part, crop: CropId): string {
       return 'kipos-sprite--bloom'
     case 'vine':
       return 'kipos-sprite--melon-vine'
+    case 'tendril':
+      return `kipos-sprite--tendril-${dir}`
     default:
       return ''
   }
@@ -72,11 +74,19 @@ function partStyle(part: Part, progress: number, shown: number, index: number, b
     const span = part.span ?? Math.max(0.05, 0.78 - part.at)
     style['--grow'] = Math.max(0.04, step((progress - part.at) / span))
   } else {
-    // Parts set at sowing (canes, twine) are simply there; the rest grow in.
-    style['--s'] = shown === 0 ? 1 : step((progress - shown) / 0.06)
+    // Parts set at sowing (canes, twine) are simply there. A leaf unfolds small
+    // and keeps expanding for a while; anything else grows in quickly.
+    style['--s'] =
+      shown === 0 ? 1 : LEAVES.has(part.kind) ? 0.3 + 0.7 * step((progress - shown) / 0.24) : step((progress - shown) / 0.06)
   }
-  // Leaves further back sit in each other's shade; no two quite match.
-  if (LEAVES.has(part.kind)) style['--shade'] = (0.84 + ((index * 53) % 17) / 100 + (part.z ? 0.07 : 0)).toFixed(2)
+  // Leaves behind the stem sit in its shade, leaves coming towards you catch
+  // the light; no two quite match.
+  if (LEAVES.has(part.kind)) {
+    const depth = (part.z ?? 0) < 0 ? 0.76 : (part.z ?? 0) > 0 ? 1.04 : 0.92
+    style['--shade'] = (depth + ((index * 53) % 7) / 100).toFixed(2)
+  }
+  // Seed leaves yellow and fall away once the plant has true leaves to spare.
+  if (part.kind === 'cotyledon') style['--age'] = step((progress - 0.35) / 0.3)
   if (part.ripeAt !== undefined) {
     const span = Math.max(0.01, part.ripeAt - part.at)
     style['--size'] = 0.3 + 0.7 * step((progress - part.at) / span)
@@ -113,6 +123,13 @@ function segmentView(drawing: PlantDrawing, onSegments: Placed[][][], s: number,
   const width = stalk.width * (1 - (0.45 * i) / count)
   // Wilting bends each joint a little more than the one below.
   const slump = (stalk.side * stalk.wilt * (i + 1)) / ((count * (count + 1)) / 2)
+  const placed = (list: Placed[]) =>
+    list.map(({ part, index }) => {
+      const along = part.along ?? 0
+      const shown = Math.max(part.at, arrival(stalk, drawing.segments[s], along))
+      if (progress < shown || progress >= (part.until ?? Infinity)) return null
+      return <PartView key={index} part={part} index={index} progress={progress} shown={shown} base={along - i * length} crop={crop} />
+    })
   const style: Record<string, string | number> = {
     height: u(length),
     '--a': `${Math.round((angles[i] - (i ? angles[i - 1] : 0)) * 10) / 10}deg`,
@@ -124,16 +141,13 @@ function segmentView(drawing: PlantDrawing, onSegments: Placed[][][], s: number,
   }
   return (
     <span key={`${s}-${i}`} className={`kipos-seg kipos-seg--${stalk.kind}`} style={style as CSSProperties}>
+      {/* Behind the stem first, then the stem, then everything in front of it. */}
+      {placed(onSegments[s][i].filter(({ part }) => (part.z ?? 0) < 0))}
       <i
         className="kipos-seg__body"
         style={{ width: u(width), '--w': Math.round(width * 100) / 100, '--grow': Math.round(grow * 20) / 20 } as CSSProperties}
       />
-      {onSegments[s][i].map(({ part, index }) => {
-        const along = part.along ?? 0
-        const shown = Math.max(part.at, arrival(stalk, drawing.segments[s], along))
-        if (progress < shown) return null
-        return <PartView key={index} part={part} index={index} progress={progress} shown={shown} base={along - i * length} crop={crop} />
-      })}
+      {placed(onSegments[s][i].filter(({ part }) => (part.z ?? 0) >= 0))}
       {/* The growing tip: a bud of new leaves riding the top of the stalk until it stops. */}
       {stalk.kind !== 'stalk' && (grow < 1 || i + 1 === count) && progress < stalk.to + 0.02 && (
         <span className="kipos-seg__tip" style={{ '--grow': Math.round(grow * 20) / 20 } as CSSProperties}>
@@ -168,7 +182,7 @@ export const Plant = memo(function Plant({ crop, progress, wilted, seed }: Plant
         <i className="kipos-plant__shadow" style={{ '--spread': step(progress) } as CSSProperties} />
         <i className="kipos-plant__mound" />
         {drawing.parts.map((part, index) =>
-          part.stalk === undefined && progress >= part.at ? (
+          part.stalk === undefined && progress >= part.at && progress < (part.until ?? Infinity) ? (
             <PartView key={index} part={part} index={index} progress={progress} shown={part.at} base={0} crop={crop} />
           ) : null,
         )}

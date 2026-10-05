@@ -502,6 +502,24 @@
 .kipos-part--basil-leaf,
 .kipos-part--round-leaf { filter: brightness(var(--shade, 1)); }
 
+/* The seed leaves wither: they pale, yellow, droop and drop. */
+.kipos-part--cotyledon {
+  filter: saturate(calc(1 - var(--age, 0) * 0.5)) sepia(calc(var(--age, 0) * 0.55));
+  opacity: calc(1 - var(--age, 0) * 0.9);
+  transform: rotate(calc(var(--r, 0deg) + var(--age, 0) * var(--side, 0) * 40deg)) scale(var(--s, 1));
+  transition: transform 1200ms ease, opacity 1200ms ease, filter 1200ms ease;
+}
+
+/* A tendril has its grip; it doesn't wilt. */
+.kipos-part--tendril { transform: rotate(var(--r, 0deg)) scale(var(--s, 1)); }
+
+/* The ground darkened under a melon, where it rests. Swells with the fruit. */
+.kipos-part--pool {
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 45%, rgba(18, 10, 4, 0.6), rgba(18, 10, 4, 0.25) 55%, rgba(18, 10, 4, 0) 72%);
+  transform: scale(calc(var(--s, 1) * var(--size, 1)));
+}
+
 .kipos-part--cane { filter: drop-shadow(calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1.5) rgba(30, 20, 8, 0.3)); }
 
 .kipos-part--twine {

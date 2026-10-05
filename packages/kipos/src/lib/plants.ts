@@ -35,6 +35,8 @@ export type PartKind =
   | 'melon'
   | 'vine'
   | 'bloom'
+  | 'tendril'
+  | 'pool'
 
 export type Part = {
   kind: PartKind
@@ -50,6 +52,8 @@ export type Part = {
   side: -1 | 0 | 1
   /** Progress at which the part appears. */
   at: number
+  /** Progress at which it is gone again: a flower once its fruit has set. */
+  until?: number
   /** Progress at which a fruit reaches full size and colour. */
   ripeAt?: number
   /** A trailing vine unrolls with growth instead of popping in. */
@@ -58,7 +62,7 @@ export type Part = {
   span?: number
   /** Which drawing of several to use. */
   variant: number
-  /** Drawn in front of lower values. */
+  /** Drawn in front of lower values. On a stalk, below 0 is behind the stem. */
   z?: number
   /** The stalk the part grows on, by index, and how far up it. */
   stalk?: number
@@ -207,51 +211,86 @@ function tomato(random: () => number): Drawn {
   const stalks: Stalk[] = [
     { kind: 'stem', origin: [0, 0], points: spine, width: 6.5, from: 0.07, to: 0.78, side: random() < 0.5 ? -1 : 1, wilt: 34 },
   ]
-  for (let i = 0; i < 13; i++) {
+  const spineAt = (y: number) => alongAt(stalks[0], y)
+  // Leaves come off the stem all the way round it: some reach out to the side,
+  // some come towards you and foreshorten, and some go behind the stem into
+  // its shade. Low leaves are big and arch down under their own weight; the
+  // young ones near the tip are small and reach up.
+  const LEAVES = 16
+  for (let i = 0; i < LEAVES; i++) {
     const side = i % 2 === 0 ? -1 : 1
-    const y = 24 + i * 21 + jitter(8)
-    const w = 118 - i * 4.2
+    const rise = i / (LEAVES - 1)
+    const y = 20 + rise * 270 + jitter(10)
+    const depth = ([-1, 0, 1, 0] as const)[i % 4]
+    const size = (124 - rise * 62) * (0.86 + random() * 0.28)
+    const toward = depth === 1
     parts.push(
-      onStalk(stalks, 0, alongAt(stalks[0], y), {
+      onStalk(stalks, 0, spineAt(y), {
         kind: 'leaf',
         x: side * 1.5,
         y: 0,
-        w,
-        h: w * 0.53,
+        w: size * (toward ? 0.6 : 1),
+        h: size * 0.53 * (toward ? 1.12 : 1),
         anchor: facing(TOMATO_LEAF_BASE, side),
-        r: side * (-14 + jitter(22)) + (i > 9 ? side * -14 : 0),
+        r: side * (18 - rise * 58 + jitter(20)),
         side,
         at: 0.07,
         variant: Math.floor(random() * 3),
+        z: depth,
       }),
     )
+    // A side shoot in the crook of some leaves, reaching up.
+    if (i % 4 === 2 && rise < 0.8)
+      parts.push(
+        onStalk(stalks, 0, spineAt(y + 6), {
+          kind: 'leaf',
+          x: side * 1.5,
+          y: 0,
+          w: size * 0.42,
+          h: size * 0.42 * 0.53,
+          anchor: facing(TOMATO_LEAF_BASE, side),
+          r: side * (-48 + jitter(12)),
+          side,
+          at: 0.2,
+          variant: Math.floor(random() * 3),
+          z: 0,
+        }),
+      )
   }
   for (const [i, y] of [112, 196, 280].entries()) {
     parts.push(part({ kind: 'tie', x: -40 - y * 0.052, y, w: 18, h: 10, anchor: [0.5, 0.5], r: -8, at: 0.28 + i * 0.12, z: 1 }))
     parts.push(part({ kind: 'tie', x: 38 + y * 0.07, y: y - 8, w: 18, h: 10, anchor: [0.5, 0.5], r: 10, at: 0.32 + i * 0.12, variant: 1 - (i % 2), z: 1 }))
   }
-  const flowers: [number, number][] = [[-22, 150], [24, 198], [-16, 238], [20, 270], [-26, 210]]
-  for (const [x, y] of flowers)
-    parts.push(...hanging(stalks, 0, alongAt(stalks[0], y), x * 0.8, -6, { kind: 'flower', x: 0, y: 0, w: 16, h: 16, anchor: [0.5, 0], r: jitter(40), at: 0.5, z: 1 }))
-  // Trusses of fruit hanging under the leaves, lowest ripening first.
-  const fruit: [number, number, number][] = [
-    [-16, 104, 34], [8, 96, 30], [20, 142, 32], [-24, 178, 30], [-6, 170, 26], [18, 220, 30], [-12, 252, 26], [24, 262, 22],
-  ]
-  fruit.forEach(([x, y, size], i) => {
-    parts.push(
-      ...hanging(stalks, 0, alongAt(stalks[0], y + 10), x + jitter(4), -10 + jitter(4), {
-        kind: 'tomato',
-        x: 0,
-        y: 0,
-        w: size,
-        h: size * 0.95,
-        anchor: [0.5, 0.06],
-        r: jitter(16),
-        at: 0.64 + i * 0.01,
-        ripeAt: 0.84 + (i / fruit.length) * 0.14 + random() * 0.03,
-        z: 2,
-      }),
-    )
+  // Trusses: each comes off the stem between leaves and carries a few flowers,
+  // which set into a hand of fruit, the lowest truss ripening first.
+  const trusses: [-1 | 1, number, number][] = [[-1, 88, 3], [1, 126, 3], [-1, 166, 2], [1, 206, 3], [-1, 244, 2], [1, 272, 1]]
+  trusses.forEach(([side, y, count], k) => {
+    const along = spineAt(y)
+    for (let j = 0; j < count; j++) {
+      // Down and along the truss, so the hand hangs as a loose cluster.
+      const reach = 20 + j * 13 + jitter(5)
+      const drop = -6 - j * 9 + jitter(4)
+      parts.push(
+        ...hanging(stalks, 0, along, side * reach, drop + 8, {
+          kind: 'flower', x: 0, y: 0, w: 15, h: 15, anchor: [0.5, 0], r: jitter(50), at: 0.48 + k * 0.03, until: 0.66 + k * 0.02 + j * 0.01, z: 1,
+        }),
+      )
+      const size = (34 - j * 4 - k * 1.5) * (0.92 + random() * 0.16)
+      parts.push(
+        ...hanging(stalks, 0, along, side * reach, drop, {
+          kind: 'tomato',
+          x: 0,
+          y: 0,
+          w: size,
+          h: size * 0.95,
+          anchor: [0.5, 0.06],
+          r: jitter(16),
+          at: 0.62 + k * 0.02 + j * 0.01,
+          ripeAt: 0.84 + (k / trusses.length) * 0.14 + j * 0.01 + random() * 0.02,
+          z: 2,
+        }),
+      )
+    }
   })
   return { stalks, parts }
 }
@@ -301,6 +340,15 @@ function cucumber(random: () => number): Drawn {
       }),
     )
   }
+  // Tendrils reach out from the nodes for the twine and canes.
+  for (const [i, y] of [58, 104, 150, 196, 240, 278].entries()) {
+    const side = i % 2 === 0 ? 1 : -1
+    parts.push(
+      onStalk(stalks, 0, alongAt(stalks[0], y), {
+        kind: 'tendril', x: 0, y: 0, w: 30, h: 27, anchor: [0.05, 0.94], r: side * (52 + jitter(30)), side, at: 0.12, z: 1,
+      }),
+    )
+  }
   for (const [x, y] of [[-20, 120], [24, 178], [-8, 232], [16, 100]] as const)
     parts.push(...hanging(stalks, 0, alongAt(stalks[0], y), Math.sign(x) * 9, 2, { kind: 'flower', x: 0, y: 0, w: 18, h: 18, anchor: [0.5, 0.5], r: jitter(60), at: 0.5, z: 1 }))
   const fruit: [number, number, number][] = [[-24, 112, 6], [28, 160, -8], [-6, 206, 4]]
@@ -342,7 +390,10 @@ function watermelon(random: () => number): Drawn {
   for (const [x, y, r] of [[154, -34, 70], [150, -112, 104]] as const)
     parts.push(part({ kind: 'melon-leaf', x, y, w: 58, h: 46, anchor: [0.15, 0.5], r, side: 1, at: 0.62, variant: 1, z: 4 }))
   parts.push(part({ kind: 'flower', x: 24, y: 40, w: 20, h: 20, anchor: [0.5, 0.5], at: 0.5, z: 1 }))
+  parts.push(part({ kind: 'pool', x: -22, y: -12, w: 150, h: 26, anchor: [0.5, 0.5], at: 0.62, ripeAt: 1, z: 1 }))
   parts.push(part({ kind: 'melon', x: -26, y: -8, w: 132, h: 86, anchor: [0.5, 0.94], r: -2, at: 0.62, ripeAt: 1, z: 2 }))
+  for (const [x, y, r, side] of [[-92, -14, -24, -1], [34, -18, 30, 1], [-40, -22, 8, 1]] as const)
+    parts.push(part({ kind: 'melon-leaf', x, y, w: 54, h: 44, anchor: [0.5, 0.92], r, side, at: 0.62, variant: side > 0 ? 1 : 0, z: 3 }))
   return { stalks: [], parts }
 }
 
