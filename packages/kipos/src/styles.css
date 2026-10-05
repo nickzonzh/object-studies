@@ -752,20 +752,11 @@
   height: calc(var(--kipos-u) * 88);
   border-radius: calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 14);
   pointer-events: none;
-  background-size: calc(var(--kipos-u) * 900) calc(var(--kipos-u) * 280);
+  /* The lit board, drawn at this size, from art.css. */
+  background-size: 100% 100%;
   box-shadow:
-    inset 0 calc(var(--kipos-u) * 1.5) 0 rgba(255, 240, 210, 0.55),
     0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 2) rgba(30, 16, 4, 0.4),
     0 calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 16) rgba(30, 16, 4, 0.25);
-}
-
-/* The board's top face, its rounded front edge catching the light, and the shadow under it. */
-.kipos-tray__wood::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(rgba(255, 236, 200, 0.28), rgba(255, 236, 200, 0) 12%, rgba(0, 0, 0, 0) 70%, rgba(48, 26, 8, 0.1) 74%, rgba(255, 230, 190, 0.18) 78%, rgba(48, 26, 8, 0.3) 92%, rgba(30, 16, 4, 0.5) 100%);
 }
 
 .kipos-tray__brand {
@@ -885,6 +876,17 @@
   mix-blend-mode: multiply;
 }
 /* Paper tooth over everything printed. */
+/* The light on the paper, laid over paper and print alike: the seal's crimp, the
+   seeds' bulge and the creases. Mid grey leaves things as they are. */
+.kipos-packet__face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: 100% 100%;
+  mix-blend-mode: hard-light;
+  pointer-events: none;
+}
 .kipos-packet__face::after {
   content: '';
   position: absolute;

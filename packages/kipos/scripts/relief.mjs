@@ -143,15 +143,16 @@ export async function litCanvas({ w, h, scale = 2, mirror = false, svg, height, 
   const gloss = new Float32Array(size).fill(1)
   const toPath = (d) => (typeof d === 'string' ? new Path2D(d) : d)
   const api = {
-    /** A shape that swells towards its middle, `amount` units high. */
+    /** A shape that swells towards its middle, `amount` units high, or sinks for a negative `amount`. */
     dome(d, { blur, amount, transform }) {
       const a = layer((ctx) => {
         if (transform) ctx.transform(...transform)
         ctx.fill(toPath(d))
       }, blur)
+      // A raised shape stands on what is there; a hollow (negative) is pressed into it.
       for (let i = 0; i < size; i++) {
         const s = a[i] * a[i] * (3 - 2 * a[i])
-        field[i] = Math.max(field[i], amount * s)
+        field[i] = amount >= 0 ? Math.max(field[i], amount * s) : field[i] + amount * s
       }
     },
     /**
@@ -168,6 +169,11 @@ export async function litCanvas({ w, h, scale = 2, mirror = false, svg, height, 
         const z = amount * Math.sqrt(1 - u * u)
         for (let y = from; y < to; y++) field[y * W + x] += z
       }
+    },
+    /** Any surface given as a height at each point, for curves worked out exactly: the rounded nose of a board. */
+    surface(heightAt) {
+      for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) field[y * W + x] += heightAt((mirror ? W - x : x) / scale, y / scale)
     },
     /** A rounded ridge along a line: a stem, a rib, a raised vein. */
     ridge(d, { width, blur = width * 0.4, amount, transform }) {

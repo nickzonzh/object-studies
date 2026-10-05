@@ -95,6 +95,7 @@ const PLACES = {
   'kipos-art-watermelon': ['.kipos-packet--watermelon .kipos-packet__art'],
   'kipos-tomato-red': ['.kipos-part--tomato::after'],
   'kipos-cane': ['.kipos-cane'],
+  'kipos-packet-light': ['.kipos-packet__face::before'],
   'kipos-stem': ['.kipos-seg--stem > .kipos-seg__body', '.kipos-part--truss'],
   'kipos-vine': ['.kipos-seg--vine > .kipos-seg__body'],
   'kipos-stalk': ['.kipos-seg--stalk > .kipos-seg__body'],
@@ -173,28 +174,6 @@ material(
     </defs>
     <rect width='160' height='160' fill='#a29276' filter='url(#m)'/>
     <rect width='160' height='160' filter='url(#moss)' opacity='.8'/>`, { scale: 1, quality: 14 }),
-)
-
-// Olive wood: warm figured grain, warped so it swirls round the knots.
-material(
-  'kipos-olive',
-  uri(640, 200, `
-    <defs>
-      <filter id='w' x='-10%' y='-10%' width='120%' height='120%' color-interpolation-filters='sRGB'>
-        <feTurbulence type='fractalNoise' baseFrequency='.003 .045' numOctaves='4' seed='3' stitchTiles='stitch' result='g'/>
-        <feTurbulence type='fractalNoise' baseFrequency='.01 .018' numOctaves='2' seed='8' stitchTiles='stitch' result='warp'/>
-        <feDisplacementMap in='g' in2='warp' scale='48' xChannelSelector='R' yChannelSelector='G' result='d'/>
-        <feColorMatrix in='d' type='matrix' values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1' result='grey'/>
-        <feComponentTransfer in='grey'>
-          <feFuncR type='table' tableValues='.42 .62 .78 .7 .84 .6 .74'/>
-          <feFuncG type='table' tableValues='.27 .42 .56 .49 .62 .4 .52'/>
-          <feFuncB type='table' tableValues='.14 .23 .33 .28 .4 .21 .3'/>
-        </feComponentTransfer>
-      </filter>
-      <filter id='fine' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.003 .9' numOctaves='2' seed='6' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .12  0 0 0 0 .05  0 0 0 -1.5 .9'/></filter>
-    </defs>
-    <rect width='640' height='200' fill='#b58756'/><rect width='640' height='200' filter='url(#w)'/>
-    <rect width='640' height='200' filter='url(#fine)' opacity='.6'/>`, { scale: 2 }),
 )
 
 // Uncoated seed-packet paper: tooth and the odd fibre.
@@ -973,19 +952,132 @@ for (const [name, cloth, fold] of [['tie-cream', '#ece3cf', '#cfc4ab'], ['tie-bl
   })
 }
 
-// A hand trowel resting on the capstones: worn steel blade, olive handle.
-const single = (name, w, h, defs, body) => rule(`.kipos-sprite--${name}`, [`background-image: ${uri(w, h, `<defs>${defs}</defs>${body}`)}`])
-single('trowel', 150, 40, `
-  <linearGradient id='blade' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#d7dbdc'/><stop offset='.5' stop-color='#9aa1a3'/><stop offset='1' stop-color='#5f6668'/></linearGradient>
-  <linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#c99a62'/><stop offset='.5' stop-color='#8a5c33'/><stop offset='1' stop-color='#5a3a1e'/></linearGradient>
-  <filter id='rust' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.08' numOctaves='3' seed='3'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .24  0 0 0 0 .1  0 0 0 -5 2.6'/><feComposite in2='SourceGraphic' operator='in'/></filter>`, `
-  <path d='M4 20 C10 8 52 6 74 14 L80 18 L80 22 L74 26 C52 34 10 32 4 20Z' fill='url(#blade)'/>
-  <path d='M4 20 C10 8 52 6 74 14 L80 18 L80 22 L74 26 C52 34 10 32 4 20Z' fill='#000' filter='url(#rust)' opacity='.6'/>
-  <path d='M8 20 L74 20' stroke='#fff' stroke-opacity='.25' stroke-width='1'/>
-  <rect x='78' y='17' width='16' height='6' rx='2' fill='#7d8587'/>
-  <rect x='92' y='13' width='56' height='14' rx='7' fill='url(#h)'/>
-  <rect x='96' y='15' width='46' height='2.4' rx='1.2' fill='#f2d3a6' opacity='.45'/>
-  <circle cx='142' cy='20' r='2' fill='#3d2814'/>`)
+// A hand trowel resting on the capstones, lit as a surface: a dished steel
+// blade with a raised spine, worn bright at the tip and rusting elsewhere, a
+// steel ferrule, and a rounded olive-wood handle with a rivet through it. The
+// wood has a satin sheen; the steel shines.
+{
+  const W = 150, H = 40
+  const blade = 'M4 20 C10 8 52 6 74 14 L80 18 L80 22 L74 26 C52 34 10 32 4 20Z'
+  const hollow = 'M12 20 C17 12 50 11 68 16 L72 20 L68 24 C50 29 17 28 12 20Z'
+  const ferrule = 'M78 16.5 h16 v7 h-16Z'
+  const handle = 'M99 13 h42 a7 7 0 0 1 0 14 h-42 a7 7 0 0 1 0 -14Z'
+  let grain = ''
+  const r = rng(970)
+  for (let i = 0; i < 9; i++) {
+    const y = 14.5 + r() * 11
+    grain += `<path d='M93 ${f(y)} C110 ${f(y + (r() - 0.5) * 2)} 130 ${f(y + (r() - 0.5) * 2)} 148 ${f(y + (r() - 0.5))}' stroke='${r() < 0.5 ? '#6e4424' : '#b98a55'}' stroke-width='${f(0.4 + r() * 0.5)}' fill='none' opacity='.55'/>`
+  }
+  rule('.kipos-sprite--trowel', [
+    `background-image: ${lit(W, H, {
+      scale: 3,
+      body: `<defs>
+          <clipPath id='blade'><path d='${blade}'/></clipPath>
+          <clipPath id='handle'><path d='${handle}'/></clipPath>
+          <filter id='rust' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.08' numOctaves='3' seed='3'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .26  0 0 0 0 .1  0 0 0 -5 2.4'/></filter>
+          <radialGradient id='worn' cx='0' cy='.5' r='.4'><stop offset='0' stop-color='#e8ecec'/><stop offset='1' stop-color='#e8ecec' stop-opacity='0'/></radialGradient>
+        </defs>
+        <path d='${blade}' fill='#9aa0a2'/>
+        <g clip-path='url(#blade)'><rect width='${W}' height='${H}' filter='url(#rust)' opacity='.75'/><rect x='0' y='0' width='40' height='${H}' fill='url(#worn)'/></g>
+        <path d='${ferrule}' fill='#7d8587'/>
+        <path d='${handle}' fill='#9a6a3c'/>
+        <g clip-path='url(#handle)'>${grain}</g>
+        <circle cx='142' cy='20' r='1.8' fill='#3d2814'/>`,
+      material: { bump: 1, ambient: 0.36, spec: 0.6, shine: 30, rim: 0, rimColour: [0, 0, 0], occlusion: 0.4 },
+      shadow: { x: 1.2, y: 1.8, blur: 1.4, opacity: 0.4 },
+      height(api) {
+        // The blade dishes: raised at the rim, hollow in the middle, with a spine from the shank.
+        api.dome(blade, { blur: 2, amount: 3 })
+        api.dome(hollow, { blur: 5, amount: -3.5 })
+        api.ridge('M52 20 L80 20', { width: 3, amount: 1.4 })
+        api.surface((x, y) => (x > 77 && x < 95 ? 3.4 * Math.sqrt(Math.max(0, 1 - ((y - 20) / 3.6) ** 2)) : 0))
+        api.dome(handle, { blur: 4.5, amount: 6 })
+        api.bumps([[142, 20, 1.8, 0.8]], 0.4)
+        api.grain(971, 0.7, 0.2)
+        api.matte(handle, { value: 0.35 })
+      },
+    })}`,
+  ])
+}
+
+// The olive-wood board the packets and can sit on, lit as one piece: a flat
+// top face with the wood's figure swirling through it, oiled to a soft sheen,
+// and a rounded front edge falling away into shade. 872 x 88, the size it is
+// laid at, with rounded ends.
+{
+  const W = 872, H = 88, NOSE = 60, END = 12, BOARD_SEED = 5
+  const board = `M10 0 H${W - 10} A10 10 0 0 1 ${W} 10 V${H - 14} A14 14 0 0 1 ${W - 14} ${H} H14 A14 14 0 0 1 0 ${H - 14} V10 A10 10 0 0 1 10 0Z`
+  material(
+    'kipos-olive',
+    lit(W, H, {
+      body: `<defs>
+          <clipPath id='b'><path d='${board}'/></clipPath>
+          <!-- Room above and below for the warp, which reaches further than the board is deep. -->
+          <filter id='w' x='-10%' y='-80%' width='120%' height='260%' color-interpolation-filters='sRGB'>
+            <feTurbulence type='fractalNoise' baseFrequency='.0021 .032' numOctaves='4' seed='${BOARD_SEED}' result='g'/>
+            <feTurbulence type='fractalNoise' baseFrequency='.007 .0128' numOctaves='2' seed='8' result='warp'/>
+            <feDisplacementMap in='g' in2='warp' scale='66' xChannelSelector='R' yChannelSelector='G' result='d'/>
+            <feColorMatrix in='d' type='matrix' values='1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1' result='grey'/>
+            <feComponentTransfer in='grey'>
+              <feFuncR type='table' tableValues='.42 .62 .78 .7 .84 .6 .74'/>
+              <feFuncG type='table' tableValues='.27 .42 .56 .49 .62 .4 .52'/>
+              <feFuncB type='table' tableValues='.14 .23 .33 .28 .4 .21 .3'/>
+            </feComponentTransfer>
+          </filter>
+          <filter id='fine' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.0021 .64' numOctaves='2' seed='6'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .12  0 0 0 0 .05  0 0 0 -1.5 .9'/></filter>
+        </defs>
+        <g clip-path='url(#b)'>
+          <rect width='${W}' height='${H}' fill='#b58756'/>
+          <rect width='${W}' height='${H}' filter='url(#w)'/>
+          <rect width='${W}' height='${H}' filter='url(#fine)' opacity='.6'/>
+        </g>`,
+      material: { bump: 1, ambient: 0.38, spec: 0.22, shine: 22, rim: 0, rimColour: [0, 0, 0], occlusion: 0.3 },
+      async height(api) {
+        api.surface((x, y) => {
+          // The nose rounds down towards you; the ends round off too.
+          const front = y < NOSE ? 1 : Math.sqrt(Math.max(0, 1 - ((y - NOSE) / (H - NOSE)) ** 2))
+          const ends = Math.min(1, Math.sqrt(Math.max(0, 1 - Math.max(0, END - Math.min(x, W - x)) ** 2 / END ** 2)))
+          return 24 * front * ends
+        })
+        // Open pores, running with the grain.
+        await api.raster(svgOf(W, H, `<filter id='p' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.004 .7' numOctaves='2' seed='6'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3 1.6'/></filter><rect width='${W}' height='${H}' filter='url(#p)'/>`), { amount: -0.22 })
+      },
+    }),
+  )
+}
+
+// The light on a seed packet: the paper bellied out by the seeds inside, the
+// sealed top crimped into fine ridges, a fold under the seal and a couple of
+// soft creases from handling. Mid grey is no change; laid over the printed
+// packet with hard-light, so paper and ink bend together.
+{
+  const W = 120, H = 88
+  const r = rng(990)
+  material(
+    'kipos-packet-light',
+    lit(W, H, {
+      body: `<rect width='${W}' height='${H}' fill='#808080'/>`,
+      material: { bump: 1, ambient: 0.5, spec: 0.08, shine: 10, rim: 0, rimColour: [0, 0, 0], occlusion: 0.25 },
+      height(api) {
+        api.dome(`M4 12 H${W - 4} V${H - 6} H4Z`, { blur: 14, amount: 9 })
+        // Seeds settled to the bottom.
+        const seeds = []
+        for (let i = 0; i < 30; i++) seeds.push([10 + r() * (W - 20), 74 + r() * 9, 1.1 + r() * 0.8, 0.45 + r() * 0.3])
+        api.bumps(seeds, 0.7)
+        // Folded seams down both sides and along the foot.
+        api.ridge(`M2.5 10 V${H - 2} M${W - 2.5} 10 V${H - 2} M2 ${H - 2.5} H${W - 2}`, { width: 2.4, blur: 0.8, amount: 0.8 })
+        // The crimped seal: fine vertical ridges across the top.
+        let crimp = ''
+        for (let x = 1; x < W; x += 2) crimp += `M${x} 0 V7 `
+        api.ridge(crimp, { width: 1, blur: 0.4, amount: 0.7 })
+        api.groove(`M0 8.5 H${W}`, { width: 1.4, amount: 1 })
+        // Creases from handling.
+        api.groove('M18 30 L52 70', { width: 2.2, blur: 1.6, amount: 0.9 })
+        api.groove(`M${W - 10} 22 L${W - 46} 60`, { width: 1.6, blur: 1.2, amount: 0.6 })
+      },
+    }),
+  )
+}
 
 const css = `/*
  * Generated by scripts/build-art.mjs. Do not edit by hand: change the script
