@@ -556,17 +556,19 @@ for (let v = 0; v < 3; v++) {
 for (let v = 0; v < 2; v++) {
   const W = 80, H = 66, cx = 40, cy = 34, R = 30
   const outline = []
-  for (let i = 0; i < 120; i++) {
-    const a = (i / 120) * Math.PI * 2
-    const scallop = 1 + 0.06 * Math.pow(Math.abs(Math.sin(4.5 * a)), 0.5)
-    const notch = 1 - 0.35 * Math.exp(-Math.pow((a - Math.PI / 2) / 0.22, 2))
-    const rr = R * scallop * notch
+  // Seven shallow lobes, each finely toothed, and a deep notch where the stalk joins.
+  for (let i = 0; i < 168; i++) {
+    const a = (i / 168) * Math.PI * 2
+    const lobes = 1 + 0.1 * Math.pow(Math.abs(Math.cos(3.5 * (a - Math.PI / 2))), 0.7)
+    const teeth = 1 + 0.025 * Math.abs(Math.sin(21 * a + v))
+    const notch = 1 - 0.5 * Math.exp(-Math.pow((a - Math.PI / 2) / 0.24, 2))
+    const rr = R * 0.94 * lobes * teeth * notch
     outline.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.92])
   }
-  const d = smooth(outline.filter((_, i) => i % 3 === 0), 0.8)
+  const d = smooth(outline.filter((_, i) => i % 2 === 0), 0.8)
   sprite(`geranium-leaf-${v}`, W, H, `
     ${leafDefs('g', v ? '#7fa456' : '#86ab5c', '#4c7232', { hair: 0.4 })}
-    <radialGradient id='zone' cx='.5' cy='.55' r='.5'><stop offset='.42' stop-color='#4a3a1e' stop-opacity='0'/><stop offset='.56' stop-color='#4a3a1e' stop-opacity='.26'/><stop offset='.68' stop-color='#4a3a1e' stop-opacity='.2'/><stop offset='.78' stop-color='#4a3a1e' stop-opacity='0'/></radialGradient>`, `
+    <radialGradient id='zone' cx='.5' cy='.58' r='.5'><stop offset='.36' stop-color='#5c2a16' stop-opacity='0'/><stop offset='.5' stop-color='#5c2a16' stop-opacity='.42'/><stop offset='.64' stop-color='#4a2a14' stop-opacity='.34'/><stop offset='.78' stop-color='#4a3a1e' stop-opacity='0'/></radialGradient>`, `
     <path d='${d}' fill='url(#g)' stroke='#3d5f28' stroke-width='.6' stroke-opacity='.5'/>
     <path d='${d}' fill='url(#zone)'/>
     <path d='${d}' fill='url(#gh)'/>

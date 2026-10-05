@@ -128,7 +128,7 @@
   position: absolute;
   background-color: #dccfb5;
   background-size: calc(var(--kipos-u) * 360);
-  filter: brightness(var(--tone, 1));
+  filter: brightness(var(--tone, 1)) sepia(var(--warm, 0));
   /* Lit from the upper left; each stone sits slightly proud of the mortar. */
   box-shadow:
     inset calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 2) rgba(255, 251, 240, 0.55),
@@ -141,6 +141,18 @@
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(ellipse 80% 70% at 30% 25%, rgba(255, 252, 242, 0.32), rgba(255, 252, 242, 0) 70%);
+}
+/* Crusts of grey-green lichen on the odd stone. */
+.kipos-stone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: var(--lichen, 0);
+  background:
+    radial-gradient(ellipse 26% 34% at var(--lx) var(--ly), rgba(128, 138, 92, 0.75), rgba(128, 138, 92, 0.4) 55%, rgba(128, 138, 92, 0) 100%),
+    radial-gradient(ellipse 12% 16% at calc(var(--lx) + 14%) calc(var(--ly) - 18%), rgba(204, 196, 132, 0.8), rgba(204, 196, 132, 0) 100%),
+    radial-gradient(ellipse 9% 12% at calc(var(--lx) - 12%) calc(var(--ly) + 10%), rgba(104, 114, 80, 0.7), rgba(104, 114, 80, 0) 100%);
 }
 
 /* Capstones along the front edge, a little proud of the face below. */

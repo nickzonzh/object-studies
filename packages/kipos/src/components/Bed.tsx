@@ -348,7 +348,9 @@ const LIMESTONE_TILE = 360
 const stoneCut = (random: number, size: number) =>
   `calc(var(--kipos-u) * ${(-random * Math.max(0, LIMESTONE_TILE - size)).toFixed(1)})`
 
-// The bed's stonework, laid once from a fixed seed so every bed is built the same.
+// The bed's stonework, laid once from a fixed seed so every bed is built the
+// same. Dressed limestone laid by hand: no two stones the same height or quite
+// level, some warmer and some greyer, lichen on the odd face.
 const STONES: CSSProperties[] = (() => {
   const random = seededRandom(1907)
   const stones: CSSProperties[] = []
@@ -356,27 +358,33 @@ const STONES: CSSProperties[] = (() => {
     { top: 0, height: 50 },
     { top: 54, height: 46 },
   ]
+  const lay = (left: number, top: number, width: number, height: number) => {
+    const r = () => `${Math.round(6 + random() * 12)}%`
+    stones.push({
+      left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
+      top: `calc(var(--kipos-u) * ${top.toFixed(1)})`,
+      width: `calc(var(--kipos-u) * ${width.toFixed(1)})`,
+      height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
+      borderRadius: `${r()} ${r()} ${r()} ${r()} / ${r()} ${r()} ${r()} ${r()}`,
+      backgroundPosition: `${stoneCut(random(), width)} ${stoneCut(random(), height)}`,
+      transform: `rotate(${((random() - 0.5) * 2.2).toFixed(2)}deg)`,
+      '--tone': (0.88 + random() * 0.18).toFixed(3),
+      '--warm': (random() * 0.3).toFixed(2),
+      '--lichen': random() < 0.22 ? 1 : 0,
+      '--lx': `${Math.round(random() * 100)}%`,
+      '--ly': `${Math.round(30 + random() * 60)}%`,
+    } as CSSProperties)
+  }
   for (const [row, course] of courses.entries()) {
     let x = row ? -40 : 0
     while (x < 908) {
-      const width = 88 + random() * 96
+      const width = 70 + random() * 120
       const left = Math.max(0, x)
       const right = Math.min(908, x + width)
-      if (right - left > 24) {
-        const r = () => `${Math.round(6 + random() * 12)}%`
-        const top = course.top + random() * 3
-        const height = course.height - random() * 4
-        stones.push({
-          left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
-          top: `calc(var(--kipos-u) * ${top.toFixed(1)})`,
-          width: `calc(var(--kipos-u) * ${(right - left).toFixed(1)})`,
-          height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
-          borderRadius: `${r()} ${r()} ${r()} ${r()} / ${r()} ${r()} ${r()} ${r()}`,
-          backgroundPosition: `${stoneCut(random(), right - left)} ${stoneCut(random(), height)}`,
-          '--tone': (0.9 + random() * 0.14).toFixed(3),
-        } as CSSProperties)
-      }
-      x += width + 6
+      const sink = random() * 3
+      if (right - left > 24) lay(left, course.top + sink, right - left, course.height - sink - random() * 3)
+      // Now and then a wider joint, where the mortar and moss show.
+      x += width + (random() < 0.25 ? 10 + random() * 6 : 6)
     }
   }
   return stones
