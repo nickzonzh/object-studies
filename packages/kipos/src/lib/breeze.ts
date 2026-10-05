@@ -30,7 +30,7 @@ export function useBreeze(scene: RefObject<HTMLElement | null>, selector: string
     if (!root || reducedMotion()) return
     let onScreen = true
     const observer = typeof IntersectionObserver === 'function'
-      ? new IntersectionObserver(([entry]) => (onScreen = entry.isIntersecting))
+      ? new IntersectionObserver((entries) => (onScreen = entries[entries.length - 1].isIntersecting))
       : null
     observer?.observe(root)
     let timer: ReturnType<typeof setTimeout>

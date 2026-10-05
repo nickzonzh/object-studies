@@ -1026,6 +1026,7 @@
   .kipos-plant__shadow,
   .kipos-seg,
   .kipos-seg__body,
+  .kipos-seg__tip,
   .kipos-bed__scene,
   .kipos-teneke__scene { transition: none; }
   .kipos-pour { display: none; }

@@ -78,6 +78,13 @@ export function createHand(scene: HTMLElement, layer: HTMLElement, tools: readon
     following = value
     scene.toggleAttribute('data-carrying', value)
   }
+  // A tool waiting over the tray stays there when the garden is resized.
+  const resized = typeof ResizeObserver === 'function'
+    ? new ResizeObserver(() => {
+        if (held && !following && !busy) motion.ready(held, { immediate: true })
+      })
+    : null
+  resized?.observe(scene)
   const settle = () => {
     clearTimeout(busy)
     busy = undefined
@@ -154,6 +161,7 @@ export function createHand(scene: HTMLElement, layer: HTMLElement, tools: readon
     },
     destroy() {
       clearTimeout(busy)
+      resized?.disconnect()
       scene.removeAttribute('data-carrying')
       motion.destroy()
     },
