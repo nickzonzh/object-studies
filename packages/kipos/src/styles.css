@@ -268,7 +268,7 @@
   bottom: calc(var(--kipos-u) * 20);
   width: 0;
   height: 0;
-  filter: drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 2) rgba(30, 20, 8, 0.3));
+  filter: drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a-thin)));
 }
 .kipos-idle__cane {
   position: absolute;
@@ -313,7 +313,7 @@
 .kipos-plant__body {
   position: absolute;
   inset: 0;
-  filter: drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 3) rgba(20, 30, 8, 0.32));
+  filter: drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a)));
   transition: filter 1200ms ease;
 }
 
@@ -322,7 +322,7 @@
 }
 .kipos-plant--wilted > .kipos-plant__body {
   filter:
-    drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 3) rgba(20, 30, 8, 0.28))
+    drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a)))
     saturate(0.7) brightness(0.98) sepia(0.1);
 }
 
@@ -520,7 +520,7 @@
   transform: scale(calc(var(--s, 1) * var(--size, 1)));
 }
 
-.kipos-part--cane { filter: drop-shadow(calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1.5) rgba(30, 20, 8, 0.3)); }
+.kipos-part--cane { filter: drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a-thin))); }
 
 .kipos-part--twine {
   background: linear-gradient(#d9c595, #a8915e);
@@ -657,15 +657,40 @@
 .kipos-tag__count { font-size: calc(var(--kipos-u) * 11); font-weight: 400; }
 
 /* ---------- Light ----------
-   A filter on the whole object rather than an overlay, so the light falls on
-   the bed and never tints the page behind it. It only changes a few times a day. */
+   The sun moves across the garden. Plants and canes cast their shadows away
+   from it: long to the right in the morning, short and dark at midday, long
+   to the left through the afternoon and longer still at dusk, and soft under
+   the moon. Garden units, so shadows scale with the bed.
+
+   The colour of the light is a filter on the whole object rather than an
+   overlay, so it falls on the bed and never tints the page behind it. It
+   changes a few times a day. */
+
+.kipos {
+  --sun-x: 4;
+  --sun-y: 4;
+  --sun-blur: 3;
+  --sun-a: 0.32;
+  --sun-a-thin: 0.28;
+}
+.kipos[data-light='morning'] { --sun-x: 11; --sun-y: 3; --sun-blur: 4; --sun-a: 0.26; --sun-a-thin: 0.22; }
+.kipos[data-light='midday'] { --sun-x: 1; --sun-y: 5; --sun-blur: 2.2; --sun-a: 0.4; --sun-a-thin: 0.34; }
+.kipos[data-light='afternoon'] { --sun-x: -9; --sun-y: 4; --sun-blur: 3.5; --sun-a: 0.3; --sun-a-thin: 0.26; }
+.kipos[data-light='dusk'] { --sun-x: -16; --sun-y: 2.5; --sun-blur: 5; --sun-a: 0.2; --sun-a-thin: 0.16; }
+.kipos[data-light='night'] { --sun-x: 3; --sun-y: 5; --sun-blur: 8; --sun-a: 0.22; --sun-a-thin: 0.18; }
 
 .kipos-bed__scene,
 .kipos-teneke__scene { transition: filter 2400ms ease; }
-[data-light='morning'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.08) saturate(1.08) brightness(1.03); }
-[data-light='afternoon'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.16) saturate(1.1) brightness(1.01); }
-[data-light='dusk'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.2) saturate(0.92) brightness(0.86) hue-rotate(-10deg); }
-[data-light='night'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: brightness(0.66) saturate(0.72) hue-rotate(14deg); }
+/* Fresh and a little cool, gold just warming the edges. */
+[data-light='morning'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.06) saturate(1.06) brightness(1.04) hue-rotate(-3deg); }
+/* Full sun: clean colour and a touch more contrast. */
+[data-light='midday'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: contrast(1.05) saturate(1.06); }
+/* Late gold. */
+[data-light='afternoon'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.18) saturate(1.14) brightness(1.01); }
+/* Low, rosy and fading. */
+[data-light='dusk'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.3) saturate(1.05) hue-rotate(-14deg) brightness(0.84) contrast(0.95); }
+/* Moonlight: dim and blue, the colour drained out of everything. */
+[data-light='night'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: grayscale(0.88) sepia(0.4) hue-rotate(180deg) saturate(1.15) brightness(0.62) contrast(1.06); }
 
 /* ---------- Tray, packets and can ---------- */
 
