@@ -25,7 +25,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only",
     "release": "npm run build && npm run check:packages && changeset publish",
-    "dev:site": "npm run build --workspace object-studies-core --workspace korniza --workspace kimolia --workspace melani --workspace keramos --workspace kollaz && npm run dev --workspace object-studies-site",
+    "dev:site": "npm run build --workspace object-studies-core --workspace korniza --workspace kimolia --workspace melani --workspace keramos --workspace kollaz --workspace komboloi && npm run dev --workspace object-studies-site",
     "smoke:consumer": "node scripts/smoke-consumer.mjs"
   },
   "devDependencies": {

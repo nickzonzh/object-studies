@@ -133,6 +133,12 @@ a:focus-visible {
   min-width: 0;
 }
 
+/* Leave half a strand's width on each side for the canvas's swing room. */
+.site-komboloi {
+  width: min(50%, 280px);
+  margin: 0 auto;
+}
+
 .site-toggles {
   display: flex;
   gap: 24px;

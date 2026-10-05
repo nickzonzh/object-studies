@@ -9,7 +9,8 @@
       "melani": ["../../packages/melani/src/index.ts"],
       "korniza": ["../../packages/korniza/src/index.ts"],
       "keramos": ["../../packages/keramos/src/index.ts"],
-      "kollaz": ["../../packages/kollaz/src/index.ts"]
+      "kollaz": ["../../packages/kollaz/src/index.ts"],
+      "komboloi": ["../../packages/komboloi/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]
