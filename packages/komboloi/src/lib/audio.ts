@@ -89,11 +89,17 @@ export function playClack(material: Material, strength: number, pan: number, vol
   source.start(now)
   source.stop(now + decay * 2 + 0.02)
   voices++
+  // The ring shares the panner and outlasts the 60 ms noise burst, so the
+  // panner is released only once every sound routed through it has ended.
+  let sounding = 1
+  const ended = () => {
+    if (--sounding === 0) panner?.disconnect()
+  }
   source.onended = () => {
     voices--
     source.disconnect()
     envelope.disconnect()
-    panner?.disconnect()
+    ended()
   }
 
   if (ring > 0.05) {
@@ -107,9 +113,11 @@ export function playClack(material: Material, strength: number, pan: number, vol
     tone.connect(toneGain).connect(panner ?? out)
     tone.start(now)
     tone.stop(now + decay * 2.6)
+    sounding++
     tone.onended = () => {
       tone.disconnect()
       toneGain.disconnect()
+      ended()
     }
   }
 }
