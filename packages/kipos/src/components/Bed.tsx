@@ -1,11 +1,13 @@
-import { type CSSProperties, type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type KeyboardEvent, type PointerEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { type CropId, gardenHours, harvest, readPlanting, sow, water } from '../lib/garden.js'
 import { type BedDocument, bedStore, emptyBed, rescaleBed } from '../lib/documents.js'
 import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
+import { sway, useBreeze } from '../lib/breeze.js'
 import { type KiposLabelOverrides, type KiposLabels, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
 import { seededRandom } from 'object-studies-core'
 import { Plant } from './Plant.js'
+import { plantProgress } from '../lib/plants.js'
 import '../art.css'
 import '../styles.css'
 
@@ -64,19 +66,28 @@ export function Bed({
   const [pouring, setPouring] = useState<{ plot: number; id: number } | null>(null)
   const pourTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(pourTimer.current), [])
+  const scene = useRef<HTMLDivElement>(null)
+  useBreeze(scene, '.kipos-plot')
 
   const take = (next: Hand) => {
     setHand((current) => (current === next ? null : next))
     setMessage('')
   }
 
-  const pour = (plot: number) => {
+  const pour = (plot: number, target: HTMLElement) => {
     clearTimeout(pourTimer.current)
     setPouring({ plot, id: actionTime() })
     pourTimer.current = setTimeout(() => setPouring(null), POUR_MS)
+    // The leaves shiver as the water lands.
+    sway(target, 'shiver', 350)
   }
 
-  const tendPlot = (index: number) => {
+  // A plant brushed by the pointer rustles.
+  const brush = (event: PointerEvent<HTMLButtonElement>, planted: boolean) => {
+    if (planted && event.pointerType !== 'touch') sway(event.currentTarget, 'brush')
+  }
+
+  const tendPlot = (index: number, target: HTMLElement) => {
     const t = actionTime()
     const planting = bed.plots[index]
     const setPlot = (next: (typeof bed.plots)[number], picked = 0) =>
@@ -91,13 +102,13 @@ export function Bed({
       if (!planting) return setMessage(labels.nothingToWater)
       const wasWilted = readPlanting(planting, t, speed).wilted
       setPlot(water(planting, t, speed))
-      pour(index)
+      pour(index, target)
       return setMessage(wasWilted ? fill(labels.revived, cropSlots(labels, planting.crop)) : labels.watered)
     }
     if (hand) {
       if (planting) return setMessage(labels.plotTaken)
       setPlot(sow(hand, t))
-      pour(index)
+      pour(index, target)
       setHand(null)
       return setMessage(fill(labels.sown, cropSlots(labels, hand)))
     }
@@ -136,7 +147,7 @@ export function Bed({
       <p id={instructionsId} className="kipos-sr-only">
         {labels.bedInstructions}
       </p>
-      <div className="kipos-bed__scene">
+      <div className="kipos-bed__scene" ref={scene}>
         <div className="kipos-bed__ground" aria-hidden="true" />
         <div className="kipos-bed__back" aria-hidden="true" />
         <div className="kipos-bed__soil" aria-hidden="true" />
@@ -160,11 +171,13 @@ export function Bed({
               key={index}
               type="button"
               className={`kipos-plot${state?.ripe && !hand ? ' kipos-plot--ripe' : ''}`}
-              style={{ '--plot': index, '--wet': Math.round(wet * 20) / 20 } as CSSProperties}
+              style={{ '--plot': index } as CSSProperties}
               aria-label={plotLabel(labels, index, bed, now, speed)}
-              onClick={() => tendPlot(index)}
+              onClick={(event) => tendPlot(index, event.currentTarget)}
+              onPointerEnter={(event) => brush(event, Boolean(planting))}
             >
-              <span className="kipos-plot__soil" />
+              {/* Set on the soil alone: a change here restyles nothing above it. */}
+              <span className="kipos-plot__soil" style={{ '--wet': Math.round(wet * 20) / 20 } as CSSProperties} />
               {!planting && (
                 // Last season's canes, left standing in the empty plot until something is sown.
                 <span className={`kipos-idle kipos-idle--${index % 3}`} aria-hidden="true">
@@ -177,7 +190,7 @@ export function Bed({
               {planting && state && (
                 <Plant
                   crop={planting.crop}
-                  progress={state.progress}
+                  progress={plantProgress(state.progress)}
                   wilted={state.wilted}
                   seed={(planting.plantedAt % 100_000) + index}
                 />
@@ -271,6 +284,12 @@ const PACKET_NO: Record<CropId, string> = {
   geranium: 'Νο 18',
 }
 
+// Where a stone is cut from the limestone: anywhere, so long as it fits inside
+// one tile. A baked texture shows a faint seam where it wraps.
+const LIMESTONE_TILE = 360
+const stoneCut = (random: number, size: number) =>
+  `calc(var(--kipos-u) * ${(-random * Math.max(0, LIMESTONE_TILE - size)).toFixed(1)})`
+
 // The bed's stonework, laid once from a fixed seed so every bed is built the same.
 const STONES: CSSProperties[] = (() => {
   const random = seededRandom(1907)
@@ -287,13 +306,15 @@ const STONES: CSSProperties[] = (() => {
       const right = Math.min(908, x + width)
       if (right - left > 24) {
         const r = () => `${Math.round(6 + random() * 12)}%`
+        const top = course.top + random() * 3
+        const height = course.height - random() * 4
         stones.push({
           left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
-          top: `calc(var(--kipos-u) * ${(course.top + random() * 3).toFixed(1)})`,
+          top: `calc(var(--kipos-u) * ${top.toFixed(1)})`,
           width: `calc(var(--kipos-u) * ${(right - left).toFixed(1)})`,
-          height: `calc(var(--kipos-u) * ${(course.height - random() * 4).toFixed(1)})`,
+          height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
           borderRadius: `${r()} ${r()} ${r()} ${r()} / ${r()} ${r()} ${r()} ${r()}`,
-          backgroundPosition: `${Math.round(random() * 256)}px ${Math.round(random() * 256)}px`,
+          backgroundPosition: `0 0, ${stoneCut(random(), right - left)} ${stoneCut(random(), height)}`,
           '--tone': (0.9 + random() * 0.14).toFixed(3),
         } as CSSProperties)
       }
@@ -312,7 +333,7 @@ const COPING: CSSProperties[] = (() => {
     stones.push({
       left: `calc(var(--kipos-u) * ${x.toFixed(1)})`,
       width: `calc(var(--kipos-u) * ${(width - 4).toFixed(1)})`,
-      backgroundPosition: `0 0, ${Math.round(random() * 256)}px ${Math.round(random() * 256)}px`,
+      backgroundPosition: `0 0, ${stoneCut(random(), width - 4)} ${stoneCut(random(), 34)}`,
       '--tone': (0.94 + random() * 0.1).toFixed(3),
     } as CSSProperties)
     x += width

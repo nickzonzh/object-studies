@@ -2,13 +2,16 @@
 //
 //   node packages/kipos/scripts/build-art.mjs
 //
-// Every texture and drawing is an SVG data URI: rasterised once by the browser
-// and cached, so the garden costs nothing to repaint. The output is generated;
-// change this script and re-run it rather than editing art.css by hand.
-// Everything is seeded, so the same script always draws the same garden.
+// Drawings are SVG data URIs. Anything grown from noise (feTurbulence) is
+// baked here into a small AVIF instead: a browser re-runs an SVG filter every
+// time anything over it repaints, which made the garden expensive to touch.
+// The output is generated; change this script and re-run it rather than
+// editing art.css by hand. Everything is seeded, so the same script always
+// draws the same garden.
 
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { createCanvas, loadImage } from '@napi-rs/canvas'
 
 const OUT = fileURLToPath(new URL('../src/art.css', import.meta.url))
 
@@ -39,10 +42,36 @@ function smooth(points, tension = 1) {
   return d + 'Z'
 }
 
-const uri = (w, h, body) =>
-  `url("data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}' preserveAspectRatio='none'>${body}</svg>`,
-  ).replace(/'/g, '%27')}")`
+const svgOf = (w, h, body) =>
+  `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}' preserveAspectRatio='none'>${body}</svg>`
+
+// Noise drawings waiting to be baked, by placeholder.
+const bakes = []
+
+/**
+ * A drawing as a CSS url(). `scale` is the bitmap's pixels per drawing unit
+ * for a baked drawing: enough for the size it is shown at on a 2x screen.
+ */
+function uri(w, h, body, { scale = 2, quality = 10 } = {}) {
+  const svg = svgOf(w, h, body)
+  if (!svg.includes('feTurbulence'))
+    return `url("data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, '%27')}")`
+  const token = `@@bake-${bakes.length}@@`
+  bakes.push({ token, svg, w, h, scale, quality })
+  return token
+}
+
+async function bake({ svg, w, h, scale, quality }) {
+  const width = Math.round(w * scale)
+  const height = Math.round(h * scale)
+  // Drawn at full size, not drawn small and stretched: the noise and the
+  // lighting on it are worked out at every pixel of the bitmap.
+  const image = await loadImage(Buffer.from(svg.replace(`width='${w}' height='${h}'`, `width='${width}' height='${height}'`)))
+  const canvas = createCanvas(width, height)
+  canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
+  const avif = canvas.toBuffer('image/avif', { quality, speed: 2 })
+  return `url("data:image/avif;base64,${avif.toString('base64')}")`
+}
 
 const rules = []
 const rule = (selector, declarations) => rules.push(`${selector} {\n${declarations.map((d) => `  ${d};`).join('\n')}\n}`)
@@ -84,7 +113,7 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
       </defs>
       <rect width='360' height='360' fill='#6a4630' filter='url(#s)'/>
       <rect width='360' height='360' filter='url(#loam)' opacity='.55'/>
-      ${grit}`),
+      ${grit}`, { scale: 1, quality: 28 }),
   )
 }
 
@@ -104,7 +133,7 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
       </defs>
       <rect width='256' height='256' fill='#e2d6bd' filter='url(#l)'/>
       <rect width='256' height='256' filter='url(#drift)' opacity='.5'/>
-      ${flecks}`),
+      ${flecks}`, { scale: 2.5, quality: 16 }),
   )
 }
 
@@ -116,7 +145,7 @@ variable(
       <filter id='moss' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='14' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .27  0 0 0 0 .36  0 0 0 0 .12  0 0 0 -11 4.9'/></filter>
     </defs>
     <rect width='160' height='160' fill='#a29276' filter='url(#m)'/>
-    <rect width='160' height='160' filter='url(#moss)' opacity='.8'/>`),
+    <rect width='160' height='160' filter='url(#moss)' opacity='.8'/>`, { scale: 1, quality: 14 }),
 )
 
 // Olive wood: warm figured grain, warped so it swirls round the knots.
@@ -138,7 +167,7 @@ variable(
       <filter id='fine' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.003 .9' numOctaves='2' seed='6' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .12  0 0 0 0 .05  0 0 0 -1.5 .9'/></filter>
     </defs>
     <rect width='640' height='200' fill='#b58756'/><rect width='640' height='200' filter='url(#w)'/>
-    <rect width='640' height='200' filter='url(#fine)' opacity='.6'/>`),
+    <rect width='640' height='200' filter='url(#fine)' opacity='.6'/>`, { scale: 2 }),
 )
 
 // Uncoated seed-packet paper: tooth and the odd fibre.
@@ -153,14 +182,14 @@ variable(
     'kipos-paper',
     uri(160, 160, `
       <defs>${relief('p', { freq: 0.9, octaves: 3, scale: 0.5, seed: 12, elevation: 72 })}</defs>
-      <rect width='160' height='160' fill='#f3e7cb' filter='url(#p)'/>${fibres}`),
+      <rect width='160' height='160' fill='#f3e7cb' filter='url(#p)'/>${fibres}`, { scale: 1 }),
   )
 }
 
 // A fine grain for anything printed or painted, laid over with soft-light.
 variable(
   'kipos-grain',
-  uri(128, 128, `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='128' height='128' filter='url(#n)' opacity='.5'/>`),
+  uri(128, 128, `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='128' height='128' filter='url(#n)' opacity='.5'/>`, { scale: 1 }),
 )
 
 // ─── The galvanised watering can ─────────────────────────────────────────────
@@ -185,6 +214,13 @@ variable(
       <stop offset='.9' stop-color='#b3babd'/><stop offset='1' stop-color='#636b6e'/>
     </linearGradient>`
   const W = 290, H = 176
+  // The rose's holes, drawn one by one (a pattern fill bakes as a solid).
+  let roseHoles = ''
+  for (let y = 29.5; y <= 50.5; y += 3.5)
+    for (let x = 15.5; x <= 24.5; x += 3) {
+      const dx = (x - 20) / 6.5, dy = (y - 40) / 13
+      if (dx * dx + dy * dy < 0.8) roseHoles += `<circle cx='${f(x)}' cy='${f(y)}' r='.8' fill='#3d4446' opacity='.75'/>`
+    }
   const bodyX = 112, bodyW = 150, bodyTop = 56, bodyBottom = 166
   const body = `M${bodyX} ${bodyTop}h${bodyW}v${bodyBottom - bodyTop - 8}q0 8 -8 8h${-(bodyW - 16)}q-8 0 -8 -8Z`
   variable(
@@ -194,7 +230,6 @@ variable(
         <linearGradient id='tubeV' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#eef1f2'/><stop offset='.35' stop-color='#b9c0c2'/><stop offset='1' stop-color='#6a7275'/></linearGradient>
         <linearGradient id='handle' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#6d7578'/><stop offset='.45' stop-color='#d8dddf'/><stop offset='1' stop-color='#7b8386'/></linearGradient>
         <radialGradient id='rose' cx='.4' cy='.38' r='.7'><stop offset='0' stop-color='#e6eaeb'/><stop offset='.7' stop-color='#9aa2a5'/><stop offset='1' stop-color='#5e6669'/></radialGradient>
-        <pattern id='holes' width='5' height='5' patternUnits='userSpaceOnUse'><circle cx='2.5' cy='2.5' r='.9' fill='#3d4446'/></pattern>
         <clipPath id='bodyClip'><path d='${body}'/></clipPath>
         <linearGradient id='seam' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fff' stop-opacity='.7'/><stop offset='.5' stop-color='#fff' stop-opacity='0'/><stop offset='.55' stop-color='#2b3133' stop-opacity='.35'/><stop offset='1' stop-color='#2b3133' stop-opacity='0'/></linearGradient>
       </defs>
@@ -210,7 +245,7 @@ variable(
       <g transform='rotate(-48 24 40)'>
         <ellipse cx='24' cy='40' rx='9' ry='17' fill='#7c8487'/>
         <ellipse cx='20' cy='40' rx='8' ry='16' fill='url(#rose)'/>
-        <ellipse cx='20' cy='40' rx='6.5' ry='13' fill='url(#holes)' opacity='.75'/>
+        ${roseHoles}
       </g>
       <!-- body -->
       <path d='${body}' fill='url(#body)'/>
@@ -226,7 +261,7 @@ variable(
       <rect x='${bodyX - 2}' y='${bodyTop - 5}' width='${bodyW + 4}' height='2.4' rx='1.2' fill='#fff' opacity='.6'/>
       <!-- dimple near the base -->
       <ellipse cx='214' cy='120' rx='14' ry='9' fill='#2f3537' opacity='.08'/>
-      <ellipse cx='210' cy='116' rx='9' ry='5' fill='#fff' opacity='.12'/>`),
+      <ellipse cx='210' cy='116' rx='9' ry='5' fill='#fff' opacity='.12'/>`, { scale: 3 }),
   )
 }
 
@@ -345,10 +380,20 @@ function leaflet(length, width, teeth, r, { tip = 1, blunt = 0 } = {}) {
   return [...top, ...bottom.reverse()]
 }
 
+// Fine hairs on a rough leaf: a stipple of pale dots. A pattern, not noise,
+// so the leaf stays a cheap vector drawing.
+function stipple(hair) {
+  const r = rng(3)
+  let dots = ''
+  for (let i = 0; i < 6; i++)
+    dots += `<circle cx='${f(r() * 6)}' cy='${f(r() * 6)}' r='${f(0.25 + r() * 0.25)}' fill='#fffbe6' opacity='${f(hair * (0.5 + r() * 0.6))}'/>`
+  return dots
+}
+
 const leafDefs = (id, light, dark, { gloss = 0, hair = 0 } = {}) => `
   <linearGradient id='${id}' x1='0' y1='0' x2='.35' y2='1'><stop offset='0' stop-color='${light}'/><stop offset='1' stop-color='${dark}'/></linearGradient>
   ${gloss ? `<radialGradient id='${id}g' cx='.35' cy='.3' r='.55'><stop offset='0' stop-color='#fff' stop-opacity='${gloss}'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></radialGradient>` : ''}
-  ${hair ? `<filter id='${id}h' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' seed='3'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 .9  0 0 0 ${-hair * 8} ${hair * 4.6}'/><feComposite in2='SourceGraphic' operator='in'/></filter>` : ''}`
+  ${hair ? `<pattern id='${id}h' width='6' height='6' patternUnits='userSpaceOnUse'>${stipple(hair)}</pattern>` : ''}`
 
 const mirrorX = (w, body) => `<g transform='translate(${w} 0) scale(-1 1)'>${body}</g>`
 
@@ -426,7 +471,7 @@ for (let v = 0; v < 2; v++) {
   sprite(`cucumber-leaf-${v}`, W, H, leafDefs('k', v ? '#6e9b48' : '#79a651', '#36602a', { hair: 0.35 }), `
     <path d='M${cx} ${cy + 10} L${cx + 2} ${H - 1}' stroke='#5a8a3a' stroke-width='3' stroke-linecap='round'/>
     <path d='${d}' fill='url(#k)' stroke='#2c5320' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${d}' fill='#fff' filter='url(#kh)' opacity='.25'/>
+    <path d='${d}' fill='url(#kh)'/>
     ${veins}`)
 }
 
@@ -450,7 +495,7 @@ for (let v = 0; v < 2; v++) {
   const blade = smooth(outline.filter((_, i) => i % 2 === 0), 0.6)
   sprite(`melon-leaf-${v}`, W, H, leafDefs('m', '#9ab47c', '#4d6e3c', { hair: 0.25 }) + `<clipPath id='blade'><path d='${blade}'/></clipPath>`, `
     <path d='${blade}' fill='url(#m)' stroke='#3b5a2c' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${blade}' fill='#fff' filter='url(#mh)' opacity='.3'/>
+    <path d='${blade}' fill='url(#mh)'/>
     <g clip-path='url(#blade)'>${veins}</g>`)
 }
 
@@ -489,7 +534,7 @@ for (let v = 0; v < 2; v++) {
     <radialGradient id='zone' cx='.5' cy='.55' r='.5'><stop offset='.42' stop-color='#4a3a1e' stop-opacity='0'/><stop offset='.56' stop-color='#4a3a1e' stop-opacity='.26'/><stop offset='.68' stop-color='#4a3a1e' stop-opacity='.2'/><stop offset='.78' stop-color='#4a3a1e' stop-opacity='0'/></radialGradient>`, `
     <path d='${d}' fill='url(#g)' stroke='#3d5f28' stroke-width='.6' stroke-opacity='.5'/>
     <path d='${d}' fill='url(#zone)'/>
-    <path d='${d}' fill='#fff' filter='url(#gh)' opacity='.14'/>
+    <path d='${d}' fill='url(#gh)'/>
     ${Array.from({ length: 7 }, (_, k) => {
       const a = Math.PI / 2 + Math.PI * 0.2 + (k / 6) * Math.PI * 1.6
       return `<path d='M${cx} ${cy + 6} L${f(cx + Math.cos(a) * R * 0.92)} ${f(cy + Math.sin(a) * R * 0.85)}' stroke='#b9d38e' stroke-width='.7' stroke-opacity='.55'/>`
@@ -680,5 +725,7 @@ ${vars.join('\n')}
 
 ${rules.join('\n\n')}
 `
-writeFileSync(OUT, css)
-console.log(`kipos art: ${(css.length / 1024).toFixed(0)} KB, ${rules.length} sprites, ${vars.length} materials`)
+let baked = css
+for (const job of bakes) baked = baked.replace(job.token, await bake(job))
+writeFileSync(OUT, baked)
+console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB, ${rules.length} sprites, ${vars.length} materials, ${bakes.length} baked`)

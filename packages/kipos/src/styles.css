@@ -86,7 +86,7 @@
   border-radius: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) 0 0;
   background:
     linear-gradient(rgba(255, 250, 238, 0.45), rgba(255, 250, 238, 0) 40%, rgba(40, 28, 14, 0.25)),
-    var(--kipos-limestone) 0 0 / calc(var(--kipos-u) * 256);
+    var(--kipos-limestone) 0 0 / calc(var(--kipos-u) * 920);
   filter: brightness(0.9);
 }
 
@@ -268,23 +268,145 @@
 
 /* ---------- Plants ---------- */
 
+/* The plant's root is a point on the soil; everything is drawn out from it.
+   Each plant keeps a layer of its own: a breeze moves it without redrawing it,
+   and it can grow without the stonework behind it being redrawn. */
 .kipos-plant {
   --droop: 0;
   position: absolute;
+  will-change: transform;
   left: 50%;
   bottom: calc(var(--kipos-u) * 22);
   width: 0;
   height: 0;
-  /* One soft shadow for the whole plant, cast down and away from the sun. */
+  transform-origin: 0 0;
+}
+
+/* One soft shadow for the whole plant, cast down and away from the sun. It sits
+   inside the swaying element, so a breeze moves the shadowed plant as one
+   finished picture instead of re-casting the shadow every frame. */
+.kipos-plant__body {
+  position: absolute;
+  inset: 0;
   filter: drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 3) rgba(20, 30, 8, 0.32));
   transition: filter 1200ms ease;
 }
 
 .kipos-plant--wilted {
   --droop: 1;
+}
+.kipos-plant--wilted > .kipos-plant__body {
   filter:
     drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 3) rgba(20, 30, 8, 0.28))
     saturate(0.7) brightness(0.98) sepia(0.1);
+}
+
+/* A breeze: the plant leans and swings back, its tip travelling furthest. A
+   gust is the full swing; a plant brushed in passing, or watered, swings less.
+   The keyframes hold plain numbers so the swing runs on the compositor. */
+[data-sway] > .kipos-plant {
+  animation-duration: 3.8s;
+  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  animation-delay: var(--sway-delay, 0ms);
+  animation-fill-mode: both;
+}
+[data-sway='gust-a'] > .kipos-plant { animation-name: kipos-sway-gust-a; }
+[data-sway='gust-b'] > .kipos-plant { animation-name: kipos-sway-gust-b; }
+[data-sway='brush-a'] > .kipos-plant { animation-name: kipos-sway-brush-a; }
+[data-sway='brush-b'] > .kipos-plant { animation-name: kipos-sway-brush-b; }
+[data-sway='shiver-a'] > .kipos-plant { animation-name: kipos-sway-shiver-a; }
+[data-sway='shiver-b'] > .kipos-plant { animation-name: kipos-sway-shiver-b; }
+@keyframes kipos-sway-gust-a {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-2.6deg); }
+  36% { transform: skewX(1.5deg); }
+  56% { transform: skewX(-0.8deg); }
+  76% { transform: skewX(0.35deg); }
+}
+@keyframes kipos-sway-gust-b {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-2.6deg); }
+  36% { transform: skewX(1.5deg); }
+  56% { transform: skewX(-0.8deg); }
+  76% { transform: skewX(0.35deg); }
+}
+@keyframes kipos-sway-brush-a {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.04deg); }
+  36% { transform: skewX(0.6deg); }
+  56% { transform: skewX(-0.32deg); }
+  76% { transform: skewX(0.14deg); }
+}
+@keyframes kipos-sway-brush-b {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.04deg); }
+  36% { transform: skewX(0.6deg); }
+  56% { transform: skewX(-0.32deg); }
+  76% { transform: skewX(0.14deg); }
+}
+@keyframes kipos-sway-shiver-a {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.3deg); }
+  36% { transform: skewX(0.75deg); }
+  56% { transform: skewX(-0.4deg); }
+  76% { transform: skewX(0.17deg); }
+}
+@keyframes kipos-sway-shiver-b {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.3deg); }
+  36% { transform: skewX(0.75deg); }
+  56% { transform: skewX(-0.4deg); }
+  76% { transform: skewX(0.17deg); }
+}
+
+/* A stalk: segments hung end to end, each turning from the top of the last.
+   Wilting adds a little to every joint, so the whole stalk slumps together. */
+.kipos-seg {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 0;
+  transform-origin: 0 100%;
+  transform: rotate(calc(var(--a) + var(--droop) * var(--wa)));
+  transition: transform 1200ms cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+/* Each segment is a capsule reaching half its width past both joints, so the
+   joints never show. A segment still growing stretches up from its foot. */
+.kipos-seg__body {
+  position: absolute;
+  left: calc(var(--kipos-u) * var(--w) / -2);
+  bottom: calc(var(--kipos-u) * var(--w) / -2);
+  height: calc(100% + var(--kipos-u) * var(--w));
+  border-radius: calc(var(--kipos-u) * var(--w) / 2);
+  background: linear-gradient(90deg, #345d23, #6a9a48 42%, #3c6a29);
+  transform-origin: 50% calc(100% - var(--kipos-u) * var(--w) / 2);
+  transform: scaleY(var(--grow, 1));
+  transition: transform 1200ms ease;
+}
+.kipos-seg__tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--grow, 1) * 100%);
+  width: 0;
+  height: 0;
+  transition: bottom 1200ms ease;
+}
+.kipos-seg__tip i {
+  position: absolute;
+  bottom: 0;
+  width: calc(var(--kipos-u) * 13);
+  height: calc(var(--kipos-u) * 6);
+  filter: brightness(0.9) saturate(1.1);
+}
+.kipos-seg__tip i:first-child { right: 0; transform-origin: 100% 50%; transform: rotate(52deg); }
+.kipos-seg__tip i:last-child { left: 0; transform-origin: 0 50%; transform: rotate(-52deg); }
+.kipos-seg--vine > .kipos-seg__body { background: linear-gradient(90deg, #3f6a2c, #7aa257 42%, #4c7535); }
+.kipos-seg--stalk > .kipos-seg__body { background: linear-gradient(90deg, #5b7a36, #8aa860 42%, #5e7e3a); }
+
+/* Once the plant is on the page, anything new grows in from nothing. */
+@starting-style {
+  .kipos-plant[data-live] .kipos-seg__body { transform: scaleY(0); }
+  .kipos-plant[data-live] .kipos-part:not(.kipos-part--vine) { transform: rotate(var(--r, 0deg)) scale(0); }
 }
 
 .kipos-plant__shadow {
@@ -320,11 +442,6 @@
   transition: transform 1200ms cubic-bezier(0.3, 1.2, 0.5, 1);
 }
 
-/* Stems and runners stretch rather than pop, and lean a little when they wilt. */
-.kipos-part--stem,
-.kipos-part--runner {
-  transform: rotate(calc(var(--r, 0deg) + var(--droop) * 6deg)) scaleY(var(--grow, 1));
-}
 .kipos-part--across { transform: rotate(var(--r, 0deg)) scaleX(var(--grow, 1)); }
 
 /* A trailing vine unrolls from its root rather than stretching. */
@@ -344,10 +461,11 @@
     scale(calc(var(--s, 1) * var(--size, 1)));
 }
 
-/* Canes and ties are set by hand; they never wilt. */
+/* Canes and ties are set by hand; they never wilt. A truss turns with its stalk. */
 .kipos-part--cane,
 .kipos-part--tie,
 .kipos-part--twine { transform: rotate(var(--r, 0deg)); }
+.kipos-part--truss { transform: rotate(var(--r, 0deg)) scaleY(var(--s, 1)); }
 
 .kipos-part--leaf,
 .kipos-part--vine-leaf,
@@ -363,18 +481,9 @@
   opacity: 0.9;
 }
 
-.kipos-part--stem {
-  border-radius: calc(var(--kipos-u) * 3);
-  background:
-    linear-gradient(90deg, #345d23, #6a9a48 45%, #3c6a29);
-}
-.kipos-plant--geranium .kipos-part--stem {
-  background: linear-gradient(90deg, #5b7a36, #8aa860 45%, #5e7e3a);
-}
-
-.kipos-part--runner {
-  border-radius: calc(var(--kipos-u) * 3);
-  background: linear-gradient(#7aa257, #4c7535);
+.kipos-part--truss {
+  border-radius: calc(var(--kipos-u) * 1);
+  background: linear-gradient(90deg, #3c6a29, #6f9a4c);
 }
 
 /* A ripe tomato: the red drawing cross-fades in over the green. */
@@ -795,9 +904,12 @@
   .kipos-plot__soil::before,
   .kipos-plot__soil::after,
   .kipos-teneke__soil::before,
-  .kipos-plant,
+  .kipos-plant__body,
   .kipos-plant__shadow,
+  .kipos-seg,
+  .kipos-seg__body,
   .kipos-bed__scene,
   .kipos-teneke__scene { transition: none; }
   .kipos-pour { display: none; }
+  [data-sway] > .kipos-plant { animation: none; }
 }

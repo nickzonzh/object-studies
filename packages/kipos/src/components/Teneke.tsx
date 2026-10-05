@@ -1,10 +1,12 @@
-import { type CSSProperties, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type MouseEvent, type PointerEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { harvest, readPlanting, sow, water } from '../lib/garden.js'
 import { emptyTeneke, rescaleTeneke, tenekeStore } from '../lib/documents.js'
 import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
+import { sway, useBreeze } from '../lib/breeze.js'
 import { type KiposLabelOverrides, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
 import { Plant } from './Plant.js'
+import { plantProgress } from '../lib/plants.js'
 import '../art.css'
 import '../styles.css'
 
@@ -54,21 +56,24 @@ export function Teneke({
   const [pourId, setPourId] = useState<number | null>(null)
   const pourTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(pourTimer.current), [])
+  const scene = useRef<HTMLDivElement>(null)
+  useBreeze(scene, '.kipos-teneke__tin')
 
   // A tin that held something else grows what it is asked to now.
   const planting = tin.planting?.crop === plant ? tin.planting : null
   const state = planting ? readPlanting(planting, now, speed) : null
   const slots = cropSlots(labels, plant)
 
-  const pour = () => {
+  const pour = (target: HTMLElement) => {
     clearTimeout(pourTimer.current)
     setPourId(actionTime())
     pourTimer.current = setTimeout(() => setPourId(null), POUR_MS)
+    sway(target, 'shiver', 350)
   }
 
-  const press = () => {
+  const press = (event: MouseEvent<HTMLButtonElement>) => {
     const t = actionTime()
-    pour()
+    pour(event.currentTarget)
     if (!planting) {
       update((current) => ({ ...current, planting: sow(plant, t) }))
       return setMessage(fill(labels.sown, slots))
@@ -101,19 +106,21 @@ export function Teneke({
       <p id={instructionsId} className="kipos-sr-only">
         {labels.tenekeInstructions}
       </p>
-      <div className="kipos-teneke__scene">
+      <div className="kipos-teneke__scene" ref={scene}>
         <span className="kipos-teneke__shadow" aria-hidden="true" />
         <button
           type="button"
           className="kipos-teneke__tin"
-          style={{ '--wet': state ? Math.round(state.moisture * 20) / 20 : 0.15 } as CSSProperties}
           aria-label={planting ? `${fill(labels.teneke, slots)}: ${status}` : fill(labels.sowTeneke, slots)}
           aria-describedby={instructionsId}
           onClick={press}
+          onPointerEnter={(event: PointerEvent<HTMLButtonElement>) => {
+            if (planting && event.pointerType !== 'touch') sway(event.currentTarget, 'brush')
+          }}
         >
-          <span className="kipos-teneke__soil" />
+          <span className="kipos-teneke__soil" style={{ '--wet': state ? Math.round(state.moisture * 20) / 20 : 0.15 } as CSSProperties} />
           {planting && state && (
-            <Plant crop={plant} progress={state.progress} wilted={state.wilted} seed={planting.plantedAt % 100_000} />
+            <Plant crop={plant} progress={plantProgress(state.progress)} wilted={state.wilted} seed={planting.plantedAt % 100_000} />
           )}
           <span className="kipos-teneke__body" aria-hidden="true" />
           {pourId !== null && (
