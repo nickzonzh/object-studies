@@ -21,7 +21,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
-import { MATERIALS, litCanvas, relief as litDrawing } from './relief.mjs'
+import { MATERIALS, litCanvas } from './relief.mjs'
 
 const OUT = fileURLToPath(new URL('../src/art.css', import.meta.url))
 const ART = fileURLToPath(new URL('../src/art/', import.meta.url))
@@ -64,16 +64,16 @@ const bakes = []
  * A drawing as a CSS url(). `scale` is the bitmap's pixels per drawing unit
  * for a baked drawing: enough for the size it is shown at on a 2x screen.
  */
-function uri(w, h, body, { scale = 2, quality = 10 } = {}) {
+function uri(w, h, body, { scale = 2, quality = 10, tile = false } = {}) {
   const svg = svgOf(w, h, body)
   if (!svg.includes('feTurbulence'))
     return `url("data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, '%27')}")`
   const token = `@@bake-${bakes.length}@@`
-  bakes.push({ token, svg, w, h, scale, quality })
+  bakes.push({ token, scale, quality, tile, draw: () => bake({ svg, w, h, scale }) })
   return token
 }
 
-async function bake({ svg, w, h, scale, quality }) {
+async function bake({ svg, w, h, scale }) {
   const width = Math.round(w * scale)
   const height = Math.round(h * scale)
   // Drawn at full size, not drawn small and stretched: the noise and the
@@ -81,7 +81,7 @@ async function bake({ svg, w, h, scale, quality }) {
   const image = await loadImage(Buffer.from(svg.replace(`width='${w}' height='${h}'`, `width='${width}' height='${height}'`)))
   const canvas = createCanvas(width, height)
   canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
-  return canvas.toBuffer('image/avif', { quality, speed: 2 })
+  return canvas
 }
 
 const rules = []
@@ -231,14 +231,14 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
     'kipos-paper',
     uri(160, 160, `
       <defs>${relief('p', { freq: 0.9, octaves: 3, scale: 0.5, seed: 12, elevation: 72 })}</defs>
-      <rect width='160' height='160' fill='#f3e7cb' filter='url(#p)'/>${fibres}`, { scale: 1 }),
+      <rect width='160' height='160' fill='#f3e7cb' filter='url(#p)'/>${fibres}`, { scale: 1, tile: true }),
   )
 }
 
 // A fine grain for anything printed or painted, laid over with soft-light.
 material(
   'kipos-grain',
-  uri(128, 128, `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='128' height='128' filter='url(#n)' opacity='.5'/>`, { scale: 1 }),
+  uri(128, 128, `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='128' height='128' filter='url(#n)' opacity='.5'/>`, { scale: 1, tile: true }),
 )
 
 // ─── The galvanised watering can ─────────────────────────────────────────────
@@ -719,12 +719,11 @@ function hairs(seed, w, h, count, opacity) {
   return dots
 }
 
-/** A lit drawing, baked at the end of the run. */
 /** A lit drawing, baked at the end of the run: alone, or onto `sheet` with the others that go with it. */
-function lit(w, h, { body, height, material, scale = 2, mirror = false, quality, shadow, tile, sheet }) {
+function lit(w, h, { body, height, material, scale = 2, mirror = false, quality = 12, shadow, tile, sheet }) {
   const token = `@@bake-${bakes.length}@@`
-  const drawing = () => ({ w, h, scale, mirror, shadow, tile, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material })
-  bakes.push({ token, sheet, run: () => litDrawing({ ...drawing(), quality }), draw: () => litCanvas(drawing()) })
+  const drawing = { w, h, scale, mirror, shadow, tile, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material }
+  bakes.push({ token, sheet, scale, quality, tile, draw: () => litCanvas(drawing) })
   return token
 }
 
@@ -1396,7 +1395,6 @@ mkdirSync(ART, { recursive: true })
 // Images are named by their content, so an unchanged one is rewritten in place;
 // only images nothing uses any more are removed, once the new ones are written.
 const written = new Set()
-let baked = css
 let bytes = 0
 const save = (image, prefix = '') => {
   const name = `${prefix}${createHash('sha256').update(image).digest('hex').slice(0, 12)}.avif`
@@ -1405,16 +1403,51 @@ const save = (image, prefix = '') => {
   bytes += image.length
   return name
 }
-const sheets = new Map()
-for (const job of bakes) {
-  if (job.sheet) {
-    if (!sheets.has(job.sheet)) sheets.set(job.sheet, [])
-    sheets.get(job.sheet).push(job)
-    continue
+const encode = (canvas, quality) => canvas.toBuffer('image/avif', { quality, speed: 2 })
+
+// Phones get the bed's art again at two thirds the size, about half the bytes.
+// Art drawn at two pixels or more to a garden unit is sharp on a 1000px bed on
+// a 2x screen; two thirds of it is all a 3x phone screen can show of a bed up
+// to 440px wide. Finer textures drawn at less than two keep their one copy, and
+// only the bed switches: a tin is the same size on every screen. A copy under
+// 4 KB isn't worth having: a consumer's bundler (Vite, by default) folds an
+// image that small into the stylesheet, where every screen downloads it.
+const PHONE = 2 / 3
+const PHONE_BED = 440
+const INLINED = 4096
+const TIN_SHEETS = new Set(['basil', 'geranium'])
+const byToken = new Map(bakes.map((job) => [job.token, job]))
+const tokensIn = (text) => text.match(/@@bake-\d+@@/g) ?? []
+const shrinks = (token) => byToken.get(token).scale >= 2 && !TIN_SHEETS.has(byToken.get(token).sheet)
+// Each rule with art in it again, with only that art and only the places a bed shows it.
+const phoneRules = []
+for (const block of [...materials, ...rules]) {
+  const [, head, body] = block.match(/^([^{]+)\{([^}]*)\}$/)
+  const art = body.split('\n').map((line) => line.trim()).filter((line) => tokensIn(line).length && tokensIn(line).every(shrinks))
+  const where = head.split(',').map((selector) => selector.trim()).filter((selector) => !selector.includes('teneke'))
+  if (!art.length || !where.length) continue
+  phoneRules.push({ where, art })
+}
+const phoneTokens = new Set(phoneRules.flatMap(({ art }) => art.flatMap(tokensIn)))
+
+/** A picture at `k` of its size. A tile is shrunk among copies of itself, so its edges still meet. */
+function shrink(canvas, k, tile) {
+  const w = Math.round(canvas.width * k), h = Math.round(canvas.height * k)
+  const small = createCanvas(w, h)
+  const ctx = small.getContext('2d')
+  ctx.imageSmoothingQuality = 'high'
+  if (!tile) {
+    ctx.drawImage(canvas, 0, 0, w, h)
+    return small
   }
-  const name = save(job.run ? await job.run() : await bake(job))
-  // A drawing used in two places shares one token, so replace every use.
-  baked = baked.replaceAll(job.token, `url("./art/${name}")`)
+  const around = createCanvas(canvas.width * 3, canvas.height * 3)
+  for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) around.getContext('2d').drawImage(canvas, x * canvas.width, y * canvas.height)
+  const shrunk = createCanvas(w * 3, h * 3)
+  const shrunkCtx = shrunk.getContext('2d')
+  shrunkCtx.imageSmoothingQuality = 'high'
+  shrunkCtx.drawImage(around, 0, 0, w * 3, h * 3)
+  ctx.drawImage(shrunk, -w, -h)
+  return small
 }
 
 // Each sheet is packed in shelves, tallest drawings first, with a clear gutter
@@ -1423,36 +1456,71 @@ for (const job of bakes) {
 // the sheet to it, in percentages, so it still stretches with its element.
 const GUTTER = 6, SHEET_WIDTH = 1200
 const pct = (n) => `${Math.round(n * 10000) / 10000}%`
-for (const [sheet, jobs] of sheets) {
-  const drawn = []
-  for (const job of jobs) drawn.push({ job, canvas: await job.draw() })
-  const order = [...drawn].sort((a, b) => b.canvas.height - a.canvas.height)
-  let x = GUTTER, y = GUTTER, shelf = 0, width = 0
-  for (const item of order) {
-    if (x + item.canvas.width + GUTTER > SHEET_WIDTH && x > GUTTER) {
-      x = GUTTER
-      y += shelf + GUTTER
-      shelf = 0
+
+/** Saves each drawing worth saving, alone or on its sheet, and gives the CSS that shows it, by token. */
+async function output(jobs, picture, prefix, worth = () => true) {
+  const values = new Map()
+  const sheets = new Map()
+  for (const job of jobs) {
+    if (job.sheet) {
+      if (!sheets.has(job.sheet)) sheets.set(job.sheet, [])
+      sheets.get(job.sheet).push({ job, canvas: picture(job) })
+      continue
     }
-    item.x = x
-    item.y = y
-    x += item.canvas.width + GUTTER
-    shelf = Math.max(shelf, item.canvas.height)
-    width = Math.max(width, x)
+    const image = encode(picture(job), job.quality)
+    if (worth(image)) values.set(job.token, `url("./art/${save(image, prefix)}")`)
   }
-  const height = y + shelf + GUTTER
-  const page = createCanvas(width, height)
-  const ctx = page.getContext('2d')
-  for (const item of drawn) ctx.drawImage(item.canvas, item.x, item.y)
-  const name = save(page.toBuffer('image/avif', { quality: 12, speed: 2 }), `${sheet}-`)
-  for (const { job, canvas, x: sx, y: sy } of drawn) {
-    const along = (offset, size, whole) => (whole === size ? '0%' : pct((offset / (whole - size)) * 100))
-    baked = baked.replaceAll(
-      job.token,
-      `url("./art/${name}"); background-size: ${pct((width / canvas.width) * 100)} ${pct((height / canvas.height) * 100)}; background-position: ${along(sx, canvas.width, width)} ${along(sy, canvas.height, height)}; background-repeat: no-repeat`,
-    )
+  for (const [sheet, drawn] of sheets) {
+    const order = [...drawn].sort((a, b) => b.canvas.height - a.canvas.height)
+    let x = GUTTER, y = GUTTER, shelf = 0, width = 0
+    for (const item of order) {
+      if (x + item.canvas.width + GUTTER > SHEET_WIDTH && x > GUTTER) {
+        x = GUTTER
+        y += shelf + GUTTER
+        shelf = 0
+      }
+      item.x = x
+      item.y = y
+      x += item.canvas.width + GUTTER
+      shelf = Math.max(shelf, item.canvas.height)
+      width = Math.max(width, x)
+    }
+    const height = y + shelf + GUTTER
+    const page = createCanvas(width, height)
+    const ctx = page.getContext('2d')
+    for (const item of drawn) ctx.drawImage(item.canvas, item.x, item.y)
+    const image = encode(page, 12)
+    if (!worth(image)) continue
+    const name = save(image, `${sheet}-${prefix}`)
+    for (const { job, canvas, x: sx, y: sy } of drawn) {
+      const along = (offset, size, whole) => (whole === size ? '0%' : pct((offset / (whole - size)) * 100))
+      values.set(
+        job.token,
+        `url("./art/${name}"); background-size: ${pct((width / canvas.width) * 100)} ${pct((height / canvas.height) * 100)}; background-position: ${along(sx, canvas.width, width)} ${along(sy, canvas.height, height)}; background-repeat: no-repeat`,
+      )
+    }
   }
+  return values
 }
+
+const canvases = new Map()
+for (const job of bakes) canvases.set(job.token, await job.draw())
+const full = await output(bakes, (job) => canvases.get(job.token), '')
+const fullBytes = bytes
+const phone = await output(bakes.filter((job) => phoneTokens.has(job.token)), (job) => shrink(canvases.get(job.token), PHONE, job.tile), 'phone-', (image) => image.length >= INLINED)
+const phoneCss = phoneRules
+  .map(({ where, art }) => ({ where, art: art.filter((line) => tokensIn(line).every((token) => phone.has(token))) }))
+  .filter(({ art }) => art.length)
+  .map(({ where, art }) => `  ${where.join(',\n  ')} {\n${art.map((line) => `    ${line}`).join('\n')}\n  }`)
+  .join('\n\n')
+// A drawing used in two places shares one token, so replace every use.
+const fill = (text, values) => text.replace(/@@bake-\d+@@/g, (token) => values.get(token))
+const baked = `${fill(css, full)}
+/* The bed's art at two thirds the size, for a bed on a phone. */
+@container kipos-bed (max-width: ${PHONE_BED}px) {
+${fill(phoneCss, phone)}
+}
+`
 for (const name of readdirSync(ART)) if (!written.has(name)) rmSync(ART + name)
 writeFileSync(OUT, baked)
-console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB of CSS, ${rules.length} sprites, ${materials.length} materials, ${bakes.length} images (${(bytes / 1024).toFixed(0)} KB)`)
+console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB of CSS, ${rules.length} sprites, ${materials.length} materials, ${written.size} images (${(fullBytes / 1024).toFixed(0)} KB, and ${((bytes - fullBytes) / 1024).toFixed(0)} KB for phones)`)

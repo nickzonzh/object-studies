@@ -30,7 +30,9 @@ like any other CSS. Every rule is scoped to `kipos` classes. It is small (about
 8 KB gzipped) and links its art as image files in `kipos/dist/art/`, which your
 bundler picks up from the stylesheet like any other `url()`: a page draws
 without waiting for the art, and fetches only the art it shows. Each surface
-has a matching base colour until its image arrives.
+has a matching base colour until its image arrives. A bed 440px wide or
+narrower, as on a phone, shows its larger images at two thirds the size, which
+is all a phone screen can show of them.
 
 MIT. React 19. No runtime dependency beyond [`object-studies-core`](../core).
 Everything is drawn with DOM, CSS and images: no canvas, no WebGL. The

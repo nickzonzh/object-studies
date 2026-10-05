@@ -286,3 +286,158 @@
 .kipos-sprite--trowel {
   background-image: url("./art/wall-02c69022de2e.avif"); background-size: 255.5556% 321.6667%; background-position: 0.8571% 2.2556%; background-repeat: no-repeat;
 }
+
+/* The bed's art at two thirds the size, for a bed on a phone. */
+@container kipos-bed (max-width: 440px) {
+  .kipos-part--tomato::after {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 1352.2727% 179.7619%; background-position: 99.4555% 8.9552%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--1 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 2069.8113% 322.3881%; background-position: 29.8851% 4.0268%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--2 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 1025.2336% 322.3881%; background-position: 37.4747% 4.0268%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--3 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 1025.2336% 322.3881%; background-position: 48.8889% 4.0268%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--4 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 746.2585% 322.3881%; background-position: 62.8421% 4.0268%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--5 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 746.2585% 322.3881%; background-position: 78.9474% 4.0268%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--6 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 586.631% 322.3881%; background-position: 99.2308% 4.0268%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--7 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 586.631% 322.3881%; background-position: 0.6593% 61.745%; background-repeat: no-repeat;
+  }
+
+  .kipos-stone--8 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 483.2599% 322.3881%; background-position: 22.8736% 61.745%; background-repeat: no-repeat;
+  }
+
+  .kipos-capstone--0 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 548.5% 480%; background-position: 48.1605% 53.8012%; background-repeat: no-repeat;
+  }
+
+  .kipos-capstone--1 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 548.5% 480%; background-position: 71.126% 53.8012%; background-repeat: no-repeat;
+  }
+
+  .kipos-capstone--2 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 444.1296% 480%; background-position: 99.2941% 53.8012%; background-repeat: no-repeat;
+  }
+
+  .kipos-capstone--3 {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 444.1296% 480%; background-position: 0.7059% 96.4912%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-leaf-0-r {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 743.75% 177.6471%; background-position: 0.5825% 9.0909%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-leaf-0-l {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 743.75% 177.6471%; background-position: 16.699% 9.0909%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-leaf-1-r {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 743.75% 177.6471%; background-position: 32.8155% 9.0909%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-leaf-1-l {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 743.75% 177.6471%; background-position: 48.932% 9.0909%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-leaf-2-r {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 743.75% 177.6471%; background-position: 65.0485% 9.0909%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-leaf-2-l {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 743.75% 177.6471%; background-position: 81.165% 9.0909%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--cucumber-leaf-0-r {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 610% 130%; background-position: 9.1503% 16.6667%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--cucumber-leaf-0-l {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 610% 130%; background-position: 29.7386% 16.6667%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--cucumber-leaf-1-r {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 610% 130%; background-position: 50.3268% 16.6667%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--cucumber-leaf-1-l {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 610% 130%; background-position: 70.915% 16.6667%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--melon-leaf-0-r {
+    background-image: url("./art/melon-phone-fe447f947c8d.avif"); background-size: 734.5865% 235.514%; background-position: 49.8815% 4.1379%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--melon-leaf-0-l {
+    background-image: url("./art/melon-phone-fe447f947c8d.avif"); background-size: 734.5865% 235.514%; background-position: 66.3507% 4.1379%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--melon-leaf-1-r {
+    background-image: url("./art/melon-phone-fe447f947c8d.avif"); background-size: 734.5865% 235.514%; background-position: 82.8199% 4.1379%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--melon-leaf-1-l {
+    background-image: url("./art/melon-phone-fe447f947c8d.avif"); background-size: 734.5865% 235.514%; background-position: 99.2891% 4.1379%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-flower {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 2479.1667% 314.5833%; background-position: 0.5254% 94.1748%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-green {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 1352.2727% 179.7619%; background-position: 90.9256% 8.9552%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tomato-red {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 1352.2727% 179.7619%; background-position: 99.4555% 8.9552%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--cucumber {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 1663.6364% 108.3333%; background-position: 0.8721% 50%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--melon {
+    background-image: url("./art/melon-phone-fe447f947c8d.avif"); background-size: 555.1136% 219.1304%; background-position: 29.8377% 4.3796%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--melon-vine {
+    background-image: url("./art/melon-phone-fe447f947c8d.avif"); background-size: 430.3965% 105%; background-position: 0.8% 50%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tendril-r {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 915% 216.6667%; background-position: 85.8896% 7.1429%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tendril-l {
+    background-image: url("./art/cucumber-phone-51b6ef3d77d5.avif"); background-size: 915% 216.6667%; background-position: 99.0798% 7.1429%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tie-cream {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 2288.4615% 539.2857%; background-position: 5.2724% 78.8618%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--tie-blue {
+    background-image: url("./art/tomato-phone-61ccdc549f5f.avif"); background-size: 2288.4615% 539.2857%; background-position: 10.3691% 78.8618%; background-repeat: no-repeat;
+  }
+
+  .kipos-sprite--trowel {
+    background-image: url("./art/wall-phone-a4976f49f340.avif"); background-size: 365.6667% 270%; background-position: 0.7528% 4.4118%; background-repeat: no-repeat;
+  }
+}

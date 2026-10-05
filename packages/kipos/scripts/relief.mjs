@@ -95,11 +95,6 @@ export const MATERIALS = {
   stem: { bump: 1, ambient: 0.42, spec: 0.12, shine: 16, rim: 0.1, rimColour: [0.5, 0.7, 0.2] },
 }
 
-/** A lit drawing as an AVIF image. */
-export async function relief({ quality = 12, ...drawing }) {
-  return (await litCanvas(drawing)).toBuffer('image/avif', { quality, speed: 2 })
-}
-
 /**
  * Renders a lit drawing onto a canvas.
  *
