@@ -2,7 +2,7 @@
   "name": "object-studies",
   "private": true,
   "type": "module",
-  "description": "Tactile, physical-object React components: Melani (whiteboard), Kimolia (chalkboard), Korniza (gallery frames), Keramos (painted pottery) and Kollaz (craft table).",
+  "description": "Tactile, physical-object React components: Melani (whiteboard), Kimolia (chalkboard), Korniza (gallery frames), Keramos (painted pottery), Kollaz (craft table) and Komboloi (worry beads).",
   "license": "MIT",
   "workspaces": [
     "packages/core",
@@ -11,6 +11,7 @@
     "packages/melani",
     "packages/keramos",
     "packages/kollaz",
+    "packages/komboloi",
     "apps/site"
   ],
   "scripts": {
