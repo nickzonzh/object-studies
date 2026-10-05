@@ -159,12 +159,14 @@ export async function litCanvas({ w, h, scale = 2, mirror = false, svg, height, 
      * middle. Worked out exactly rather than blurred, so a broad curve has no
      * steps in it for the light to find.
      */
-    cylinder({ left, right, amount }) {
+    cylinder({ left, right, amount, top = -Infinity, bottom = Infinity }) {
       const middle = (left + right) / 2, half = (right - left) / 2
+      const from = Math.max(0, Math.round(top * scale)), to = Math.min(H, Math.round(bottom * scale))
       for (let x = 0; x < W; x++) {
         const u = ((mirror ? W - x : x) / scale - middle) / half
-        const z = amount * Math.sqrt(Math.max(0, 1 - u * u))
-        for (let y = 0; y < H; y++) field[y * W + x] += z
+        if (Math.abs(u) > 1) continue
+        const z = amount * Math.sqrt(1 - u * u)
+        for (let y = from; y < to; y++) field[y * W + x] += z
       }
     },
     /** A rounded ridge along a line: a stem, a rib, a raised vein. */

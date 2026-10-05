@@ -221,6 +221,9 @@ material(
 
 // ─── The galvanised watering can ─────────────────────────────────────────────
 
+// Lit as a surface by scripts/relief.mjs: a drum of galvanised steel with the
+// zinc's crystal spangle in it, rolled seams and rim, a tube handle and a
+// tapering spout ending in a domed rose.
 {
   const spangle = `
     <filter id='spangle' x='0' y='0' width='100%' height='100%'>
@@ -232,63 +235,54 @@ material(
         <feFuncA type='linear' slope='0' intercept='1'/>
       </feComponentTransfer>
     </filter>`
-  // Cylinder shading: dark limb, bright band left of centre, soft right limb.
-  const metal = (id, x1 = 0, x2 = 1) => `
-    <linearGradient id='${id}' x1='${x1}' x2='${x2}' y1='0' y2='0'>
-      <stop offset='0' stop-color='#5d6567'/><stop offset='.08' stop-color='#8c9496'/>
-      <stop offset='.26' stop-color='#d9dee0'/><stop offset='.34' stop-color='#f4f6f6'/>
-      <stop offset='.44' stop-color='#bfc6c8'/><stop offset='.7' stop-color='#949c9f'/>
-      <stop offset='.9' stop-color='#b3babd'/><stop offset='1' stop-color='#636b6e'/>
-    </linearGradient>`
   const W = 290, H = 176
-  // The rose's holes, drawn one by one (a pattern fill bakes as a solid).
-  let roseHoles = ''
+  const roseHoles = []
   for (let y = 29.5; y <= 50.5; y += 3.5)
     for (let x = 15.5; x <= 24.5; x += 3) {
       const dx = (x - 20) / 6.5, dy = (y - 40) / 13
-      if (dx * dx + dy * dy < 0.8) roseHoles += `<circle cx='${f(x)}' cy='${f(y)}' r='.8' fill='#3d4446' opacity='.75'/>`
+      if (dx * dx + dy * dy < 0.8) roseHoles.push([x, y])
     }
   const bodyX = 112, bodyW = 150, bodyTop = 56, bodyBottom = 166
   const body = `M${bodyX} ${bodyTop}h${bodyW}v${bodyBottom - bodyTop - 8}q0 8 -8 8h${-(bodyW - 16)}q-8 0 -8 -8Z`
+  const handle = 'M150 60 C150 6 238 6 238 60'
+  const spout = 'M118 132 L32 40 L22 50 L114 150 Z'
+  const spoutLine = 'M116 141 L27 45'
+  const rim = `M${bodyX - 2} ${bodyTop - 1} h${bodyW + 4}`
+  // The rose's holes, rotated with it.
+  const a = (-48 * Math.PI) / 180
+  const holes = roseHoles.map(([x, y]) => [24 + (x - 24) * Math.cos(a) - (y - 40) * Math.sin(a), 40 + (x - 24) * Math.sin(a) + (y - 40) * Math.cos(a)])
   material(
     'kipos-can',
-    uri(W, H, `
-      <defs>${spangle}${metal('body')}${metal('tube', 0, 0)}
-        <linearGradient id='tubeV' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#eef1f2'/><stop offset='.35' stop-color='#b9c0c2'/><stop offset='1' stop-color='#6a7275'/></linearGradient>
-        <linearGradient id='handle' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#6d7578'/><stop offset='.45' stop-color='#d8dddf'/><stop offset='1' stop-color='#7b8386'/></linearGradient>
-        <radialGradient id='rose' cx='.4' cy='.38' r='.7'><stop offset='0' stop-color='#e6eaeb'/><stop offset='.7' stop-color='#9aa2a5'/><stop offset='1' stop-color='#5e6669'/></radialGradient>
-        <clipPath id='bodyClip'><path d='${body}'/></clipPath>
-        <linearGradient id='seam' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fff' stop-opacity='.7'/><stop offset='.5' stop-color='#fff' stop-opacity='0'/><stop offset='.55' stop-color='#2b3133' stop-opacity='.35'/><stop offset='1' stop-color='#2b3133' stop-opacity='0'/></linearGradient>
-      </defs>
-      <!-- handle: a rolled tube arching over the top -->
-      <path d='M150 60 C150 6 238 6 238 60' fill='none' stroke='#596164' stroke-width='12' stroke-linecap='round'/>
-      <path d='M150 60 C150 6 238 6 238 60' fill='none' stroke='url(#handle)' stroke-width='9' stroke-linecap='round'/>
-      <path d='M154 52 C156 16 230 14 233 44' fill='none' stroke='#fff' stroke-width='1.6' stroke-opacity='.55' stroke-linecap='round'/>
-      <!-- spout: a tapering tube from low on the body up to the rose -->
-      <path d='M118 132 L32 40 L22 50 L114 150 Z' fill='url(#tubeV)'/>
-      <path d='M116 136 L28 44' stroke='#fff' stroke-opacity='.6' stroke-width='1.5'/>
-      <path d='M114 150 L22 50' stroke='#3e4648' stroke-opacity='.45' stroke-width='1.5'/>
-      <!-- rose -->
-      <g transform='rotate(-48 24 40)'>
-        <ellipse cx='24' cy='40' rx='9' ry='17' fill='#7c8487'/>
-        <ellipse cx='20' cy='40' rx='8' ry='16' fill='url(#rose)'/>
-        ${roseHoles}
-      </g>
-      <!-- body -->
-      <path d='${body}' fill='url(#body)'/>
-      <g clip-path='url(#bodyClip)'>
-        <rect x='${bodyX}' y='${bodyTop}' width='${bodyW}' height='${bodyBottom - bodyTop}' filter='url(#spangle)' opacity='.38' style='mix-blend-mode:multiply'/>
-        <rect x='${bodyX}' y='${bodyTop}' width='${bodyW}' height='${bodyBottom - bodyTop}' fill='url(#body)' opacity='.45'/>
-        <rect x='${bodyX}' y='84' width='${bodyW}' height='7' fill='url(#seam)'/>
-        <rect x='${bodyX}' y='138' width='${bodyW}' height='7' fill='url(#seam)'/>
-        <path d='M${bodyX} 158 h${bodyW}' stroke='#3b2a1a' stroke-opacity='.25' stroke-width='10'/>
-      </g>
-      <!-- rolled top rim -->
-      <rect x='${bodyX - 4}' y='${bodyTop - 6}' width='${bodyW + 8}' height='10' rx='5' fill='url(#body)'/>
-      <rect x='${bodyX - 2}' y='${bodyTop - 5}' width='${bodyW + 4}' height='2.4' rx='1.2' fill='#fff' opacity='.6'/>
-      <!-- dimple near the base -->
-      <ellipse cx='214' cy='120' rx='14' ry='9' fill='#2f3537' opacity='.08'/>
-      <ellipse cx='210' cy='116' rx='9' ry='5' fill='#fff' opacity='.12'/>`, { scale: 3 }),
+    lit(W, H, {
+      scale: 3,
+      body: `
+        <defs>${spangle}<clipPath id='bodyClip'><path d='${body}'/></clipPath></defs>
+        <path d='${handle}' fill='none' stroke='#a7aeb0' stroke-width='10' stroke-linecap='round'/>
+        <path d='${spout}' fill='#a3aaac'/>
+        <g transform='rotate(-48 24 40)'><ellipse cx='24' cy='40' rx='9' ry='17' fill='#7c8487'/><ellipse cx='20' cy='40' rx='8' ry='16' fill='#9aa2a5'/></g>
+        ${holes.map(([x, y]) => `<circle cx='${f(x)}' cy='${f(y)}' r='.85' fill='#2c3234'/>`).join('')}
+        <path d='${body}' fill='#a9b0b2'/>
+        <g clip-path='url(#bodyClip)'>
+          <rect x='${bodyX}' y='${bodyTop}' width='${bodyW}' height='${bodyBottom - bodyTop}' filter='url(#spangle)' opacity='.3' style='mix-blend-mode:luminosity'/>
+          <path d='M${bodyX} 158 h${bodyW}' stroke='#3b2a1a' stroke-opacity='.2' stroke-width='10'/>
+        </g>
+        <rect x='${bodyX - 4}' y='${bodyTop - 6}' width='${bodyW + 8}' height='10' rx='5' fill='#b4babc'/>`,
+      material: { bump: 1, ambient: 0.36, spec: 0.75, shine: 44, rim: 0, rimColour: [0, 0, 0], occlusion: 0.45 },
+      height(api) {
+        api.cylinder({ left: bodyX - 2, right: bodyX + bodyW + 2, top: bodyTop - 7, bottom: bodyBottom + 1, amount: 40 })
+        api.ridge(rim, { width: 10, amount: 4 })
+        for (const y of [87, 141]) {
+          api.ridge(`M${bodyX} ${y} h${bodyW}`, { width: 4, amount: 2.2 })
+          api.groove(`M${bodyX} ${y + 4} h${bodyW}`, { width: 2.4, amount: 1.2 })
+        }
+        api.ridge(`M${bodyX} 161 h${bodyW}`, { width: 5, amount: 1.6 })
+        api.groove('M206 118 l14 2', { width: 16, blur: 8, amount: 3 })
+        api.ridge(handle, { width: 10, amount: 7 })
+        api.ridge(spoutLine, { width: 13, blur: 5, amount: 7 })
+        api.bumps([[21, 39, 9, 7]], 5)
+        api.bumps(holes.map(([x, y]) => [x, y, 0.85, -0.8]), 0.3)
+      },
+    }),
   )
 }
 
