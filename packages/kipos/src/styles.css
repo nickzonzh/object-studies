@@ -417,7 +417,9 @@
   bottom: calc(var(--kipos-u) * var(--w) / -2);
   height: calc(100% + var(--kipos-u) * var(--w));
   border-radius: calc(var(--kipos-u) * var(--w) / 2);
-  background: linear-gradient(90deg, #345d23, #6a9a48 42%, #3c6a29);
+  /* The lit stem, vine or stalk tile is set in art.css, by kind. */
+  background-size: 100% calc(var(--kipos-u) * var(--w) * 2.4);
+  background-repeat: repeat-y;
   transform-origin: 50% calc(100% - var(--kipos-u) * var(--w) / 2);
   transform: scaleY(var(--grow, 1));
   transition: transform 1200ms ease;
@@ -439,8 +441,6 @@
 }
 .kipos-seg__tip i:first-child { right: 0; transform-origin: 100% 50%; transform: rotate(52deg); }
 .kipos-seg__tip i:last-child { left: 0; transform-origin: 0 50%; transform: rotate(-52deg); }
-.kipos-seg--vine > .kipos-seg__body { background: linear-gradient(90deg, #3f6a2c, #7aa257 42%, #4c7535); }
-.kipos-seg--stalk > .kipos-seg__body { background: linear-gradient(90deg, #5b7a36, #8aa860 42%, #5e7e3a); }
 
 /* Once the plant is on the page, anything new grows in from nothing. */
 @starting-style {
@@ -545,7 +545,8 @@
 
 .kipos-part--truss {
   border-radius: calc(var(--kipos-u) * 1);
-  background: linear-gradient(90deg, #3c6a29, #6f9a4c);
+  background-size: 100% calc(var(--kipos-u) * 4.4);
+  background-repeat: repeat-y;
 }
 
 /* A ripe tomato: the red drawing cross-fades in over the green. */

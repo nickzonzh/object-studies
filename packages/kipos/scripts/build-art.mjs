@@ -5,6 +5,7 @@
 // Drawings are SVG data URIs. Anything grown from noise (feTurbulence) is
 // baked here into a small AVIF instead: a browser re-runs an SVG filter every
 // time anything over it repaints, which made the garden expensive to touch.
+// The plants are lit as surfaces by scripts/relief.mjs and baked the same way.
 // The output is generated; change this script and re-run it rather than
 // editing art.css by hand. Everything is seeded, so the same script always
 // draws the same garden.
@@ -12,6 +13,7 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
+import { MATERIALS, relief as litDrawing } from './relief.mjs'
 
 const OUT = fileURLToPath(new URL('../src/art.css', import.meta.url))
 
@@ -93,6 +95,9 @@ const PLACES = {
   'kipos-art-watermelon': ['.kipos-packet--watermelon .kipos-packet__art'],
   'kipos-tomato-red': ['.kipos-part--tomato::after'],
   'kipos-cane': ['.kipos-cane'],
+  'kipos-stem': ['.kipos-seg--stem > .kipos-seg__body', '.kipos-part--truss'],
+  'kipos-vine': ['.kipos-seg--vine > .kipos-seg__body'],
+  'kipos-stalk': ['.kipos-seg--stalk > .kipos-seg__body'],
 }
 const materials = []
 const material = (name, value) => {
@@ -291,67 +296,74 @@ material(
 
 // The front of the tin, seen a little from above like the bed: its top edge is
 // the near half of the round mouth, its foot a curve. The far half of the rim
-// and the soil inside are plain CSS behind the plant.
+// and the soil inside are plain CSS behind the plant. Lit as a surface by
+// scripts/relief.mjs: a round tin of galvanised steel, its pressed rings and
+// rolled rim standing out, under a coat of lime that has flaked away in
+// places to show the metal. The lime is matte; the bare steel keeps a sheen.
 {
   const W = 180, H = 178, RY = 13, TOP = 13, FOOT = 165
   const face = `M0 ${TOP} A90 ${RY} 0 0 0 180 ${TOP} L180 ${FOOT} A90 ${RY} 0 0 1 0 ${FOOT} Z`
   const ring = (y) => `M0 ${y} A90 ${RY} 0 0 0 180 ${y}`
+  // Where the lime has flaked off: torn-edged patches, more of them low down and near the rim.
+  const flakes = `<filter id='flake' x='0' y='0' width='100%' height='100%'>
+      <feTurbulence type='fractalNoise' baseFrequency='.045' numOctaves='4' seed='23'/>
+      <feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -30 11.1'/>
+    </filter>`
+  const coatMask = `<mask id='coat'><rect width='${W}' height='${H}' fill='#fff'/><rect width='${W}' height='${H}' filter='url(#flake)'/><path d='${ring(FOOT - 10)} L180 ${H} L0 ${H} Z' fill='#000' opacity='.5'/></mask>`
+  const coat = `<g clip-path='url(#face)' mask='url(#coat)'><rect width='${W}' height='${H}' fill='#f0ece2'/><rect width='${W}' height='${H}' filter='url(#brush)'/></g>`
+  const body = `
+    <defs>
+      <clipPath id='face'><path d='${face}'/></clipPath>
+      ${flakes}${coatMask}
+      <filter id='brush' x='0' y='0' width='100%' height='100%'>
+        <feTurbulence type='fractalNoise' baseFrequency='.07 .018' numOctaves='3' seed='5'/>
+        <feColorMatrix values='0 0 0 0 .72  0 0 0 0 .7  0 0 0 0 .64  0 0 0 -1.2 .5'/>
+      </filter>
+      <filter id='rust' x='0' y='0' width='100%' height='100%'>
+        <feTurbulence type='fractalNoise' baseFrequency='.03 .006' numOctaves='3' seed='17'/>
+        <feColorMatrix values='0 0 0 0 .52  0 0 0 0 .25  0 0 0 0 .1  0 0 0 -7 3.3'/>
+      </filter>
+    </defs>
+    <g clip-path='url(#face)'>
+      <rect width='${W}' height='${H}' fill='#9b9d96'/>
+      <rect width='${W}' height='${H}' filter='url(#rust)' opacity='.45'/>
+      <path d='${ring(FOOT - 8)} L180 ${H} L0 ${H} Z' fill='#7a3f1c' opacity='.35'/>
+    </g>
+    ${coat}
+    <g clip-path='url(#face)'>
+      <!-- the oil company's print, ghosting through the lime -->
+      <g opacity='.3' font-family='Georgia, serif' text-anchor='middle'>
+        <rect x='38' y='80' width='104' height='27' rx='3' fill='none' stroke='#1f4f8f' stroke-width='2'/>
+        <text x='90' y='99' font-size='14' letter-spacing='1.5' fill='#1f4f8f'>ΕΛΑΙΟΛΑΔΟ</text>
+        <text x='90' y='128' font-size='8.5' letter-spacing='3' fill='#a8312a'>ΚΡΗΤΗΣ · 17 KG</text>
+      </g>
+      <!-- rust weeping from the rim -->
+      <path d='M30 22 q2 18 -1 34 q-2 8 1 12' stroke='#8a4a22' stroke-opacity='.28' stroke-width='2.4' fill='none' stroke-linecap='round'/>
+      <path d='M131 25 q-1 12 2 22' stroke='#8a4a22' stroke-opacity='.22' stroke-width='2' fill='none' stroke-linecap='round'/>
+    </g>
+    <path d='${ring(TOP)}' stroke='#e9e5da' stroke-width='6' fill='none' stroke-linecap='round'/>`
   material(
     'kipos-teneke',
-    uri(W, H, `
-      <defs>
-        <clipPath id='face'><path d='${face}'/></clipPath>
-        <linearGradient id='tin' x1='0' x2='1'><stop offset='0' stop-color='#5d5f59'/><stop offset='.14' stop-color='#8f9189'/><stop offset='.33' stop-color='#cfd0c8'/><stop offset='.42' stop-color='#d9dad2'/><stop offset='.64' stop-color='#a4a59d'/><stop offset='.86' stop-color='#7c7d76'/><stop offset='1' stop-color='#55564f'/></linearGradient>
-        <linearGradient id='shade' x1='0' x2='1'><stop offset='0' stop-color='#2e281e' stop-opacity='.5'/><stop offset='.16' stop-color='#2e281e' stop-opacity='.08'/><stop offset='.36' stop-color='#fff' stop-opacity='.22'/><stop offset='.46' stop-color='#fff' stop-opacity='.06'/><stop offset='.78' stop-color='#2e281e' stop-opacity='.12'/><stop offset='1' stop-color='#2e281e' stop-opacity='.55'/></linearGradient>
-        <filter id='lime' x='0' y='0' width='100%' height='100%'>
-          <feTurbulence type='fractalNoise' baseFrequency='.018 .04' numOctaves='4' seed='5' result='brush'/>
-          <feColorMatrix in='brush' values='0 0 0 0 .965  0 0 0 0 .952  0 0 0 0 .925  0 0 0 -6 6.2' result='coat'/>
-          <feTurbulence type='fractalNoise' baseFrequency='.5' numOctaves='3' seed='2' result='tooth'/>
-          <feDiffuseLighting in='tooth' surfaceScale='.3' lighting-color='#fff' result='lit'><feDistantLight azimuth='225' elevation='60'/></feDiffuseLighting>
-          <feComposite in='lit' in2='coat' operator='in' result='litcoat'/>
-          <feBlend in='litcoat' in2='coat' mode='multiply'/>
-        </filter>
-        <filter id='chips' x='0' y='0' width='100%' height='100%'>
-          <feTurbulence type='fractalNoise' baseFrequency='.11' numOctaves='2' seed='23'/>
-          <feColorMatrix values='0 0 0 0 .55  0 0 0 0 .56  0 0 0 0 .52  0 0 0 -22 8.1'/>
-        </filter>
-        <filter id='rust' x='0' y='0' width='100%' height='100%'>
-          <feTurbulence type='fractalNoise' baseFrequency='.03 .006' numOctaves='3' seed='17'/>
-          <feColorMatrix values='0 0 0 0 .52  0 0 0 0 .25  0 0 0 0 .1  0 0 0 -7 3.3'/>
-        </filter>
-        <linearGradient id='rim' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#fbf9f3'/><stop offset='.5' stop-color='#dcd7cb'/><stop offset='1' stop-color='#8b8679'/></linearGradient>
-      </defs>
-      <g clip-path='url(#face)'>
-        <rect width='${W}' height='${H}' fill='url(#tin)'/>
-        <rect width='${W}' height='${H}' filter='url(#lime)'/>
-        <rect width='${W}' height='${H}' filter='url(#chips)' opacity='.75'/>
-        <rect width='${W}' height='${H}' filter='url(#rust)' opacity='.3'/>
-        <!-- the oil company's print, ghosting through the lime -->
-        <g opacity='.3' font-family='Georgia, serif' text-anchor='middle'>
-          <rect x='38' y='80' width='104' height='27' rx='3' fill='none' stroke='#1f4f8f' stroke-width='2'/>
-          <text x='90' y='99' font-size='14' letter-spacing='1.5' fill='#1f4f8f'>ΕΛΑΙΟΛΑΔΟ</text>
-          <text x='90' y='128' font-size='8.5' letter-spacing='3' fill='#a8312a'>ΚΡΗΤΗΣ · 17 KG</text>
-        </g>
-        <!-- rust weeping from the rim and gathered at the foot -->
-        <path d='M30 22 q2 18 -1 34 q-2 8 1 12' stroke='#8a4a22' stroke-opacity='.24' stroke-width='2.4' fill='none' stroke-linecap='round'/>
-        <path d='M131 25 q-1 12 2 22' stroke='#8a4a22' stroke-opacity='.2' stroke-width='2' fill='none' stroke-linecap='round'/>
-        <path d='${ring(FOOT - 8)} L180 ${H} L0 ${H} Z' fill='#7a3f1c' opacity='.28'/>
-        <!-- pressed ridges, curving round the tin -->
-        <path d='${ring(60)}' stroke='#3b3328' stroke-opacity='.3' stroke-width='3' fill='none'/>
-        <path d='${ring(63)}' stroke='#fff' stroke-opacity='.5' stroke-width='2' fill='none'/>
-        <path d='${ring(118)}' stroke='#3b3328' stroke-opacity='.3' stroke-width='3' fill='none'/>
-        <path d='${ring(121)}' stroke='#fff' stroke-opacity='.5' stroke-width='2' fill='none'/>
-        <rect width='${W}' height='${H}' fill='url(#shade)'/>
-        <!-- a soft dent -->
-        <ellipse cx='128' cy='92' rx='18' ry='12' fill='#3b3328' opacity='.08'/>
-        <ellipse cx='123' cy='88' rx='11' ry='6' fill='#fff' opacity='.18'/>
-        <!-- the foot sits in its own shadow -->
-        <path d='${ring(FOOT - 2)} L180 ${H} L0 ${H} Z' fill='#2a2318' opacity='.25'/>
-      </g>
-      <!-- the near half of the rolled rim -->
-      <path d='${ring(TOP)}' stroke='#6f6a5e' stroke-width='7' fill='none' stroke-linecap='round'/>
-      <path d='${ring(TOP)}' stroke='url(#rim)' stroke-width='5' fill='none' stroke-linecap='round'/>
-      <path d='M6 ${TOP + 1} A86 ${RY - 1} 0 0 0 174 ${TOP + 1}' stroke='#fff' stroke-opacity='.7' stroke-width='1.2' fill='none'/>`),
+    lit(W, H, {
+      body,
+      material: { bump: 1, ambient: 0.34, spec: 0.5, shine: 36, rim: 0, rimColour: [0, 0, 0], occlusion: 0.5 },
+      async height(api) {
+        // Round: the tin turns away from you to either side.
+        api.cylinder({ left: -4, right: 184, amount: 60 })
+        // Pressed rings and the rolled rim stand proud; each ring has a hollow beside it.
+        for (const y of [60, 118]) {
+          api.ridge(ring(y), { width: 4, amount: 2.4 })
+          api.groove(ring(y + 4), { width: 2.4, amount: 1.4 })
+        }
+        api.ridge(ring(TOP), { width: 6, amount: 4 })
+        api.ridge(ring(FOOT - 2), { width: 4, amount: 1.6 })
+        // A soft dent.
+        api.groove('M118 90 l14 2', { width: 16, blur: 9, amount: 3.5 })
+        // The lime stands a little proud of the bare steel, and takes the sheen off it.
+        await api.raster(svgOf(W, H, `<defs><clipPath id='face'><path d='${face}'/></clipPath>${flakes}${coatMask}</defs><g clip-path='url(#face)' mask='url(#coat)'><rect width='${W}' height='${H}' fill='#fff'/></g>`), { amount: 0.7, matte: 0.08 })
+        api.grain(77, 0.8, 0.22)
+      },
+    }),
   )
 }
 
@@ -397,6 +409,11 @@ const printed = (art) => `<g id='art'>${art}</g><mask id='ink'><use href='#art' 
 }
 
 // ─── Botanicals ──────────────────────────────────────────────────────────────
+//
+// Every plant drawing is lit as a surface by scripts/relief.mjs: the colour
+// layer below carries only the plant's own colours, and the height layer says
+// how each leaflet domes, where veins sink in, where a stem stands proud. The
+// sun is at the upper left, as for the rest of the bed.
 
 // A serrated leaflet along +x from the base at (0, 0): half-width profile with
 // teeth, as a closed polygon.
@@ -414,75 +431,114 @@ function leaflet(length, width, teeth, r, { tip = 1, blunt = 0 } = {}) {
   return [...top, ...bottom.reverse()]
 }
 
-// Fine hairs on a rough leaf: a stipple of pale dots. A pattern, not noise,
-// so the leaf stays a cheap vector drawing.
-function stipple(hair) {
-  const r = rng(3)
+const mirrorX = (w, body) => `<g transform='translate(${w} 0) scale(-1 1)'>${body}</g>`
+
+/** Translate then rotate, as a canvas matrix, to place a part in the height layer. */
+function turn(x, y, deg) {
+  const a = (deg * Math.PI) / 180
+  return [Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), x, y]
+}
+const at = (x, y, deg) => `translate(${f(x)} ${f(y)}) rotate(${f(deg)})`
+
+const ellipse = (cx, cy, rx, ry) =>
+  `M${f(cx - rx)} ${f(cy)} A${f(rx)} ${f(ry)} 0 1 0 ${f(cx + rx)} ${f(cy)} A${f(rx)} ${f(ry)} 0 1 0 ${f(cx - rx)} ${f(cy)}Z`
+
+/** Fine pale hairs over a rough leaf, scattered across a box and clipped to it by the caller. */
+function hairs(seed, w, h, count, opacity) {
+  const r = rng(seed)
   let dots = ''
-  // A wide tile of uneven dots, so no grid shows.
-  for (let i = 0; i < 22; i++)
-    dots += `<circle cx='${f(r() * 12)}' cy='${f(r() * 12)}' r='${f(0.16 + r() * 0.22)}' fill='#f2f6e0' opacity='${f(hair * (0.3 + r() * 0.5))}'/>`
+  for (let i = 0; i < count; i++)
+    dots += `<circle cx='${f(r() * w)}' cy='${f(r() * h)}' r='${f(0.18 + r() * 0.2)}' fill='#eef4dc' opacity='${f(opacity * (0.4 + r() * 0.6))}'/>`
   return dots
 }
 
-const leafDefs = (id, light, dark, { gloss = 0, hair = 0 } = {}) => `
-  <linearGradient id='${id}' x1='0' y1='0' x2='.35' y2='1'><stop offset='0' stop-color='${light}'/><stop offset='1' stop-color='${dark}'/></linearGradient>
-  ${gloss ? `<radialGradient id='${id}g' cx='.35' cy='.3' r='.55'><stop offset='0' stop-color='#fff' stop-opacity='${gloss}'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></radialGradient>` : ''}
-  ${hair ? `<pattern id='${id}h' width='12' height='12' patternUnits='userSpaceOnUse'>${stipple(hair)}</pattern>` : ''}`
-
-const mirrorX = (w, body) => `<g transform='translate(${w} 0) scale(-1 1)'>${body}</g>`
-
-/** Emits a sprite class for both leaf orientations: `-r` grows right, `-l` left. */
-function sprite(name, w, h, defs, body) {
-  rule(`.kipos-sprite--${name}-r`, [`background-image: ${uri(w, h, `<defs>${defs}</defs>${body}`)}`])
-  rule(`.kipos-sprite--${name}-l`, [`background-image: ${uri(w, h, `<defs>${defs}</defs>${mirrorX(w, body)}`)}`])
+/** A lit drawing, baked at the end of the run. */
+function lit(w, h, { body, height, material, scale = 2, mirror = false, quality, shadow }) {
+  const token = `@@bake-${bakes.length}@@`
+  bakes.push({
+    token,
+    run: () =>
+      litDrawing({ w, h, scale, mirror, shadow, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material, quality }),
+  })
+  return token
 }
-const single = (name, w, h, defs, body) => rule(`.kipos-sprite--${name}`, [`background-image: ${uri(w, h, `<defs>${defs}</defs>${body}`)}`])
+
+/** A sprite class for both orientations: `-r` grows right, `-l` left. The sun stays at the upper left on both. */
+function litSprite(name, w, h, drawing) {
+  rule(`.kipos-sprite--${name}-r`, [`background-image: ${lit(w, h, drawing)}`])
+  rule(`.kipos-sprite--${name}-l`, [`background-image: ${lit(w, h, { ...drawing, mirror: true })}`])
+}
+const litSingle = (name, w, h, drawing) => rule(`.kipos-sprite--${name}`, [`background-image: ${lit(w, h, drawing)}`])
 
 // Tomato: a compound leaf. Rachis from the stem at the left, toothed leaflets
-// in pairs, small interstitial leaflets, and a terminal leaflet. 120 x 64.
+// in pairs, small leaflets between them, and a terminal leaflet. Each leaflet
+// domes on its own, quilted by its sunken midrib and side veins. 120 x 64.
 for (let v = 0; v < 3; v++) {
   const r = rng(100 + v)
   const W = 120, H = 64, cy = 34
-  let body = ''
   const rachis = (t) => [6 + t * 104, cy - Math.sin(t * Math.PI) * (6 + v * 2) + t * 4]
-  const pairs = [0.22, 0.44, 0.64, 0.82]
-  const drawLeaflet = (t, side, size) => {
-    const [x, y] = rachis(t)
-    const angle = side * (52 - t * 18 + (r() - 0.5) * 14)
-    const shape = leaflet(26 * size, 7.5 * size, 7, r)
-    const tf = `translate(${f(x)} ${f(y)}) rotate(${f(angle - 6)})`
-    body += `<path transform='${tf}' d='${closed(shape)}' fill='url(#tl)' stroke='#2f5a22' stroke-width='.5' stroke-opacity='.6'/>`
-    body += `<path transform='${tf}' d='M1 0 L${f(24 * size)} 0' stroke='#b3d189' stroke-width='.8' stroke-opacity='.75'/>`
-    for (let k = 0.25; k < 0.8; k += 0.18)
-      body += `<path transform='${tf}' d='M${f(26 * size * k)} 0 l${f(4 * size)} ${f(-4.5 * size)} M${f(26 * size * k)} 0 l${f(4 * size)} ${f(4.5 * size)}' stroke='#9fc074' stroke-width='.45' stroke-opacity='.55'/>`
+  const greens = [['#3c6a28', '#44732d', '#386425', '#416e2b'], ['#447330', '#4c7c34', '#3f6c2c', '#477631'], ['#38622a', '#406b2c', '#355d27', '#3d672b']][v]
+  const leaflets = []
+  const add = (t, side, size, angle = side * (52 - t * 18 + (r() - 0.5) * 14) - 6, xy = rachis(t)) => {
+    const L = 26 * size, Wd = 7.5 * size
+    leaflets.push({ x: xy[0], y: xy[1], angle, L, Wd, shape: closed(leaflet(L, Wd, 7, r)), colour: greens[Math.floor(r() * greens.length)] })
   }
-  for (const [i, t] of pairs.entries()) {
+  for (const [i, t] of [0.22, 0.44, 0.64, 0.82].entries()) {
     const size = 1 - i * 0.12 + (r() - 0.5) * 0.1
-    drawLeaflet(t, -1, size)
-    drawLeaflet(t + 0.04, 1, size * 0.95)
+    add(t, -1, size)
+    add(t + 0.04, 1, size * 0.95)
     if (i < 3) {
-      drawLeaflet(t + 0.11, -1, 0.34)
-      drawLeaflet(t + 0.12, 1, 0.3)
+      add(t + 0.11, -1, 0.34)
+      add(t + 0.12, 1, 0.3)
     }
   }
-  // Terminal leaflet.
   const [tx, ty] = rachis(0.94)
-  const tl = leaflet(22, 7, 7, r)
-  body += `<path transform='translate(${f(tx - 6)} ${f(ty)}) rotate(4)' d='${closed(tl)}' fill='url(#tl)' stroke='#2f5a22' stroke-width='.5' stroke-opacity='.6'/>`
-  const rpts = Array.from({ length: 11 }, (_, i) => rachis(i / 10 * 0.96))
-  body = `<path d='M${pts(rpts)}' stroke='#4c7a30' stroke-width='2.4' fill='none' stroke-linecap='round'/>${body}`
-  body += `<path d='M${pts(rpts)}' stroke='#9cc06e' stroke-width='.7' fill='none' stroke-opacity='.6'/>`
-  sprite(`tomato-leaf-${v}`, W, H, leafDefs('tl', v === 1 ? '#77a24d' : '#6a9744', '#355f25'), body)
+  add(0.94, 1, 22 / 26, 4, [tx - 6, ty])
+  const rachisPath = `M${pts(Array.from({ length: 11 }, (_, i) => rachis((i / 10) * 0.96)))}`
+  const veins = (l) => {
+    let d = ''
+    for (let k = 0.22; k < 0.8; k += 0.16)
+      d += `M${f(l.L * k)} 0 q${f(l.L * 0.08)} ${f(-l.Wd * 0.3)} ${f(l.L * 0.16)} ${f(-l.Wd * 0.62)} M${f(l.L * k)} 0 q${f(l.L * 0.08)} ${f(l.Wd * 0.3)} ${f(l.L * 0.16)} ${f(l.Wd * 0.62)}`
+    return d
+  }
+  let body = `<defs><radialGradient id='margin' cx='.4' cy='.5' r='.65'><stop offset='.55' stop-color='#d8e08a' stop-opacity='0'/><stop offset='1' stop-color='#b6c86c' stop-opacity='.22'/></radialGradient></defs>`
+  body += `<path d='${rachisPath}' stroke='#5b8a3c' stroke-width='2.4' fill='none' stroke-linecap='round'/>`
+  for (const l of leaflets)
+    body += `<g transform='${at(l.x, l.y, l.angle)}'><path d='${l.shape}' fill='${l.colour}'/><path d='${l.shape}' fill='url(#margin)'/>
+      <path d='M1 0 L${f(l.L * 0.92)} 0' stroke='#a3c26f' stroke-width='.55' stroke-opacity='.8'/>
+      <path d='${veins(l)}' stroke='#93b462' stroke-width='.35' fill='none' stroke-opacity='.6'/></g>`
+  litSprite(`tomato-leaf-${v}`, W, H, {
+    shadow: { x: 1, y: 1.4, blur: 1.1, opacity: 0.38 },
+    body,
+    material: { ...MATERIALS.leaf, spec: 0.12, shine: 16, rim: 0.25 },
+    height(api) {
+      api.ridge(rachisPath, { width: 2.4, amount: 1.4 })
+      for (const l of leaflets) {
+        const t = turn(l.x, l.y, l.angle)
+        api.dome(l.shape, { blur: l.Wd * 0.45, amount: l.Wd * 0.42, transform: t })
+        api.groove(`M1 0 L${f(l.L * 0.92)} 0`, { width: 0.7, amount: 0.55, transform: t })
+        api.groove(veins(l), { width: 0.5, amount: 0.3, transform: t })
+      }
+      api.grain(7 + v, 1.1, 0.22)
+    },
+  })
 }
 
-// Cotyledon: a smooth seed leaf.
-sprite('cotyledon', 40, 18, leafDefs('c', '#a8d77c', '#5f9a3e', { gloss: 0.5 }), `
-  <path d='M2 9 C10 1 30 0 38 8 C30 16 10 17 2 9Z' fill='url(#c)'/>
-  <path d='M2 9 C10 1 30 0 38 8 C30 16 10 17 2 9Z' fill='url(#cg)'/>
-  <path d='M3 9 L34 8' stroke='#cfe8a8' stroke-width='.7' opacity='.7'/>`)
+// Cotyledon: a smooth, fleshy seed leaf.
+{
+  const blade = 'M2 9 C10 1 30 0 38 8 C30 16 10 17 2 9Z'
+  litSprite('cotyledon', 40, 18, {
+    body: `<path d='${blade}' fill='#8cc062'/><path d='M3 9 L34 8' stroke='#c9e6a2' stroke-width='.7' opacity='.8'/>`,
+    material: 'glossyLeaf',
+    height(api) {
+      api.dome(blade, { blur: 3, amount: 3.2 })
+      api.groove('M3 9 L34 8', { width: 0.8, amount: 0.5 })
+    },
+  })
+}
 
-// Cucumber: palmate, five shallow pointed lobes, finely toothed, rough and matte.
+// Cucumber: palmate, five shallow pointed lobes, finely toothed. Rough and
+// matte: the blade puckers between sunken veins and is covered in fine hairs.
 for (let v = 0; v < 2; v++) {
   const r = rng(200 + v)
   const W = 90, H = 90, cx = 45, cy = 48, R = 36
@@ -497,20 +553,41 @@ for (let v = 0; v < 2; v++) {
     const rr = R * (0.72 + 0.28 * lobe) * sinus * tooth
     outline.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.96])
   }
-  let veins = ''
+  const blade = closed(outline)
+  let main = '', side = ''
   for (let k = 0; k < 5; k++) {
     const a = -Math.PI / 2 + (k - 2) * 0.75
-    veins += `<path d='M${cx} ${cy + 10} Q${f(cx + Math.cos(a) * R * 0.35)} ${f(cy + Math.sin(a) * R * 0.35)} ${f(cx + Math.cos(a) * R * 0.92)} ${f(cy + Math.sin(a) * R * 0.92)}' stroke='#c2dc98' stroke-width='${k === 2 ? 1.3 : 1}' fill='none' stroke-opacity='.7'/>`
+    const ex = cx + Math.cos(a) * R * 0.92, ey = cy + Math.sin(a) * R * 0.92
+    main += `M${cx} ${cy + 10} Q${f(cx + Math.cos(a) * R * 0.35)} ${f(cy + Math.sin(a) * R * 0.35)} ${f(ex)} ${f(ey)} `
+    // Side veins off each main vein, branching towards the margin.
+    for (const t of [0.45, 0.7]) {
+      const px = cx + (ex - cx) * t, py = cy + 10 + (ey - cy - 10) * t
+      for (const s of [-1, 1]) side += `M${f(px)} ${f(py)} l${f(Math.cos(a + s * 0.9) * R * 0.22)} ${f(Math.sin(a + s * 0.9) * R * 0.22)} `
+    }
   }
-  const d = closed(outline)
-  sprite(`cucumber-leaf-${v}`, W, H, leafDefs('k', v ? '#6e9b48' : '#79a651', '#36602a', { hair: 0.35 }), `
-    <path d='M${cx} ${cy + 10} L${cx + 2} ${H - 1}' stroke='#5a8a3a' stroke-width='3' stroke-linecap='round'/>
-    <path d='${d}' fill='url(#k)' stroke='#2c5320' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${d}' fill='url(#kh)'/>
-    ${veins}`)
+  const petiole = `M${cx} ${cy + 10} L${cx + 2} ${H - 1}`
+  litSprite(`cucumber-leaf-${v}`, W, H, {
+    shadow: { x: 1.6, y: 2.2, blur: 1.8, opacity: 0.38 },
+    body: `<defs><clipPath id='b'><path d='${blade}'/></clipPath></defs>
+      <path d='${petiole}' stroke='#5a8a3a' stroke-width='3' stroke-linecap='round'/>
+      <path d='${blade}' fill='${v ? '#4a7a32' : '#518236'}'/>
+      <g clip-path='url(#b)'>${hairs(201 + v, W, H, 520, 0.22)}</g>
+      <path d='${main}' stroke='#b9d48c' stroke-width='1.1' fill='none' stroke-opacity='.75'/>
+      <path d='${side}' stroke='#a8c67c' stroke-width='.55' fill='none' stroke-opacity='.6'/>`,
+    material: 'matteLeaf',
+    height(api) {
+      api.ridge(petiole, { width: 3, amount: 2 })
+      api.dome(blade, { blur: 7, amount: 5 })
+      api.groove(main, { width: 1.5, amount: 1.4 })
+      api.groove(side, { width: 0.9, amount: 0.7 })
+      api.grain(210 + v, 4.5, 1.6)
+      api.grain(220 + v, 0.7, 0.3)
+    },
+  })
 }
 
-// Watermelon: deeply cut, three main lobes each lobed again, grey-green with silvery veins.
+// Watermelon: deeply cut, three main lobes each lobed again, grey-green with
+// silvery veins. Each lobe domes on its own; the cuts between them fall away.
 for (let v = 0; v < 2; v++) {
   const r = rng(300 + v)
   const W = 100, H = 80, cx = 50, cy = 46, R = 38
@@ -523,36 +600,54 @@ for (let v = 0; v < 2; v++) {
     const rr = R * (0.32 + 0.68 * main * sub) * (0.95 + r() * 0.06)
     outline.push([cx + Math.cos(a) * rr * 1.08, cy + Math.sin(a) * rr * 0.82])
   }
-  let veins = ''
-  for (const a of [-Math.PI / 2, -Math.PI / 2 - 2.09, -Math.PI / 2 + 2.09, -Math.PI / 2 - 1.05, -Math.PI / 2 + 1.05]) {
-    veins += `<path d='M${cx} ${cy} L${f(cx + Math.cos(a) * R * 0.78 * 1.08)} ${f(cy + Math.sin(a) * R * 0.78 * 0.82)}' stroke='#dfe8cc' stroke-width='.9' stroke-opacity='.65'/>`
-  }
   const blade = smooth(outline.filter((_, i) => i % 2 === 0), 0.6)
-  sprite(`melon-leaf-${v}`, W, H, leafDefs('m', '#9ab47c', '#4d6e3c', { hair: 0.25 }) + `<clipPath id='blade'><path d='${blade}'/></clipPath>`, `
-    <path d='${blade}' fill='url(#m)' stroke='#3b5a2c' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${blade}' fill='url(#mh)'/>
-    <g clip-path='url(#blade)'>${veins}</g>`)
+  let veins = ''
+  for (const a of [-Math.PI / 2, -Math.PI / 2 - 2.09, -Math.PI / 2 + 2.09, -Math.PI / 2 - 1.05, -Math.PI / 2 + 1.05])
+    veins += `M${cx} ${cy} L${f(cx + Math.cos(a) * R * 0.78 * 1.08)} ${f(cy + Math.sin(a) * R * 0.78 * 0.82)} `
+  litSprite(`melon-leaf-${v}`, W, H, {
+    shadow: { x: 1.4, y: 2, blur: 1.6, opacity: 0.38 },
+    body: `<defs><clipPath id='b'><path d='${blade}'/></clipPath></defs>
+      <path d='${blade}' fill='${v ? '#58764a' : '#5f7e4e'}'/>
+      <g clip-path='url(#b)'>${hairs(301 + v, W, H, 420, 0.2)}<path d='${veins}' stroke='#dbe6c6' stroke-width='.9' stroke-opacity='.75'/></g>`,
+    material: { ...MATERIALS.matteLeaf, rimColour: [0.6, 0.7, 0.45] },
+    height(api) {
+      api.dome(blade, { blur: 3.6, amount: 3.6 })
+      api.groove(veins, { width: 1.1, amount: 0.9 })
+      api.grain(310 + v, 3.5, 1.1)
+      api.grain(320 + v, 0.7, 0.25)
+    },
+  })
 }
 
-// Basil: ovate, cupped and glossy, with arched side veins.
+// Basil: ovate, cupped and glossy, quilted between arched side veins.
 for (let v = 0; v < 3; v++) {
   const r = rng(400 + v)
   const W = 64, H = 50
   const twist = (r() - 0.5) * 6
-  const outline = `M4 ${26 + twist * 0.2} C10 ${6 + twist} 44 ${2 + twist} 60 ${22 + twist * 0.4} C46 ${44 - twist} 14 ${46 - twist} 4 ${26 + twist * 0.2}Z`
-  let veins = `<path d='M5 26 C24 ${20 + twist * 0.5} 44 ${18 + twist * 0.4} 58 22' stroke='#d6f0b4' stroke-width='1.1' fill='none' stroke-opacity='.75'/>`
+  const blade = `M4 ${26 + twist * 0.2} C10 ${6 + twist} 44 ${2 + twist} 60 ${22 + twist * 0.4} C46 ${44 - twist} 14 ${46 - twist} 4 ${26 + twist * 0.2}Z`
+  const midrib = `M5 26 C24 ${20 + twist * 0.5} 44 ${18 + twist * 0.4} 58 22`
+  let side = ''
   for (let k = 0; k < 4; k++) {
     const x = 14 + k * 10
-    veins += `<path d='M${x} ${f(24 + twist * 0.1)} q4 -8 10 -12 M${x} ${f(24 + twist * 0.1)} q4 8 10 11' stroke='#c4e6a0' stroke-width='.6' fill='none' stroke-opacity='.55'/>`
+    side += `M${x} ${f(24 + twist * 0.1)} q4 -8 10 -12 M${x} ${f(24 + twist * 0.1)} q4 8 10 11 `
   }
-  sprite(`basil-leaf-${v}`, W, H, leafDefs('b', v === 1 ? '#78bd52' : '#6cb24a', '#24631f', { gloss: 0.45 }), `
-    <path d='${outline}' fill='url(#b)' stroke='#25611f' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${outline}' fill='url(#bg)'/>
-    <path d='M8 30 C22 40 44 40 56 26' stroke='#1e4f1a' stroke-width='2.4' fill='none' stroke-opacity='.18'/>
-    ${veins}`)
+  litSprite(`basil-leaf-${v}`, W, H, {
+    shadow: { x: 1.1, y: 1.6, blur: 1.2, opacity: 0.4 },
+    body: `<path d='${blade}' fill='${['#3b8130', '#438a35', '#37772d'][v]}'/>
+      <path d='${midrib}' stroke='#b6e08e' stroke-width='1' fill='none' stroke-opacity='.7'/>
+      <path d='${side}' stroke='#a4d47e' stroke-width='.55' fill='none' stroke-opacity='.55'/>`,
+    material: 'glossyLeaf',
+    height(api) {
+      api.dome(blade, { blur: 7, amount: 7 })
+      api.groove(midrib, { width: 1.4, amount: 1.4 })
+      api.groove(side, { width: 1, amount: 0.9 })
+      api.grain(410 + v, 0.9, 0.12)
+    },
+  })
 }
 
-// Geranium: round, scalloped and velvety, with the dark horseshoe of a zonal pelargonium.
+// Geranium: round, toothed and velvety, with the dark horseshoe of a zonal
+// geranium. The blade is gently waved and its veins fan from the stalk.
 for (let v = 0; v < 2; v++) {
   const W = 80, H = 66, cx = 40, cy = 34, R = 30
   const outline = []
@@ -565,85 +660,140 @@ for (let v = 0; v < 2; v++) {
     const rr = R * 0.94 * lobes * teeth * notch
     outline.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.92])
   }
-  const d = smooth(outline.filter((_, i) => i % 2 === 0), 0.8)
-  sprite(`geranium-leaf-${v}`, W, H, `
-    ${leafDefs('g', v ? '#7fa456' : '#86ab5c', '#4c7232', { hair: 0.4 })}
-    <radialGradient id='zone' cx='.5' cy='.58' r='.5'><stop offset='.36' stop-color='#5c2a16' stop-opacity='0'/><stop offset='.5' stop-color='#5c2a16' stop-opacity='.42'/><stop offset='.64' stop-color='#4a2a14' stop-opacity='.34'/><stop offset='.78' stop-color='#4a3a1e' stop-opacity='0'/></radialGradient>`, `
-    <path d='${d}' fill='url(#g)' stroke='#3d5f28' stroke-width='.6' stroke-opacity='.5'/>
-    <path d='${d}' fill='url(#zone)'/>
-    <path d='${d}' fill='url(#gh)'/>
-    ${Array.from({ length: 7 }, (_, k) => {
-      const a = Math.PI / 2 + Math.PI * 0.2 + (k / 6) * Math.PI * 1.6
-      return `<path d='M${cx} ${f(cy + R * 0.58)} Q${f(cx + Math.cos(a) * R * 0.4)} ${f(cy + R * 0.3 + Math.sin(a) * R * 0.4)} ${f(cx + Math.cos(a) * R * 0.9)} ${f(cy + Math.sin(a) * R * 0.84)}' stroke='#b9d38e' stroke-width='.7' fill='none' stroke-opacity='.55'/>`
-    }).join('')}`)
+  const blade = smooth(outline.filter((_, i) => i % 2 === 0), 0.8)
+  const veins = Array.from({ length: 7 }, (_, k) => {
+    const a = Math.PI / 2 + Math.PI * 0.2 + (k / 6) * Math.PI * 1.6
+    return `M${cx} ${f(cy + R * 0.58)} Q${f(cx + Math.cos(a) * R * 0.4)} ${f(cy + R * 0.3 + Math.sin(a) * R * 0.4)} ${f(cx + Math.cos(a) * R * 0.9)} ${f(cy + Math.sin(a) * R * 0.84)}`
+  }).join(' ')
+  litSprite(`geranium-leaf-${v}`, W, H, {
+    shadow: { x: 1.4, y: 2, blur: 1.6, opacity: 0.36 },
+    body: `<defs>
+        <radialGradient id='zone' cx='.5' cy='.58' r='.5'><stop offset='.36' stop-color='#5c2a16' stop-opacity='0'/><stop offset='.5' stop-color='#5c2a16' stop-opacity='.42'/><stop offset='.64' stop-color='#4a2a14' stop-opacity='.34'/><stop offset='.78' stop-color='#4a3a1e' stop-opacity='0'/></radialGradient>
+        <clipPath id='b'><path d='${blade}'/></clipPath>
+      </defs>
+      <path d='${blade}' fill='${v ? '#5a8a3a' : '#62913f'}'/>
+      <path d='${blade}' fill='url(#zone)'/>
+      <g clip-path='url(#b)'>${hairs(501 + v, W, H, 700, 0.18)}</g>
+      <path d='${veins}' stroke='#b9d38e' stroke-width='.7' fill='none' stroke-opacity='.5'/>`,
+    material: 'velvet',
+    height(api) {
+      api.dome(blade, { blur: 7, amount: 5 })
+      api.groove(veins, { width: 1.2, amount: 0.8 })
+      // A gentle wave round the margin.
+      api.grain(510 + v, 7, 2.2)
+      api.grain(520 + v, 0.6, 0.18)
+    },
+  })
 }
 
-// Flowers.
-single('tomato-flower', 24, 24, `<radialGradient id='p' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='#f0b316'/><stop offset='1' stop-color='#fbe36a'/></radialGradient>`, `
-  ${Array.from({ length: 5 }, (_, k) => `<path transform='rotate(${k * 72 + 10} 12 12)' d='M12 12 C13.6 8 13 3 12 1.5 C11 3 10.4 8 12 12Z' fill='url(#p)'/>`).join('')}
-  <path d='M10.4 9 L12 4.5 L13.6 9 Z' fill='#d79a0e'/><circle cx='12' cy='12' r='2' fill='#c88a0c'/>`)
-single('squash-flower', 28, 28, `<radialGradient id='p' cx='.5' cy='.5' r='.55'><stop offset='0' stop-color='#e68f14'/><stop offset='.45' stop-color='#f6c632'/><stop offset='1' stop-color='#fbe27a'/></radialGradient>`, `
-  ${Array.from({ length: 5 }, (_, k) => `<path transform='rotate(${k * 72} 14 14)' d='M14 14 C8 10 8 2 14 1 C20 2 20 10 14 14Z' fill='url(#p)' stroke='#d99a20' stroke-width='.4'/><path transform='rotate(${k * 72} 14 14)' d='M14 13 L14 4' stroke='#e2a52a' stroke-width='.5'/>`).join('')}
-  <circle cx='14' cy='14' r='3' fill='#d98a10'/><circle cx='13' cy='13' r='1' fill='#fbe27a'/>`)
+// Flowers: petals that dome and curl back, round a raised centre.
+{
+  const petal = 'M12 12 C13.6 8 13 3 12 1.5 C11 3 10.4 8 12 12Z'
+  litSingle('tomato-flower', 24, 24, {
+    scale: 3,
+    body: `${Array.from({ length: 5 }, (_, k) => `<path transform='rotate(${k * 72 + 10} 12 12)' d='${petal}' fill='#f4cd2c'/>`).join('')}
+      <path d='M10.4 9 L12 4.5 L13.6 9 Z' fill='#d8a018'/><circle cx='12' cy='12' r='2' fill='#c88a0c'/>`,
+    material: 'petal',
+    height(api) {
+      for (let k = 0; k < 5; k++) api.dome(petal, { blur: 0.9, amount: 1.4, transform: rotateAbout(12, 12, k * 72 + 10) })
+      api.bumps([[12, 9, 1.4, 1.6], [12, 12, 2, 1]])
+    },
+  })
+  const squash = 'M14 14 C8 10 8 2 14 1 C20 2 20 10 14 14Z'
+  litSingle('squash-flower', 28, 28, {
+    scale: 3,
+    body: `${Array.from({ length: 5 }, (_, k) => `<path transform='rotate(${k * 72} 14 14)' d='${squash}' fill='#f5c232'/><path transform='rotate(${k * 72} 14 14)' d='M14 13 L14 4' stroke='#e2a52a' stroke-width='.5'/>`).join('')}
+      <circle cx='14' cy='14' r='3' fill='#d98a10'/>`,
+    material: 'petal',
+    height(api) {
+      for (let k = 0; k < 5; k++) {
+        api.dome(squash, { blur: 1.4, amount: 1.8, transform: rotateAbout(14, 14, k * 72) })
+        api.groove('M14 13 L14 4', { width: 0.6, amount: 0.4, transform: rotateAbout(14, 14, k * 72) })
+      }
+      api.bumps([[14, 14, 2.6, 1.8]])
+    },
+  })
+}
 
-// Tomato fruit: a slightly flattened, softly ribbed globe with a calyx and a
-// window-shaped highlight. Green and ripe versions, cross-faded by --ripe.
+/** Rotation about a point, as a canvas matrix. */
+function rotateAbout(x, y, deg) {
+  const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a)
+  return [c, s, -s, c, x - c * x + s * y, y - s * x - c * y]
+}
+
+// Tomato fruit: a slightly flattened globe with soft ribs running from the
+// stalk, waxy enough to hold a hard little highlight, under a matte calyx.
+// Green and ripe versions, cross-faded by --ripe.
 {
   const r = rng(500)
   const W = 44, H = 42, cx = 22, cy = 24, R = 17.5
-  const body = []
+  const outline = []
   for (let i = 0; i < 90; i++) {
     const a = (i / 90) * Math.PI * 2
     const rr = R * (1 + 0.035 * Math.cos(5 * a + 0.4)) * (1 + 0.02 * r())
-    body.push([cx + Math.cos(a) * rr * 1.04, cy + Math.sin(a) * rr * 0.92])
+    outline.push([cx + Math.cos(a) * rr * 1.04, cy + Math.sin(a) * rr * 0.92])
   }
-  const d = smooth(body.filter((_, i) => i % 3 === 0))
-  const calyx = Array.from({ length: 6 }, (_, k) => {
+  const globe = smooth(outline.filter((_, i) => i % 3 === 0))
+  const sepals = Array.from({ length: 6 }, (_, k) => {
     const a = (k / 6) * Math.PI * 2 + 0.3
     const lx = cx + Math.cos(a) * 9, ly = cy - 14 + Math.sin(a) * 3.2
-    return `<path d='M${cx} ${cy - 15} Q${f((cx + lx) / 2 + Math.sin(a) * 2)} ${f((cy - 15 + ly) / 2 - 1.5)} ${f(lx)} ${f(ly + (Math.sin(a) > 0 ? 1.5 : -0.5))}' stroke='#3f6f2a' stroke-width='2.2' stroke-linecap='round' fill='none'/>`
-  }).join('')
-  const fruit = (id, a, b, c) => `
-    <radialGradient id='${id}' cx='.4' cy='.36' r='.72'><stop offset='0' stop-color='${a}'/><stop offset='.55' stop-color='${b}'/><stop offset='1' stop-color='${c}'/></radialGradient>`
-  const extras = `
-    <radialGradient id='spec' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='#fff' stop-opacity='.95'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></radialGradient>
-    <linearGradient id='rib' x1='0' x2='1'><stop offset='0' stop-color='#000' stop-opacity='.12'/><stop offset='.5' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.12'/></linearGradient>`
-  const draw = (id) => `
-    <path d='${d}' fill='url(#${id})'/>
-    <path d='M${cx - 6} ${cy - 14} q6 12 0 30 M${cx + 6} ${cy - 14} q-6 12 0 30' stroke='#000' stroke-opacity='.07' stroke-width='3' fill='none'/>
-    <ellipse cx='${cx - 7}' cy='${cy - 7}' rx='5.5' ry='3.6' fill='url(#spec)' transform='rotate(-28 ${cx - 7} ${cy - 7})'/>
-    <ellipse cx='${cx + 9}' cy='${cy + 7}' rx='5' ry='7' fill='#fff' opacity='.08'/>
-    ${calyx}<path d='M${cx} ${cy - 15} l.5 -5' stroke='#4c7d32' stroke-width='2.4' stroke-linecap='round'/>`
-  single('tomato-green', W, H, fruit('t', '#c9dd86', '#8ab04a', '#4e7a2a') + extras, draw('t'))
-  single('tomato-red', W, H, fruit('t', '#ff8f6a', '#e0391c', '#94200d') + extras, draw('t'))
-  // The ripe drawing is also a variable, so a green tomato can cross-fade into it.
-  material('kipos-tomato-red', uri(W, H, `<defs>${fruit('t', '#ff8f6a', '#e0391c', '#94200d') + extras}</defs>${draw('t')}`))
+    return `M${cx} ${cy - 15} Q${f((cx + lx) / 2 + Math.sin(a) * 2)} ${f((cy - 15 + ly) / 2 - 1.5)} ${f(lx)} ${f(ly + (Math.sin(a) > 0 ? 1.5 : -0.5))}`
+  }).join(' ')
+  const ribs = Array.from({ length: 5 }, (_, k) => {
+    const a = (k / 5) * Math.PI * 2 + 0.4
+    return `M${cx} ${cy - 13} Q${f(cx + Math.cos(a) * R * 0.7)} ${f(cy - 13 + Math.sin(a) * R * 0.4 + 6)} ${f(cx + Math.cos(a) * R * 1.02)} ${f(cy + Math.sin(a) * R * 0.85)}`
+  }).join(' ')
+  const stalk = `M${cx} ${cy - 15} l.5 -5`
+  const fruit = (skin, shoulder) => `
+    <defs><radialGradient id='s' cx='.5' cy='.12' r='.55'><stop offset='0' stop-color='${shoulder}'/><stop offset='1' stop-color='${shoulder}' stop-opacity='0'/></radialGradient></defs>
+    <path d='${globe}' fill='${skin}'/><path d='${globe}' fill='url(#s)'/>
+    <path d='${sepals}' stroke='#3f6f2a' stroke-width='2.2' stroke-linecap='round' fill='none'/>
+    <path d='${stalk}' stroke='#4c7d32' stroke-width='2.4' stroke-linecap='round'/>`
+  const height = (api) => {
+    api.dome(globe, { blur: 7, amount: 14 })
+    api.groove(ribs, { width: 3.2, blur: 2.4, amount: 1.4 })
+    api.ridge(sepals, { width: 2.2, amount: 1.6 })
+    api.ridge(stalk, { width: 2.4, amount: 2.2 })
+    api.matte(sepals, { stroke: 2.6 })
+    api.matte(stalk, { stroke: 2.8 })
+  }
+  const shadow = { x: 1.2, y: 1.8, blur: 1.4, opacity: 0.42 }
+  litSingle('tomato-green', W, H, { scale: 3, shadow, body: fruit('#8eb24c', '#c5d681'), material: { ...MATERIALS.waxyFruit, spec: 0.6 }, height })
+  const red = lit(W, H, { scale: 3, shadow, body: fruit('#d9361b', '#e8742c'), material: 'waxyFruit', height })
+  rule('.kipos-sprite--tomato-red', [`background-image: ${red}`])
+  // The ripe drawing is also laid over a green tomato, so it can cross-fade into it.
+  material('kipos-tomato-red', red)
 }
 
-// Cucumber: long, slightly curved, dark with pale stripes from the blossom end,
-// and a scatter of pale spines.
+// Cucumber: long, slightly curved and dark, paler stripes from the blossom
+// end, its skin raised in little warts each tipped with a pale spine.
 {
   const r = rng(600)
   const W = 22, H = 72
-  let spines = ''
-  for (let i = 0; i < 30; i++) {
-    const y = 8 + r() * 58, x = 5 + r() * 12
-    spines += `<circle cx='${f(x)}' cy='${f(y)}' r='.9' fill='#e4f0c8' opacity='.7'/><circle cx='${f(x + 0.3)}' cy='${f(y + 0.4)}' r='.7' fill='#1d3a14' opacity='.4'/>`
-  }
-  single('cucumber', W, H, `
-    <linearGradient id='c' x1='0' x2='1'><stop offset='0' stop-color='#1f3d17'/><stop offset='.3' stop-color='#4b7f36'/><stop offset='.45' stop-color='#5c9244'/><stop offset='1' stop-color='#1c3815'/></linearGradient>
-    <linearGradient id='st' x1='0' y1='1' x2='0' y2='0'><stop offset='0' stop-color='#cfe39e' stop-opacity='.55'/><stop offset='.6' stop-color='#cfe39e' stop-opacity='0'/></linearGradient>`, `
-    <path d='M11 2 C17 4 18 20 17.5 40 C17 58 15 69 11 70 C7 69 4.5 58 4.5 40 C4.5 20 5 4 11 2Z' fill='url(#c)'/>
-    <path d='M8 66 C7 50 7 30 8 14 M14 66 C15 50 15 30 14 14' stroke='url(#st)' stroke-width='2' fill='none'/>
-    ${spines}
-    <path d='M7.5 10 C7 24 7 40 7.6 56' stroke='#fff' stroke-opacity='.22' stroke-width='1.6' fill='none' stroke-linecap='round'/>
-    <path d='M11 2 l0 -2' stroke='#4c7d32' stroke-width='2.6' stroke-linecap='round'/>
-    <circle cx='11' cy='69' r='1.6' fill='#d9c66a' opacity='.8'/>`)
+  const body = 'M11 2 C17 4 18 20 17.5 40 C17 58 15 69 11 70 C7 69 4.5 58 4.5 40 C4.5 20 5 4 11 2Z'
+  const warts = []
+  for (let i = 0; i < 34; i++) warts.push([5.5 + r() * 11, 7 + r() * 60, 0.75 + r() * 0.35, 0.9])
+  litSingle('cucumber', W, H, {
+    shadow: { x: 1.2, y: 1.8, blur: 1.2, opacity: 0.4 },
+    scale: 3,
+    body: `<defs><linearGradient id='st' x1='0' y1='1' x2='0' y2='0'><stop offset='0' stop-color='#a9c77a' stop-opacity='.6'/><stop offset='.6' stop-color='#a9c77a' stop-opacity='0'/></linearGradient></defs>
+      <path d='${body}' fill='#3c6b2b'/>
+      <path d='M8 66 C7 50 7 30 8 14 M14 66 C15 50 15 30 14 14' stroke='url(#st)' stroke-width='2' fill='none'/>
+      ${warts.map(([x, y]) => `<circle cx='${f(x)}' cy='${f(y)}' r='.35' fill='#eef3d6'/>`).join('')}
+      <path d='M11 2 l0 -2' stroke='#4c7d32' stroke-width='2.6' stroke-linecap='round'/>
+      <circle cx='11' cy='69' r='1.6' fill='#d9c66a' opacity='.8'/>`,
+    material: 'rind',
+    height(api) {
+      api.dome(body, { blur: 4, amount: 9 })
+      api.bumps(warts, 0.5)
+      api.ridge('M11 2 l0 -2', { width: 2.6, amount: 1.5 })
+    },
+  })
 }
 
 // Watermelon: dark green bands running pole to pole, their edges torn into
-// the jagged flames of a Crimson Sweet by displacing them with noise, over a
-// pale rind with a dull bloom and the yellow spot it lay on.
+// the jagged flames of a Crimson Sweet, over a pale rind with a dull bloom
+// and the yellow spot it lay on. A big, hard globe with a soft waxy sheen.
 {
   const W = 132, H = 86, cx = 66, cy = 44, rx = 62, ry = 39
   let stripes = ''
@@ -659,76 +809,137 @@ single('squash-flower', 28, 28, `<radialGradient id='p' cx='.5' cy='.5' r='.55'>
     }
     stripes += `<path d='M${pts(top)} L${pts(bottom.reverse())}Z'/>`
   }
-  single('melon', W, H, `
-    <clipPath id='e'><ellipse cx='${cx}' cy='${cy}' rx='${rx}' ry='${ry}'/></clipPath>
-    <filter id='flame' x='-5%' y='-5%' width='110%' height='110%'>
-      <feTurbulence type='fractalNoise' baseFrequency='.09 .35' numOctaves='3' seed='12' result='n'/>
-      <feDisplacementMap in='SourceGraphic' in2='n' scale='4.5' xChannelSelector='R' yChannelSelector='G'/>
-    </filter>
-    <radialGradient id='shade' cx='.36' cy='.28' r='.86'><stop offset='0' stop-color='#fff' stop-opacity='.3'/><stop offset='.42' stop-color='#fff' stop-opacity='0'/><stop offset='.78' stop-color='#0b1d08' stop-opacity='.28'/><stop offset='1' stop-color='#0b1d08' stop-opacity='.55'/></radialGradient>
-    <filter id='bloom' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .82  0 0 0 0 .87  0 0 0 0 .74  0 0 0 -2 1.1'/></filter>
-    <filter id='speck' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='6'/><feColorMatrix values='0 0 0 0 .1  0 0 0 0 .22  0 0 0 0 .08  0 0 0 -9 4.4'/></filter>`, `
-    <g clip-path='url(#e)'>
-      <rect width='${W}' height='${H}' fill='#9cc274'/>
-      <g fill='#1e4719' filter='url(#flame)'>${stripes}</g>
-      <rect width='${W}' height='${H}' filter='url(#speck)' opacity='.35'/>
-      <rect width='${W}' height='${H}' filter='url(#bloom)' opacity='.32'/>
-      <ellipse cx='${cx + 10}' cy='${cy + ry - 3}' rx='30' ry='9' fill='#e2cc78' opacity='.7' filter='url(#flame)'/>
-      <rect width='${W}' height='${H}' fill='url(#shade)'/>
-    </g>
-    <ellipse cx='${cx - 22}' cy='${cy - 21}' rx='18' ry='6' fill='#fff' opacity='.2' transform='rotate(-12 ${cx - 22} ${cy - 21})'/>
-    <path d='M${cx + rx - 3} ${cy - 3} q5 -1 7 -6' stroke='#5b7a34' stroke-width='2' fill='none' stroke-linecap='round'/>`)
+  const globe = ellipse(cx, cy, rx, ry)
+  const stalk = `M${cx + rx - 3} ${cy - 3} q5 -1 7 -6`
+  litSingle('melon', W, H, {
+    body: `<defs>
+        <clipPath id='e'><path d='${globe}'/></clipPath>
+        <filter id='flame' x='-5%' y='-5%' width='110%' height='110%'>
+          <feTurbulence type='fractalNoise' baseFrequency='.09 .35' numOctaves='3' seed='12' result='n'/>
+          <feDisplacementMap in='SourceGraphic' in2='n' scale='4.5' xChannelSelector='R' yChannelSelector='G'/>
+        </filter>
+        <filter id='bloom' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .82  0 0 0 0 .87  0 0 0 0 .74  0 0 0 -2 1.1'/></filter>
+        <filter id='speck' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='6'/><feColorMatrix values='0 0 0 0 .1  0 0 0 0 .22  0 0 0 0 .08  0 0 0 -9 4.4'/></filter>
+      </defs>
+      <g clip-path='url(#e)'>
+        <rect width='${W}' height='${H}' fill='#a6c87e'/>
+        <g fill='#244f1d' filter='url(#flame)'>${stripes}</g>
+        <rect width='${W}' height='${H}' filter='url(#speck)' opacity='.35'/>
+        <rect width='${W}' height='${H}' filter='url(#bloom)' opacity='.32'/>
+        <ellipse cx='${cx + 10}' cy='${cy + ry - 3}' rx='30' ry='9' fill='#e2cc78' opacity='.7' filter='url(#flame)'/>
+      </g>
+      <path d='${stalk}' stroke='#5b7a34' stroke-width='2' fill='none' stroke-linecap='round'/>`,
+    material: { ...MATERIALS.rind, spec: 0.32, shine: 22, ambient: 0.3 },
+    height(api) {
+      api.dome(globe, { blur: 22, amount: 30 })
+      api.ridge(stalk, { width: 2, amount: 1.4 })
+      api.grain(830, 1.4, 0.3)
+      api.matte(stalk, { stroke: 2.4 })
+    },
+  })
 }
 
-// Geranium umbel: a dome of five-petalled florets in coral and scarlet, with a few buds.
+// Geranium umbel: a dome of five-petalled florets in coral and scarlet, with
+// a few buds. The head is round as a whole, and every petal cups.
 {
   const r = rng(800)
   const W = 64, H = 56
   const reds = ['#e8473a', '#f05a48', '#d9362c', '#f26b55', '#c92e26']
-  let florets = ''
   const placed = []
   for (let i = 0; i < 16; i++) {
     const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 20
-    placed.push([32 + Math.cos(a) * d * 1.1, 28 + Math.sin(a) * d * 0.85, 6.5 + r() * 2.5])
+    placed.push([32 + Math.cos(a) * d * 1.1, 28 + Math.sin(a) * d * 0.85, 6.5 + r() * 2.5, r() * 72, reds[Math.floor(r() * reds.length)]])
   }
   placed.sort((p, q) => p[1] - q[1])
-  for (const [x, y, s] of placed) {
-    const c = reds[Math.floor(r() * reds.length)]
-    const rot = r() * 72
-    florets += Array.from({ length: 5 }, (_, k) => `<ellipse cx='${f(x)}' cy='${f(y - s * 0.55)}' rx='${f(s * 0.42)}' ry='${f(s * 0.55)}' fill='${c}' transform='rotate(${f(rot + k * 72)} ${f(x)} ${f(y)})'/>`).join('')
-    florets += `<circle cx='${f(x)}' cy='${f(y)}' r='${f(s * 0.22)}' fill='#fff2d2' opacity='.85'/><circle cx='${f(x - s * 0.25)}' cy='${f(y - s * 0.3)}' r='${f(s * 0.35)}' fill='#fff' opacity='.12'/>`
+  const buds = Array.from({ length: 4 }, () => [10 + r() * 44, 44 + r() * 8])
+  const petals = (x, y, s, rot) => Array.from({ length: 5 }, (_, k) => [ellipse(x, y - s * 0.55, s * 0.42, s * 0.55), rotateAbout(x, y, rot + k * 72), `rotate(${f(rot + k * 72)} ${f(x)} ${f(y)})`])
+  let body = buds.map(([x, y]) => `<ellipse cx='${f(x)}' cy='${f(y)}' rx='2.4' ry='3.2' fill='#8a9a4a'/><ellipse cx='${f(x)}' cy='${f(y - 1.5)}' rx='1.6' ry='1.8' fill='#e8473a'/>`).join('')
+  for (const [x, y, s, rot, c] of placed) {
+    body += petals(x, y, s, rot).map(([d, , tf]) => `<path d='${d}' fill='${c}' transform='${tf}'/>`).join('')
+    body += `<circle cx='${f(x)}' cy='${f(y)}' r='${f(s * 0.22)}' fill='#fff2d2' opacity='.85'/>`
   }
-  for (let i = 0; i < 4; i++) {
-    const x = 10 + r() * 44, y = 44 + r() * 8
-    florets = `<ellipse cx='${f(x)}' cy='${f(y)}' rx='2.4' ry='3.2' fill='#8a9a4a'/><ellipse cx='${f(x)}' cy='${f(y - 1.5)}' rx='1.6' ry='1.8' fill='#e8473a'/>` + florets
+  litSingle('bloom', W, H, {
+    shadow: { x: 1.2, y: 1.8, blur: 1.4, opacity: 0.3 },
+    scale: 3,
+    body,
+    material: 'petal',
+    height(api) {
+      api.dome(ellipse(32, 30, 26, 22), { blur: 10, amount: 8 })
+      for (const [x, y, s, rot] of placed) for (const [d, t] of petals(x, y, s, rot)) api.dome(d, { blur: s * 0.18, amount: 1.2, transform: t })
+      api.bumps(buds.map(([x, y]) => [x, y, 2.6, 1.6]))
+    },
+  })
+}
+
+// Stems, vines and flower stalks: a lit, round tile repeated along each
+// segment. A tomato stem is downy, a cucumber vine ridged, a geranium stalk
+// smooth and blushed. 10 units across, 24 along.
+{
+  const r = rng(960)
+  let down = ''
+  for (let i = 0; i < 70; i++) down += `<circle cx='${f(0.8 + r() * 8.4)}' cy='${f(r() * 24)}' r='${f(0.18 + r() * 0.16)}' fill='#e4eecb' opacity='${f(0.25 + r() * 0.35)}'/>`
+  let streaks = ''
+  for (let i = 0; i < 6; i++) {
+    const x = 1 + r() * 8
+    streaks += `<path d='M${f(x)} 0 L${f(x + (r() - 0.5))} 24' stroke='${r() < 0.5 ? '#2f5420' : '#8fb862'}' stroke-width='.4' opacity='.45'/>`
   }
-  single('bloom', W, H, '', `<ellipse cx='32' cy='36' rx='20' ry='12' fill='#5a1810' opacity='.25'/>${florets}`)
+  const round = (api) => api.cylinder({ left: -0.3, right: 10.3, amount: 4.5 })
+  material('kipos-stem', lit(10, 24, { scale: 4, body: `<rect width='10' height='24' fill='#4f7f35'/>${streaks}${down}`, material: 'stem', height: round }))
+  material(
+    'kipos-vine',
+    lit(10, 24, {
+      scale: 4,
+      body: `<rect width='10' height='24' fill='#5a8a3e'/><path d='M3 0 V24 M7 0 V24' stroke='#9cc472' stroke-width='.6' opacity='.6'/>${down.replace(/opacity='[\d.]+'/g, "opacity='.25'")}`,
+      material: 'stem',
+      height(api) {
+        round(api)
+        api.ridge('M3 -2 V26 M7 -2 V26', { width: 1, amount: 0.6 })
+      },
+    }),
+  )
+  material('kipos-stalk', lit(10, 24, { scale: 4, body: `<rect width='10' height='24' fill='#6b8a42'/><rect width='10' height='24' fill='#9a4a3a' opacity='.12'/>${streaks}`, material: 'stem', height: round }))
 }
 
 // Bamboo cane: one internode, node at the foot, tiled up the cane so nodes
-// stay evenly spaced however long the cane is drawn.
-material('kipos-cane', uri(14, 72, `
-  <defs>
-    <linearGradient id='c' x1='0' x2='1'><stop offset='0' stop-color='#8f7442'/><stop offset='.28' stop-color='#d9c189'/><stop offset='.42' stop-color='#efdeaf'/><stop offset='.7' stop-color='#bfa064'/><stop offset='1' stop-color='#7d6337'/></linearGradient>
-    <linearGradient id='node' x1='0' x2='1'><stop offset='0' stop-color='#6e5530'/><stop offset='.4' stop-color='#b49558'/><stop offset='1' stop-color='#5f4828'/></linearGradient>
-    <linearGradient id='swell' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#000' stop-opacity='0'/><stop offset='.86' stop-color='#000' stop-opacity='0'/><stop offset='.93' stop-color='#3a2a14' stop-opacity='.18'/><stop offset='1' stop-color='#000' stop-opacity='0'/></linearGradient>
-  </defs>
-  <rect width='14' height='72' fill='url(#c)'/>
-  <path d='M4.5 0 L4.3 72 M9.5 0 L9.7 72' stroke='#7a6136' stroke-width='.4' opacity='.3'/>
-  <rect width='14' height='72' fill='url(#swell)'/>
-  <rect x='0' y='66' width='14' height='3.4' rx='1.4' fill='url(#node)'/>
-  <rect x='1' y='69.4' width='12' height='1.1' fill='#fff' opacity='.32'/>`))
+// stay evenly spaced however long the cane is drawn. A round, faintly glossy
+// cane with fine fibres running its length.
+{
+  let fibres = ''
+  const r = rng(900)
+  for (let i = 0; i < 9; i++) {
+    const x = 1.5 + r() * 11
+    fibres += `<path d='M${f(x)} 0 L${f(x + (r() - 0.5) * 0.6)} 72' stroke='${r() < 0.5 ? '#9c8150' : '#e6d6a6'}' stroke-width='.35' opacity='.45'/>`
+  }
+  material(
+    'kipos-cane',
+    lit(14, 72, {
+      scale: 3,
+      body: `<rect width='14' height='72' fill='#cdb27a'/>${fibres}<rect x='0' y='66' width='14' height='3.4' fill='#a88a52'/>`,
+      material: 'stem',
+      height(api) {
+        // Taller than the tile, so the cane rounds across its width and not at the seams.
+        api.cylinder({ left: -0.5, right: 14.5, amount: 6 })
+        api.ridge('M-2 67.7 H16', { width: 3.4, amount: 1.4 })
+      },
+    }),
+  )
+}
 
 // A watermelon vine trailing along the soil and over the front of the bed,
 // with curling tendrils. Drawn from its root at the top left.
-single('melon-vine', 170, 180, `
-  <linearGradient id='v' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#7aa257'/><stop offset='1' stop-color='#4c7535'/></linearGradient>`, `
-  <path d='M2 10 C40 6 80 16 118 14 C146 13 156 22 154 44 C152 70 146 92 150 118 C153 140 148 160 152 178' stroke='#3f6a2c' stroke-width='5.2' fill='none' stroke-linecap='round'/>
-  <path d='M2 10 C40 6 80 16 118 14 C146 13 156 22 154 44 C152 70 146 92 150 118 C153 140 148 160 152 178' stroke='url(#v)' stroke-width='3.6' fill='none' stroke-linecap='round'/>
-  <path d='M3 9 C40 5 80 15 118 13' stroke='#c4dd9e' stroke-width='.8' fill='none' opacity='.6'/>
-  <path d='M86 14 c4 -10 14 -10 14 -2 c0 6 -8 6 -7 0' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>
-  <path d='M152 62 c10 2 12 12 4 14 c-5 1 -6 -5 -1 -6' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>
-  <path d='M149 128 c-10 0 -12 10 -5 12 c5 1 6 -4 1 -5' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>`)
+{
+  const vine = 'M2 10 C40 6 80 16 118 14 C146 13 156 22 154 44 C152 70 146 92 150 118 C153 140 148 160 152 178'
+  const tendrils = 'M86 14 c4 -10 14 -10 14 -2 c0 6 -8 6 -7 0 M152 62 c10 2 12 12 4 14 c-5 1 -6 -5 -1 -6 M149 128 c-10 0 -12 10 -5 12 c5 1 6 -4 1 -5'
+  litSingle('melon-vine', 170, 180, {
+    body: `<path d='${vine}' stroke='#5f8a43' stroke-width='4.6' fill='none' stroke-linecap='round'/>
+      <path d='${tendrils}' stroke='#6f9a4c' stroke-width='1.1' fill='none'/>`,
+    material: 'stem',
+    height(api) {
+      api.ridge(vine, { width: 4.6, amount: 2.6 })
+      api.ridge(tendrils, { width: 1.1, amount: 0.7 })
+    },
+  })
+}
 
 // Tendril: a fine shoot that reaches out from the vine, then coils tight.
 {
@@ -740,18 +951,36 @@ single('melon-vine', 170, 180, `
     radius *= 0.93
     d += ` L${f(cx + Math.cos(angle) * radius)} ${f(cy + Math.sin(angle) * radius)}`
   }
-  sprite('tendril', 40, 36, '', `<path d='${d}' stroke='#557f36' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='${d}' stroke='#9fc57a' stroke-width='.5' fill='none' stroke-opacity='.7' transform='translate(-.3 -.3)'/>`)
+  litSprite('tendril', 40, 36, {
+    scale: 3,
+    body: `<path d='${d}' stroke='#5f8a3e' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/>`,
+    material: 'stem',
+    height(api) {
+      api.ridge(d, { width: 1.6, amount: 1 })
+    },
+  })
 }
 
 // Rag ties: strips of old cotton knotted round the cane.
-single('tie-cream', 26, 14, '', `
-  <path d='M2 6 Q13 2 24 6 L24 9 Q13 5 2 9Z' fill='#efe7d6'/><path d='M2 9 Q13 5 24 9 L24 10 Q13 7 2 10Z' fill='#c9bfa8'/>
-  <ellipse cx='13' cy='7.5' rx='4' ry='4.2' fill='#e4dac4'/><path d='M14 10 q2 3 1 4 M12 10 q-1 3 -3 3.6' stroke='#d8cdb5' stroke-width='2' fill='none' stroke-linecap='round'/>`)
-single('tie-blue', 26, 14, '', `
-  <path d='M2 6 Q13 2 24 6 L24 9 Q13 5 2 9Z' fill='#7aa0c4'/><path d='M2 9 Q13 5 24 9 L24 10 Q13 7 2 10Z' fill='#4f7396'/>
-  <ellipse cx='13' cy='7.5' rx='4' ry='4.2' fill='#6d92b6'/><path d='M14 10 q2 3 1 4 M12 10 q-1 3 -3 3.6' stroke='#6286aa' stroke-width='2' fill='none' stroke-linecap='round'/>`)
+for (const [name, cloth, fold] of [['tie-cream', '#ece3cf', '#cfc4ab'], ['tie-blue', '#7a9fc2', '#5a7ea2']]) {
+  const band = 'M2 6 Q13 2 24 6 L24 10 Q13 7 2 10Z'
+  const knot = ellipse(13, 7.5, 4, 4.2)
+  const ends = 'M14 10 q2 3 1 4 M12 10 q-1 3 -3 3.6'
+  litSingle(name, 26, 14, {
+    scale: 3,
+    body: `<path d='${band}' fill='${cloth}'/><path d='${ends}' stroke='${fold}' stroke-width='2' fill='none' stroke-linecap='round'/><path d='${knot}' fill='${cloth}'/>`,
+    material: 'velvet',
+    height(api) {
+      api.dome(band, { blur: 1.2, amount: 1.4 })
+      api.dome(knot, { blur: 1.6, amount: 2.8 })
+      api.ridge(ends, { width: 2, amount: 1 })
+      api.grain(950, 0.5, 0.25)
+    },
+  })
+}
 
 // A hand trowel resting on the capstones: worn steel blade, olive handle.
+const single = (name, w, h, defs, body) => rule(`.kipos-sprite--${name}`, [`background-image: ${uri(w, h, `<defs>${defs}</defs>${body}`)}`])
 single('trowel', 150, 40, `
   <linearGradient id='blade' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#d7dbdc'/><stop offset='.5' stop-color='#9aa1a3'/><stop offset='1' stop-color='#5f6668'/></linearGradient>
   <linearGradient id='h' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#c99a62'/><stop offset='.5' stop-color='#8a5c33'/><stop offset='1' stop-color='#5a3a1e'/></linearGradient>
@@ -774,6 +1003,7 @@ ${materials.join('\n\n')}
 ${rules.join('\n\n')}
 `
 let baked = css
-for (const job of bakes) baked = baked.replace(job.token, await bake(job))
+// A drawing used in two places shares one token, so replace every use.
+for (const job of bakes) baked = baked.replaceAll(job.token, job.run ? await job.run() : await bake(job))
 writeFileSync(OUT, baked)
 console.log(`kipos art: ${(baked.length / 1024).toFixed(0)} KB, ${rules.length} sprites, ${materials.length} materials, ${bakes.length} baked`)
