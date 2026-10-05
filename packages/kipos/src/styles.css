@@ -86,15 +86,9 @@
   width: calc(var(--kipos-u) * 920);
   height: calc(var(--kipos-u) * 18);
   border-radius: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) 0 0;
-  background-size: calc(var(--kipos-u) * 920);
-  filter: brightness(0.9);
-}
-.kipos-bed__back::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(rgba(255, 250, 238, 0.45), rgba(255, 250, 238, 0) 40%, rgba(40, 28, 14, 0.25));
+  /* The lit far wall from art.css, in the near wall's shade. */
+  background-size: 100% 100%;
+  filter: brightness(0.92);
 }
 
 .kipos-bed__soil {

@@ -83,7 +83,7 @@ const rule = (selector, declarations) => rules.push(`${selector} {\n${declaratio
 // restyled. styles.css sets each element's background size and position.
 const PLACES = {
   'kipos-soil': ['.kipos-bed__soil', '.kipos-plant__mound', '.kipos-teneke__soil'],
-  'kipos-limestone': ['.kipos-bed__back'],
+  'kipos-far-wall': ['.kipos-bed__back'],
   'kipos-mortar': ['.kipos-bed__face', '.kipos-bed__coping'],
   'kipos-olive': ['.kipos-tray__wood'],
   'kipos-paper': ['.kipos-packet__face'],
@@ -121,62 +121,94 @@ const relief = (id, { freq, octaves, scale, seed, light = '#fff3e0', azimuth = 2
     <feBlend in='lit' in2='SourceGraphic' mode='multiply'/>
   </filter>`
 
-// Tilled soil: crumbly relief, darker loam patches and scattered grit.
+// Tilled soil, lit as a surface: crumbs and clods heaped into a loose tilth,
+// darker in every crevice, with grit and the odd pale pebble sitting proud.
+// A seamless tile.
 {
+  const W = 360, H = 360
   const r = rng(11)
-  let grit = ''
-  for (let i = 0; i < 150; i++) {
-    const x = 6 + r() * 348, y = 6 + r() * 348, s = 0.6 + r() * 2.2
-    const tone = r() < 0.5 ? '#b08a68' : '#2a190f'
-    grit += `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * (0.6 + r() * 0.4))}' fill='${tone}' opacity='${f(0.35 + r() * 0.4)}'/>`
-  }
-  for (let i = 0; i < 11; i++) {
-    const x = 14 + r() * 332, y = 14 + r() * 332, s = 2.2 + r() * 3.6
-    grit += `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * 0.7)}' fill='url(#pebble)' transform='rotate(${f(r() * 180)} ${f(x)} ${f(y)})'/>`
-  }
+  const grit = [], pebbles = []
+  for (let i = 0; i < 150; i++) grit.push([6 + r() * 348, 6 + r() * 348, 0.6 + r() * 2.2, r() < 0.5 ? '#b08a68' : '#2a190f', 0.35 + r() * 0.4])
+  for (let i = 0; i < 11; i++) pebbles.push([14 + r() * 332, 14 + r() * 332, 2.2 + r() * 3.6, r() * 180])
+  const crumbs = (seed, freq, octaves) =>
+    svgOf(W, H, `<filter id='c' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='${freq}' numOctaves='${octaves}' seed='${seed}' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 2.2 -.6'/></filter><rect width='${W}' height='${H}' filter='url(#c)'/>`)
   material(
     'kipos-soil',
-    uri(360, 360, `
-      <defs>${relief('s', { freq: 0.2, octaves: 5, scale: 6.5, seed: 4, light: '#ffe2c4', elevation: 40 })}
-        <radialGradient id='pebble' cx='.35' cy='.3' r='.8'><stop offset='0' stop-color='#d8c4a6'/><stop offset='.6' stop-color='#9c8264'/><stop offset='1' stop-color='#5b4634'/></radialGradient>
-        <filter id='loam' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='2' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .12  0 0 0 0 .07  0 0 0 0 .04  0 0 0 -2.2 1.25'/></filter>
-      </defs>
-      <rect width='360' height='360' fill='#6a4630' filter='url(#s)'/>
-      <rect width='360' height='360' filter='url(#loam)' opacity='.55'/>
-      ${grit}`, { scale: 1, quality: 28 }),
+    lit(W, H, {
+      scale: 1,
+      quality: 24,
+      tile: true,
+      body: `<defs>
+          <filter id='loam' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='2' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .12  0 0 0 0 .07  0 0 0 0 .04  0 0 0 -2.2 1.25'/></filter>
+        </defs>
+        <rect width='${W}' height='${H}' fill='#7e4a2c'/>
+        <rect width='${W}' height='${H}' filter='url(#loam)' opacity='.6'/>
+        ${grit.map(([x, y, s, tone, o]) => `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * 0.8)}' fill='${tone}' opacity='${f(o)}'/>`).join('')}
+        ${pebbles.map(([x, y, s, a]) => `<ellipse cx='${f(x)}' cy='${f(y)}' rx='${f(s)}' ry='${f(s * 0.7)}' fill='#8a7258' transform='rotate(${f(a)} ${f(x)} ${f(y)})'/>`).join('')}`,
+      material: { bump: 1, ambient: 0.16, spec: 0.03, shine: 8, rim: 0, rimColour: [0, 0, 0], occlusion: 1.2 },
+      async height(api) {
+        await api.raster(crumbs(4, 0.11, 3), { amount: 9 })
+        await api.raster(crumbs(13, 0.32, 2), { amount: 3 })
+        api.bumps(grit.map(([x, y, s]) => [x, y, s, 1.2]), 0.4)
+        api.bumps(pebbles.map(([x, y, s]) => [x, y, s, 3.5]), 0.8)
+      },
+    }),
   )
 }
 
-// Limestone: soft pitted relief over slow colour drift, with fossil flecks.
+// The far wall's top edge, glimpsed beyond the soil: weathered capstones in
+// the shadow of the near wall, their rounded tops catching a little sky, the
+// joints between them sunk in. Drawn at its full length.
 {
-  const r = rng(23)
-  let flecks = ''
-  for (let i = 0; i < 46; i++) {
-    const x = r() * 256, y = r() * 256
-    flecks += `<circle cx='${f(x)}' cy='${f(y)}' r='${f(0.5 + r() * 1.5)}' fill='${r() < 0.6 ? '#9d8d70' : '#fbf6ea'}' opacity='${f(0.3 + r() * 0.5)}'/>`
-  }
+  const W = 920, H = 18
+  const r = rng(29)
+  const joints = []
+  for (let x = 120 + r() * 60; x < W - 40; x += 150 + r() * 70) joints.push(x)
   material(
-    'kipos-limestone',
-    uri(256, 256, `
-      <defs>${relief('l', { freq: 0.07, octaves: 5, scale: 1.6, seed: 7, light: '#fffaf0', elevation: 60 })}
-        <filter id='drift' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='3' seed='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .47  0 0 0 0 .33  0 0 0 -1.6 .95'/></filter>
-      </defs>
-      <rect width='256' height='256' fill='#e2d6bd' filter='url(#l)'/>
-      <rect width='256' height='256' filter='url(#drift)' opacity='.5'/>
-      ${flecks}`, { scale: 2.5, quality: 16 }),
+    'kipos-far-wall',
+    lit(W, H, {
+      body: `<defs><linearGradient id='top' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#d6c9ad'/><stop offset='1' stop-color='#a8987a'/></linearGradient></defs>
+        <rect width='${W}' height='${H}' rx='6' fill='url(#top)'/>
+        ${joints.map((x) => `<path d='M${f(x)} 0 V${H}' stroke='#6f6248' stroke-width='2.4'/>`).join('')}`,
+      material: { bump: 1, ambient: 0.42, spec: 0.04, shine: 8, rim: 0, rimColour: [0, 0, 0], occlusion: 0.4 },
+      height(api) {
+        // A rounded top running the length, its front face dropping to the soil.
+        api.surface((x, y) => 9 * Math.sqrt(Math.max(0, 1 - ((y - 7) / 11) ** 2)) * Math.min(1, Math.min(x, W - x) / 6))
+        api.groove(joints.map((x) => `M${f(x)} -2 V${H + 2}`).join(' '), { width: 3, blur: 1, amount: 3 })
+        api.grain(31, 2, 0.8)
+        api.grain(32, 0.6, 0.25)
+      },
+    }),
   )
 }
 
-// Lime mortar, gritty, with moss creeping in.
-material(
-  'kipos-mortar',
-  uri(160, 160, `
-    <defs>${relief('m', { freq: 0.6, octaves: 3, scale: 3, seed: 5, elevation: 50 })}
-      <filter id='moss' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='14' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .27  0 0 0 0 .36  0 0 0 0 .12  0 0 0 -11 4.9'/></filter>
-    </defs>
-    <rect width='160' height='160' fill='#a29276' filter='url(#m)'/>
-    <rect width='160' height='160' filter='url(#moss)' opacity='.8'/>`, { scale: 1, quality: 14 }),
-)
+// Lime mortar between the stones: sunk back in the joints and gritty, with
+// cushions of moss standing out of it. A seamless tile.
+{
+  const W = 160, H = 160
+  const moss = svgOf(W, H, `<filter id='moss' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='14' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -11 4.9'/></filter><rect width='${W}' height='${H}' filter='url(#moss)'/>`)
+  const grit = svgOf(W, H, `<filter id='g' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='3' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 2.4 -.7'/></filter><rect width='${W}' height='${H}' filter='url(#g)'/>`)
+  material(
+    'kipos-mortar',
+    lit(W, H, {
+      scale: 1,
+      quality: 18,
+      tile: true,
+      body: `<defs>
+          <filter id='moss' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.05' numOctaves='3' seed='14' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .27  0 0 0 0 .36  0 0 0 0 .12  0 0 0 -11 4.9'/></filter>
+          <filter id='tone' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='.08' numOctaves='2' seed='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .4  0 0 0 0 .34  0 0 0 0 .24  0 0 0 -1.4 .7'/></filter>
+        </defs>
+        <rect width='${W}' height='${H}' fill='#9e8f73'/>
+        <rect width='${W}' height='${H}' filter='url(#tone)' opacity='.5'/>
+        <rect width='${W}' height='${H}' filter='url(#moss)' opacity='.85'/>`,
+      material: { bump: 1, ambient: 0.36, spec: 0.03, shine: 8, rim: 0, rimColour: [0, 0, 0], occlusion: 0.8 },
+      async height(api) {
+        await api.raster(grit, { amount: 1.6 })
+        await api.raster(moss, { amount: 3 })
+      },
+    }),
+  )
+}
 
 // Uncoated seed-packet paper: tooth and the odd fibre.
 {
@@ -577,12 +609,12 @@ function hairs(seed, w, h, count, opacity) {
 }
 
 /** A lit drawing, baked at the end of the run. */
-function lit(w, h, { body, height, material, scale = 2, mirror = false, quality, shadow }) {
+function lit(w, h, { body, height, material, scale = 2, mirror = false, quality, shadow, tile }) {
   const token = `@@bake-${bakes.length}@@`
   bakes.push({
     token,
     run: () =>
-      litDrawing({ w, h, scale, mirror, shadow, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material, quality }),
+      litDrawing({ w, h, scale, mirror, shadow, tile, svg: svgOf(w, h, mirror ? mirrorX(w, body) : body), height, material: MATERIALS[material] ?? material, quality }),
   })
   return token
 }

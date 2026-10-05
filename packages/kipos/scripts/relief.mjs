@@ -107,11 +107,11 @@ export async function relief({ quality = 12, ...drawing }) {
  * `svg(w, h)` gives the colour layer as a full SVG document. `height(api)`
  * builds the height layer with the helpers below, all in drawing units.
  * `mirror` flips both layers, so the sun stays at the upper left on a drawing
- * that faces the other way. `shadow` bakes in the tight shadow the drawing
+ * that faces the other way. `tile` lights a seamless tile as one. `shadow` bakes in the tight shadow the drawing
  * casts on whatever is just behind it, down and to the right of the sun: one
  * leaf over another, a fruit on its leaves. { x, y, blur } in drawing units.
  */
-export async function litCanvas({ w, h, scale = 2, mirror = false, svg, height, material, edge = 1.2, shadow = null }) {
+export async function litCanvas({ w, h, scale = 2, mirror = false, svg, height, material, edge = 1.2, shadow = null, tile = false }) {
   const W = Math.round(w * scale), H = Math.round(h * scale)
   const size = W * H
 
@@ -268,7 +268,10 @@ export async function litCanvas({ w, h, scale = 2, mirror = false, svg, height, 
 
   const m = { ...MATERIALS.leaf, ...material }
   const out = colourCtx.createImageData(W, H)
-  const at = (x, y) => field[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))]
+  // A seamless tile reads its neighbours across the edge, so the light has no seam either.
+  const at = tile
+    ? (x, y) => field[((y + H) % H) * W + ((x + W) % W)]
+    : (x, y) => field[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))]
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const i = y * W + x
