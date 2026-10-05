@@ -32,9 +32,10 @@ MIT. React 19. No runtime dependency beyond [`object-studies-core`](../core).
 Everything is drawn with DOM, CSS and images: no canvas, no WebGL. The
 materials (soil, limestone, olive wood, galvanised steel, whitewash, paper) and
 the botanical drawings are drawn as SVG by `scripts/build-art.mjs` and baked
-into `src/art.css`. Anything grown from noise is baked to a small AVIF image,
-because browsers re-run SVG noise filters on every repaint. Change the script
-and re-run it; never edit `art.css` by hand.
+into `src/art.css`. The plants, the can and the tins are lit as surfaces by
+`scripts/relief.mjs` (each drawing has a colour layer and a height layer, lit
+from one upper-left sun) and baked to small AVIF images, as is anything grown
+from noise. Change the scripts and re-run them; never edit `art.css` by hand.
 
 ## How the garden keeps time
 
