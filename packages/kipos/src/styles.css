@@ -255,6 +255,9 @@
 .kipos-plot__soil::before {
   background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(22, 12, 5, 0.62), rgba(22, 12, 5, 0.3) 60%, rgba(22, 12, 5, 0) 100%);
   opacity: var(--wet);
+  /* The wet patch spreads from where the water lands, and shrinks as it dries. */
+  transform: scale(calc(0.5 + var(--wet) * 0.5));
+  transition: opacity 1200ms ease, transform 1800ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 .kipos-plot__soil::after {
   background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(206, 178, 146, 0.32), rgba(206, 178, 146, 0) 100%);
@@ -488,7 +491,7 @@
 /* A trailing vine unrolls from its root rather than stretching. */
 .kipos-part--vine {
   transform: rotate(var(--r, 0deg));
-  clip-path: inset(0 calc((1 - var(--grow, 1)) * 100%) calc((1 - var(--grow, 1)) * 100%) 0);
+  clip-path: inset(0 calc((1 - var(--grow, 1)) * 100%) calc((1 - var(--grow, 1)) * 100%) 0 round calc(var(--kipos-u) * 4));
   transition: clip-path 1200ms ease;
 }
 
@@ -567,30 +570,57 @@
   pointer-events: none;
 }
 
+/* Fine streaks of water leaving the rose together and fanning out as they fall. */
 .kipos-pour i {
   position: absolute;
   top: 0;
-  width: calc(var(--kipos-u) * 5);
-  height: calc(var(--kipos-u) * 20);
+  left: calc(var(--kipos-u) * var(--from, 0));
+  width: calc(var(--kipos-u) * 3);
+  height: calc(var(--kipos-u) * 24);
   border-radius: 50%;
-  /* A drop catching the light: clear, with a darker edge so it reads against pale ground. */
+  /* Clear water catching the light, with a darker edge so it reads against pale ground. */
   background: linear-gradient(rgba(170, 205, 228, 0), rgba(150, 192, 222, 0.75) 62%, rgba(255, 255, 255, 0.95) 88%, rgba(120, 165, 195, 0.8));
   opacity: 0;
-  animation: kipos-drop 620ms cubic-bezier(0.5, 0, 0.9, 0.6) 2;
+  animation: kipos-drop 560ms cubic-bezier(0.45, 0, 0.85, 0.6) 3;
 }
-/* The first drops leave the rose as the can tips over the plant. */
-.kipos-pour i:nth-child(1) { left: calc(var(--kipos-u) * -40); animation-delay: 220ms; }
-.kipos-pour i:nth-child(2) { left: calc(var(--kipos-u) * -16); animation-delay: 360ms; }
-.kipos-pour i:nth-child(3) { left: calc(var(--kipos-u) * 6); animation-delay: 280ms; }
-.kipos-pour i:nth-child(4) { left: calc(var(--kipos-u) * 26); animation-delay: 420ms; }
-.kipos-pour i:nth-child(5) { left: calc(var(--kipos-u) * 44); animation-delay: 320ms; }
-.kipos-pour i:nth-child(6) { left: calc(var(--kipos-u) * -28); animation-delay: 480ms; }
-.kipos-pour i:nth-child(7) { left: calc(var(--kipos-u) * 16); animation-delay: 250ms; }
-.kipos-pour i:nth-child(8) { left: calc(var(--kipos-u) * 34); animation-delay: 540ms; }
+.kipos-pour i:nth-child(1) { --from: -3.1; --dx: -18; animation-delay: 200ms; }
+.kipos-pour i:nth-child(2) { --from: 2.4; --dx: 14; animation-delay: 240ms; }
+.kipos-pour i:nth-child(3) { --from: -1.0; --dx: -6; animation-delay: 280ms; }
+.kipos-pour i:nth-child(4) { --from: 4.2; --dx: 24; animation-delay: 300ms; }
+.kipos-pour i:nth-child(5) { --from: -4.5; --dx: -26; animation-delay: 340ms; }
+.kipos-pour i:nth-child(6) { --from: 1.0; --dx: 6; animation-delay: 360ms; }
+.kipos-pour i:nth-child(7) { --from: 3.1; --dx: 18; animation-delay: 400ms; }
+.kipos-pour i:nth-child(8) { --from: -2.1; --dx: -12; animation-delay: 430ms; }
+.kipos-pour i:nth-child(9) { --from: 5.3; --dx: 30; animation-delay: 460ms; }
+.kipos-pour i:nth-child(10) { --from: -5.6; --dx: -32; animation-delay: 500ms; }
+.kipos-pour i:nth-child(11) { --from: 0.0; --dx: 0; animation-delay: 520ms; }
+.kipos-pour i:nth-child(12) { --from: 1.8; --dx: 10; animation-delay: 560ms; }
+
+/* Rings spreading on the soil where the water lands. */
+.kipos-pour b {
+  position: absolute;
+  top: calc(var(--kipos-u) * 128);
+  left: calc(var(--kipos-u) * var(--at, 0));
+  width: calc(var(--kipos-u) * 26);
+  height: calc(var(--kipos-u) * 7);
+  border: calc(var(--kipos-u) * 1.2) solid rgba(214, 232, 244, 0.75);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.2);
+  animation: kipos-splash 640ms ease-out 3;
+}
+.kipos-pour b:nth-of-type(1) { --at: -14; animation-delay: 700ms; }
+.kipos-pour b:nth-of-type(2) { --at: 12; animation-delay: 820ms; }
+.kipos-pour b:nth-of-type(3) { --at: -1; animation-delay: 940ms; }
+@keyframes kipos-splash {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
 
 /* Seed tipped from a packet: a few pale seeds dropping a short way to the soil. */
 .kipos-pour--seeds { bottom: calc(var(--kipos-u) * 92); }
 .kipos-pour--seeds i {
+  --from: 0;
   width: calc(var(--kipos-u) * 3.4);
   height: calc(var(--kipos-u) * 4.6);
   background: radial-gradient(circle at 35% 30%, #f4e7c4, #c8ad78 70%);
@@ -602,7 +632,6 @@
 .kipos-pour--seeds i:nth-child(3) { left: calc(var(--kipos-u) * 2); }
 .kipos-pour--seeds i:nth-child(4) { left: calc(var(--kipos-u) * 7); }
 .kipos-pour--seeds i:nth-child(5) { left: calc(var(--kipos-u) * -1); }
-.kipos-pour--seeds i:nth-child(n + 6) { display: none; }
 @keyframes kipos-seed {
   0% { opacity: 0; transform: translateY(0); }
   15% { opacity: 1; }
@@ -610,9 +639,9 @@
 }
 
 @keyframes kipos-drop {
-  0% { opacity: 0; transform: translateY(0); }
+  0% { opacity: 0; transform: translate(0, 0); }
   15% { opacity: 1; }
-  100% { opacity: 0.2; transform: translateY(calc(var(--kipos-u) * 130)); }
+  100% { opacity: 0.2; transform: translate(calc(var(--kipos-u) * var(--dx, 0)), calc(var(--kipos-u) * 128)); }
 }
 
 /* ---------- The kraft tag, hung from the coping on a loop of twine ---------- */

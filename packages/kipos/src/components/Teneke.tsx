@@ -6,6 +6,7 @@ import { type Light, resolveLight } from '../lib/light.js'
 import { sway, useBreeze } from '../lib/breeze.js'
 import { type KiposLabelOverrides, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
 import { Plant } from './Plant.js'
+import { Pour } from './Pour.js'
 import { plantProgress } from '../lib/plants.js'
 import '../art.css'
 import '../styles.css'
@@ -124,11 +125,7 @@ export function Teneke({
             <Plant crop={plant} progress={plantProgress(state.progress)} wilted={state.wilted} seed={planting.plantedAt % 100_000} />
           )}
           <span className="kipos-teneke__body" aria-hidden="true" />
-          {pourId !== null && (
-            <span key={pourId} className="kipos-pour" aria-hidden="true">
-              <i /><i /><i /><i /><i /><i /><i /><i />
-            </span>
-          )}
+          {pourId !== null && <Pour key={pourId} />}
         </button>
         {canPinch && (
           <button type="button" className="kipos-teneke__pinch" onClick={pinch}>

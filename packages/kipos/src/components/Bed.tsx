@@ -8,6 +8,7 @@ import { type Tool, createHand } from '../lib/hand.js'
 import { type KiposLabelOverrides, type KiposLabels, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
 import { seededRandom } from 'object-studies-core'
 import { Plant } from './Plant.js'
+import { Pour } from './Pour.js'
 import { plantProgress } from '../lib/plants.js'
 import '../art.css'
 import '../styles.css'
@@ -227,11 +228,7 @@ export function Bed({
                   seed={(planting.plantedAt % 100_000) + index}
                 />
               )}
-              {pouring?.plot === index && (
-                <span key={pouring.id} className={`kipos-pour${pouring.seeds ? ' kipos-pour--seeds' : ''}`} aria-hidden="true">
-                  <i /><i /><i /><i /><i /><i /><i /><i />
-                </span>
-              )}
+              {pouring?.plot === index && <Pour key={pouring.id} seeds={pouring.seeds} />}
             </button>
           )
         })}
