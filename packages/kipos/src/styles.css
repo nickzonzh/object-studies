@@ -395,17 +395,20 @@
   transform: scaleY(var(--grow, 1));
   transition: transform 1200ms ease;
 }
+/* The tip spans its segment and slides up it as the segment grows: a transform,
+   so growth never asks the browser for layout. The bud sits at its top. */
 .kipos-seg__tip {
   position: absolute;
   left: 0;
-  bottom: calc(var(--grow, 1) * 100%);
+  bottom: 0;
   width: 0;
-  height: 0;
-  transition: bottom 1200ms ease;
+  height: 100%;
+  transform: translateY(calc((1 - var(--grow, 1)) * 100%));
+  transition: transform 1200ms ease;
 }
 .kipos-seg__tip i {
   position: absolute;
-  bottom: 0;
+  bottom: 100%;
   width: calc(var(--kipos-u) * 13);
   height: calc(var(--kipos-u) * 6);
   filter: brightness(0.9) saturate(1.1);
@@ -674,6 +677,12 @@
   transform-origin: bottom;
 }
 .kipos-tag__count { font-size: calc(var(--kipos-u) * 11); font-weight: 400; }
+
+/* Until the stored garden and the clock have arrived, everything is simply
+   where it is: no fading in from the blank first render. */
+.kipos:not([data-ready]) *,
+.kipos:not([data-ready]) *::before,
+.kipos:not([data-ready]) *::after { transition: none !important; }
 
 /* ---------- Light ----------
    The sun moves across the garden. Plants and canes cast their shadows away

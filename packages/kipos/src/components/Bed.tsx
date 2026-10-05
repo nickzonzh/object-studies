@@ -1,12 +1,12 @@
 import { type CSSProperties, type KeyboardEvent, type PointerEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { type CropId, gardenHours, harvest, readPlanting, sow, water } from '../lib/garden.js'
 import { type BedDocument, bedStore, emptyBed, rescaleBed } from '../lib/documents.js'
-import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
+import { actionTime, useGardenClock, useReady, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { sway, useBreeze } from '../lib/breeze.js'
 import { type Tool, createHand } from '../lib/hand.js'
 import { type KiposLabelOverrides, type KiposLabels, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
-import { seededRandom } from 'object-studies-core'
+import { COPING, STONES } from '../lib/stonework.js'
 import { Plant } from './Plant.js'
 import { Pour } from './Pour.js'
 import { plantProgress } from '../lib/plants.js'
@@ -61,7 +61,9 @@ export function Bed({
   const key = persistence === false ? null : persistence.key
   const store = useMemo(() => (key === null ? null : bedStore(key)), [key])
   const [bed, update] = useStoredDocument(store, emptyBed)
-  const now = useGardenClock(speed)
+  const root = useRef<HTMLDivElement>(null)
+  const now = useGardenClock(speed, root)
+  useReady(root, now)
   // Times are kept at the speed they ran at; a new speed keeps the garden hours already passed.
   useEffect(() => update((current) => rescaleBed(current, actionTime(), speed)), [bed.speed, speed, update])
   const [hand, setHand] = useState<Hand>(null)
@@ -163,6 +165,7 @@ export function Bed({
 
   return (
     <div
+      ref={root}
       className={`kipos kipos-bed${hand ? ' kipos-bed--holding' : ''} ${className}`.trim()}
       style={style}
       role="group"
@@ -185,12 +188,12 @@ export function Bed({
         <div className="kipos-bed__soil" aria-hidden="true" />
         <div className="kipos-bed__face" aria-hidden="true">
           {STONES.map((stone, index) => (
-            <i key={index} className={`kipos-stone kipos-stone--${stone.variant}`} style={stone.style} />
+            <i key={index} className={`kipos-stone kipos-stone--${stone.variant}`} style={STONE_STYLES[index]} />
           ))}
         </div>
         <div className="kipos-bed__coping" aria-hidden="true">
           {COPING.map((stone, index) => (
-            <i key={index} className={`kipos-capstone kipos-capstone--${stone.variant}`} style={stone.style} />
+            <i key={index} className={`kipos-capstone kipos-capstone--${stone.variant}`} style={COPING_STYLES[index]} />
           ))}
         </div>
         <i className="kipos-trowel kipos-sprite--trowel" aria-hidden="true" />
@@ -339,77 +342,24 @@ const PACKET_NO: Record<CropId, string> = {
   geranium: 'Νο 18',
 }
 
-// The lengths the lit blocks and capstones are drawn at, two of each, as in
-// scripts/build-art.mjs. Each stone takes the nearest and stretches to fit.
-const STONE_LENGTHS = [40, 80, 110, 140, 170, 200]
-const CAPSTONE_LENGTHS = [150, 185, 220]
-const nearest = (lengths: number[], length: number, random: number) => {
-  const i = lengths.reduce((best, l, k) => (Math.abs(l - length) < Math.abs(lengths[best] - length) ? k : best), 0)
-  return i * 2 + (random < 0.5 ? 0 : 1)
-}
-
-type Laid = { variant: number; style: CSSProperties }
-
-// The bed's stonework, laid once from a fixed seed so every bed is built the
-// same. Dressed limestone laid by hand: no two stones the same height or quite
-// level, some warmer and some greyer, lichen on the odd face.
-const STONES: Laid[] = (() => {
-  const random = seededRandom(1907)
-  const stones: Laid[] = []
-  const courses = [
-    { top: 0, height: 50 },
-    { top: 54, height: 46 },
-  ]
-  const lay = (left: number, top: number, width: number, height: number) => {
-    stones.push({
-      variant: nearest(STONE_LENGTHS, width, random()),
-      style: {
-        left: `calc(var(--kipos-u) * ${left.toFixed(1)})`,
-        top: `calc(var(--kipos-u) * ${top.toFixed(1)})`,
-        width: `calc(var(--kipos-u) * ${width.toFixed(1)})`,
-        height: `calc(var(--kipos-u) * ${height.toFixed(1)})`,
-        transform: `rotate(${((random() - 0.5) * 2.2).toFixed(2)}deg)`,
-        '--tone': (0.88 + random() * 0.18).toFixed(3),
-        '--warm': (random() * 0.3).toFixed(2),
-        '--lichen': random() < 0.22 ? 1 : 0,
-        '--lx': `${Math.round(random() * 100)}%`,
-        '--ly': `${Math.round(30 + random() * 60)}%`,
-      } as CSSProperties,
-    })
-  }
-  for (const [row, course] of courses.entries()) {
-    let x = row ? -40 : 0
-    while (x < 908) {
-      const width = 70 + random() * 120
-      const left = Math.max(0, x)
-      const right = Math.min(908, x + width)
-      const sink = random() * 3
-      if (right - left > 24) lay(left, course.top + sink, right - left, course.height - sink - random() * 3)
-      // Now and then a wider joint, where the mortar and moss show.
-      x += width + (random() < 0.25 ? 10 + random() * 6 : 6)
-    }
-  }
-  return stones
-})()
-
-const COPING: Laid[] = (() => {
-  const random = seededRandom(311)
-  const stones: Laid[] = []
-  let x = 0
-  while (x < 940) {
-    const width = Math.min(940 - x, 140 + random() * 70)
-    stones.push({
-      variant: nearest(CAPSTONE_LENGTHS, width - 4, random()),
-      style: {
-        left: `calc(var(--kipos-u) * ${x.toFixed(1)})`,
-        width: `calc(var(--kipos-u) * ${(width - 4).toFixed(1)})`,
-        '--tone': (0.94 + random() * 0.1).toFixed(3),
-      } as CSSProperties,
-    })
-    x += width
-  }
-  return stones
-})()
+// The bed's stonework, laid by scripts/build-art.mjs (see src/lib/stonework.ts).
+const u = (n: number) => `calc(var(--kipos-u) * ${n})`
+const STONE_STYLES = STONES.map(
+  (stone) =>
+    ({
+      left: u(stone.left),
+      top: u(stone.top),
+      width: u(stone.width),
+      height: u(stone.height),
+      transform: `rotate(${stone.tilt}deg)`,
+      '--tone': stone.tone,
+      '--warm': stone.warm,
+      '--lichen': stone.lichen,
+      '--lx': `${stone.lx}%`,
+      '--ly': `${stone.ly}%`,
+    }) as CSSProperties,
+)
+const COPING_STYLES = COPING.map((stone) => ({ left: u(stone.left), width: u(stone.width), '--tone': stone.tone }) as CSSProperties)
 
 const GREEK: Record<CropId, string> = {
   tomato: 'ΝΤΟΜΑΤΑ',

@@ -1,7 +1,7 @@
 import { type CSSProperties, type MouseEvent, type PointerEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { harvest, readPlanting, sow, water } from '../lib/garden.js'
 import { emptyTeneke, rescaleTeneke, tenekeStore } from '../lib/documents.js'
-import { actionTime, useGardenClock, useStoredDocument } from '../lib/hooks.js'
+import { actionTime, useGardenClock, useReady, useStoredDocument } from '../lib/hooks.js'
 import { type Light, resolveLight } from '../lib/light.js'
 import { sway, useBreeze } from '../lib/breeze.js'
 import { type KiposLabelOverrides, cropSlots, fill, mergeLabels, stageName } from '../labels.js'
@@ -50,7 +50,9 @@ export function Teneke({
   const key = persistence === false ? null : (persistence?.key ?? `kipos:teneke:${plant}`)
   const store = useMemo(() => (key === null ? null : tenekeStore(key)), [key])
   const [tin, update] = useStoredDocument(store, emptyTeneke)
-  const now = useGardenClock(speed)
+  const root = useRef<HTMLDivElement>(null)
+  const now = useGardenClock(speed, root)
+  useReady(root, now)
   // Times are kept at the speed they ran at; a new speed keeps the garden hours already passed.
   useEffect(() => update((current) => rescaleTeneke(current, actionTime(), speed)), [tin.speed, speed, update])
   const [message, setMessage] = useState('')
@@ -100,6 +102,7 @@ export function Teneke({
 
   return (
     <div
+      ref={root}
       className={`kipos kipos-teneke kipos-teneke--${plant} ${className}`.trim()}
       style={style}
       data-light={lit}

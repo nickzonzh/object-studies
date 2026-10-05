@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 
 /** The time an action happens. Kept out of render so a render never reads the clock. */
 export const actionTime = () => Date.now()
@@ -46,15 +46,57 @@ function subscribe(interval: number, listener: (now: number) => void) {
 }
 
 /**
- * The current time, refreshed often enough for growth to look continuous at
- * the given speed: once a minute in real time, faster when sped up. Zero on
- * the server and on the first client render, so hydration matches; the clock
- * starts after mount. Stops while the tab is hidden.
+ * How often the clock ticks at a speed: once a minute in real time, faster when
+ * sped up, but never more often than a growth transition (1200ms in
+ * styles.css) takes to play. Each tick's growth then glides into the next
+ * without the transitions ever piling up.
  */
-export function useGardenClock(speed: number) {
+export const tickInterval = (speed: number) => Math.min(60_000, Math.max(1200, 60_000 / Math.max(speed, 0.001)))
+
+/**
+ * Whether an element is on screen or nearly so. True until known, and where
+ * the browser cannot tell.
+ */
+function useOnScreen(element: RefObject<HTMLElement | null>) {
+  const [onScreen, setOnScreen] = useState(true)
+  useEffect(() => {
+    const target = element.current
+    if (!target || typeof IntersectionObserver !== 'function') return
+    const observer = new IntersectionObserver((entries) => setOnScreen(entries[entries.length - 1].isIntersecting), {
+      rootMargin: '200px',
+    })
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [element])
+  return onScreen
+}
+
+/**
+ * The current time, refreshed often enough for growth to look continuous at
+ * the given speed (see `tickInterval`). Zero on the server and on the first
+ * client render, so hydration matches; the clock starts after mount. Stops
+ * while the tab is hidden, or while `element` is scrolled out of view, and
+ * catches up the moment it is back: the garden is worked out from timestamps,
+ * so nothing is lost.
+ */
+export function useGardenClock(speed: number, element: RefObject<HTMLElement | null>) {
   const [now, setNow] = useState(0)
-  useEffect(() => subscribe(Math.min(60_000, Math.max(250, 60_000 / Math.max(speed, 0.001))), setNow), [speed])
+  const onScreen = useOnScreen(element)
+  useEffect(() => (onScreen ? subscribe(tickInterval(speed), setNow) : undefined), [speed, onScreen])
   return now
+}
+
+/**
+ * Marks `element` ready once the garden has its first real time, a frame after
+ * that render, so styles.css lets changes animate from then on and not before.
+ */
+export function useReady(element: RefObject<HTMLElement | null>, now: number) {
+  const started = now !== 0
+  useEffect(() => {
+    if (!started) return
+    const frame = requestAnimationFrame(() => element.current?.setAttribute('data-ready', ''))
+    return () => cancelAnimationFrame(frame)
+  }, [element, started])
 }
 
 /**

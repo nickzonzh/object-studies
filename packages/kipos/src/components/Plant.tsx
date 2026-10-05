@@ -95,6 +95,28 @@ function partStyle(part: Part, progress: number, shown: number, index: number, b
   return style as CSSProperties
 }
 
+/**
+ * The progress after which nothing in a drawing changes: every part grown in,
+ * every fruit full size and coloured, every flower gone over, every stalk at
+ * full length. Kept beside `partStyle` and `segmentView`, whose timings it
+ * follows; past it a plant needs no further drawing however long it grows.
+ */
+function settlesAt(drawing: PlantDrawing): number {
+  let last = 1 // the shadow spreads until then
+  for (const part of drawing.parts) {
+    const stalk = part.stalk === undefined ? undefined : drawing.stalks[part.stalk]
+    const shown = stalk ? Math.max(part.at, arrival(stalk, drawing.segments[part.stalk!], part.along ?? 0)) : part.at
+    if (part.grows) last = Math.max(last, part.at + (part.span ?? Math.max(0.05, 0.78 - part.at)))
+    else last = Math.max(last, shown + (LEAVES.has(part.kind) ? 0.24 : 0.06))
+    if (part.ripeAt !== undefined) last = Math.max(last, part.ripeAt)
+    if (part.until !== undefined) last = Math.max(last, part.until)
+    if (part.kind === 'cotyledon') last = Math.max(last, 0.65)
+  }
+  // A stalk's growing tip goes once the stalk has its full length.
+  for (const stalk of drawing.stalks) last = Math.max(last, stalk.to + 0.02)
+  return last
+}
+
 function PartView({ part, index, progress, shown, base, crop }: { part: Part; index: number; progress: number; shown: number; base: number; crop: CropId }) {
   const across = part.grows && part.kind !== 'vine' && part.w > part.h ? ' kipos-part--across' : ''
   return (
@@ -161,8 +183,25 @@ function segmentView(drawing: PlantDrawing, onSegments: Placed[][][], s: number,
 }
 
 /** A plant drawn at its current growth. Decorative: the plot it stands in carries the words. */
-export const Plant = memo(function Plant({ crop, progress, wilted, seed }: PlantProps) {
+export function Plant({ crop, progress, wilted, seed }: PlantProps) {
   const drawing = useMemo(() => plantDrawing(crop, seed), [crop, seed])
+  const settled = useMemo(() => settlesAt(drawing), [drawing])
+  // Past the point where nothing changes, every tick hands the drawing the
+  // same progress, so a grown plant is not drawn again.
+  return <PlantView crop={crop} drawing={drawing} progress={Math.min(progress, settled)} wilted={wilted} />
+}
+
+const PlantView = memo(function PlantView({
+  crop,
+  drawing,
+  progress,
+  wilted,
+}: {
+  crop: CropId
+  drawing: PlantDrawing
+  progress: number
+  wilted: boolean
+}) {
   // The parts on each stalk, sorted into the segment they grow on.
   const onSegments = useMemo(() => {
     const placed = drawing.stalks.map((_, s) => drawing.segments[s].angles.map((): Placed[] => []))
