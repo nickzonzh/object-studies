@@ -3,6 +3,7 @@ import { Chalkboard } from 'kimolia'
 import { Frame, FrameImage, type FrameMat, type FrameVariant, frameVariants } from 'korniza'
 import { Vase, type GreekPaletteId, type IkarosPaletteId, type ShapeId, type StyleId } from 'keramos'
 import { CraftTable } from 'kollaz'
+import { Komboloi } from 'komboloi'
 import { type ReactNode, useState } from 'react'
 
 const repo = 'https://github.com/nickzonzh/object-studies'
@@ -24,7 +25,7 @@ export function App() {
           <p className="site-lede">
             Open-source React components that behave like the things they are named after. Pick up
             the chalk. Uncap a marker. Hang a painting. Turn a painted vase to the light. Glue
-            first, then glitter.
+            first, then glitter. Swing a strand of worry beads.
           </p>
           <nav className="site-nav" aria-label="Studies">
             <a href="#kimolia">Kimolia</a>
@@ -33,6 +34,7 @@ export function App() {
             <a href="#wall">Gallery wall</a>
             <a href="#keramos">Keramos</a>
             <a href="#kollaz">Kollaz</a>
+            <a href="#komboloi">Komboloi</a>
           </nav>
         </header>
 
@@ -99,6 +101,17 @@ export function App() {
           <CraftTable />
         </Study>
 
+        <Study
+          id="komboloi"
+          number="06"
+          name="Komboloi"
+          greek="κομπολόι"
+          meaning="worry beads"
+          summary="Amber worry beads on a brass peg. Drag a bead to lift the strand, tap to flick it along the cord, or focus it and use Space to count the beads and the arrow keys to swing."
+        >
+          <Komboloi className="site-komboloi" />
+        </Study>
+
         <footer className="site-footer">
           <span>MIT licensed.</span>
           <a href={repo}>Source on GitHub</a>
@@ -109,7 +122,7 @@ export function App() {
 }
 
 type StudyProps = {
-  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz'
+  id: 'kimolia' | 'melani' | 'korniza' | 'keramos' | 'kollaz' | 'komboloi'
   number: string
   name: string
   greek: string
