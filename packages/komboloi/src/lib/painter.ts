@@ -25,9 +25,14 @@ export class StrandPainter {
   private bodies: (BeadBody | null)[] = []
   private papasBody: BeadBody | null = null
   private readonly threads: Thread[]
+  private readonly paintPadding: number
 
   constructor(strand: Strand) {
     this.strand = strand
+    const bodies = [...strand.beads, strand.papas]
+    this.paintPadding =
+      Math.max(10, strand.tassel.width / 2 + 1, ...bodies.map((b) => Math.hypot(b.length, b.width) / 2 + 1)) +
+      Math.max(SHADOW_OFFSET.x, SHADOW_OFFSET.y) + 1
     const random = seededRandom(strand.beads[0]?.seed ?? 1)
     const base = parseColour(strand.tassel.colour)
     const count = strand.tassel.threads
@@ -57,12 +62,23 @@ export class StrandPainter {
     this.papasBody = bakeBead(this.strand.papas, material, scale)
   }
 
-  /** `offset` shifts the strand right by that many millimetres, to centre it in a wider canvas. */
-  draw(ctx: Canvas2D, pose: StrandPose, scale: number, offset = 0): void {
+  /** Includes bead bodies, tassel threads, the peg and the displaced shadow. */
+  bounds(pose: StrandPose): { left: number; top: number; right: number; bottom: number } {
+    const padding = this.paintPadding
+    return {
+      left: Math.min(pose.hook.x, ...pose.x) - padding,
+      top: Math.min(pose.hook.y, ...pose.y) - padding,
+      right: Math.max(pose.hook.x, ...pose.x) + padding,
+      bottom: Math.max(pose.hook.y, ...pose.y) + padding,
+    }
+  }
+
+  /** Offsets move simulation coordinates into a canvas that can extend above or beside the host. */
+  draw(ctx: Canvas2D, pose: StrandPose, scale: number, offset = 0, offsetY = 0): void {
     this.ensureBodies(scale)
     const { material } = this.strand
     ctx.save()
-    ctx.translate(offset * scale, 0)
+    ctx.translate(offset * scale, offsetY * scale)
     ctx.scale(scale, scale)
     this.drawPegBack(ctx, pose)
     this.drawCord(ctx, pose)
@@ -79,11 +95,11 @@ export class StrandPainter {
    * upscales when it composites, which softens the edge for free. Its opacity
    * is set in CSS. `sx` and `sy` are that canvas's pixels per millimetre.
    */
-  drawShadow(ctx: Canvas2D, pose: StrandPose, sx: number, sy: number, offset: number): void {
+  drawShadow(ctx: Canvas2D, pose: StrandPose, sx: number, sy: number, offset: number, offsetY = 0): void {
     const canvas = ctx.canvas
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.setTransform(sx, 0, 0, sy, (offset + SHADOW_OFFSET.x) * sx, SHADOW_OFFSET.y * sy)
+    ctx.setTransform(sx, 0, 0, sy, (offset + SHADOW_OFFSET.x) * sx, (offsetY + SHADOW_OFFSET.y) * sy)
     ctx.fillStyle = '#000'
     ctx.strokeStyle = '#000'
     ctx.lineCap = 'round'

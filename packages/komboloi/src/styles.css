@@ -22,8 +22,8 @@
   border-radius: 4px;
 }
 
-/* Both canvases run past the box: sideways so a swing isn't clipped, and a
-   little below so the tassel's shadow isn't either. */
+/* Initial paint area. The component expands both layers together when a swing
+   reaches beyond it, preserving the host's size and pointer coordinates. */
 .komboloi__canvas,
 .komboloi__shadow {
   position: absolute;

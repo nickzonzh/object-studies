@@ -28,7 +28,7 @@ export type KomboloiProps = {
   style?: CSSProperties
 }
 
-/** The canvases are twice the strand's width, so a swing stays in view. */
+/** Initial room for a gentle swing; the canvases grow to fit harder swings. */
 const SWING_ROOM = 0.5
 /** And this tall, so the tassel's shadow isn't cut off at the bottom. */
 const OVERHANG = 1.08
@@ -100,15 +100,57 @@ export function Komboloi({
     let ready = false
     let scale = 1
     let cssWidth = 1
+    let cssHeight = 2
+    let left = -sim.width * SWING_ROOM
+    let top = 0
+    let right = sim.width * (1 + SWING_ROOM)
+    let bottom = sim.height * OVERHANG
+
+    const sizeCanvases = () => {
+      const paintWidth = right - left
+      const paintHeight = bottom - top
+      const width = (paintWidth / sim.width) * cssWidth
+      const height = (paintHeight / sim.height) * cssHeight
+      for (const layer of [canvas, shade]) {
+        layer.style.left = `${(left / sim.width) * cssWidth}px`
+        layer.style.top = `${(top / sim.height) * cssHeight}px`
+        layer.style.width = `${width}px`
+        layer.style.height = `${height}px`
+      }
+      const dpr = backingScale(width, height, window.devicePixelRatio || 1, 2)
+      const pixelWidth = Math.max(1, Math.round(width * dpr))
+      const pixelHeight = Math.max(1, Math.round(height * dpr))
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth
+        canvas.height = pixelHeight
+      }
+      scale = pixelWidth / paintWidth
+      const shadeWidth = Math.max(8, Math.round(paintWidth / SHADOW_COARSENESS))
+      const shadeHeight = Math.max(8, Math.round(paintHeight / SHADOW_COARSENESS))
+      if (shade.width !== shadeWidth || shade.height !== shadeHeight) {
+        shade.width = shadeWidth
+        shade.height = shadeHeight
+      }
+    }
 
     const draw = () => {
       if (!ready) return
       const pose = sim.view()
-      const offset = sim.width * SWING_ROOM
+      const bounds = painter.bounds(pose)
+      if (bounds.left < left || bounds.top < top || bounds.right > right || bounds.bottom > bottom) {
+        // Grow in chunks and retain the space, so a swinging strand doesn't
+        // reallocate both backing stores on every frame. The host never grows.
+        const chunk = sim.width / 2
+        left = Math.min(left, Math.floor(bounds.left / chunk) * chunk)
+        top = Math.min(top, Math.floor(bounds.top / chunk) * chunk)
+        right = Math.max(right, Math.ceil(bounds.right / chunk) * chunk)
+        bottom = Math.max(bottom, Math.ceil(bounds.bottom / chunk) * chunk)
+        sizeCanvases()
+      }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      painter.draw(ctx, pose, scale, offset)
-      painter.drawShadow(shadeCtx, pose, shade.width / (sim.width * 2), shade.height / (sim.height * OVERHANG), offset)
+      painter.draw(ctx, pose, scale, -left, -top)
+      painter.drawShadow(shadeCtx, pose, shade.width / (right - left), shade.height / (bottom - top), -left, -top)
     }
 
     const frame = (now: number) => {
@@ -140,20 +182,8 @@ export function Komboloi({
     const resize = () => {
       const rect = host.getBoundingClientRect()
       cssWidth = Math.max(1, rect.width)
-      const dpr = backingScale(rect.width * 2, rect.height * OVERHANG, window.devicePixelRatio || 1, 2)
-      const width = Math.max(1, Math.round(rect.width * 2 * dpr))
-      const height = Math.max(1, Math.round(rect.height * OVERHANG * dpr))
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width
-        canvas.height = height
-      }
-      scale = width / (sim.width * 2)
-      const shadeWidth = Math.max(8, Math.round((sim.width * 2) / SHADOW_COARSENESS))
-      const shadeHeight = Math.max(8, Math.round((sim.height * OVERHANG) / SHADOW_COARSENESS))
-      if (shade.width !== shadeWidth || shade.height !== shadeHeight) {
-        shade.width = shadeWidth
-        shade.height = shadeHeight
-      }
+      cssHeight = Math.max(1, rect.height)
+      sizeCanvases()
       draw()
     }
     const sizes = new ResizeObserver(resize)
