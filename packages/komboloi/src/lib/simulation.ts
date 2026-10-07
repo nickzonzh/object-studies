@@ -340,6 +340,9 @@ export class StrandSimulation extends StrandPose {
     }
     if (this.grab?.kind === 'pendant') {
       const i = cord + this.grab.index
+      // Release carries the hand's last step, rather than the whole drag.
+      this.ox[i] = this.x[i]
+      this.oy[i] = this.y[i]
       this.x[i] = this.stepTarget.x
       this.y[i] = this.stepTarget.y
     }

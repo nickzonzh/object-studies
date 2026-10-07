@@ -64,6 +64,27 @@ test('a held bead follows the pointer and the strand swings free when let go', (
   assertSpaced(sim)
 })
 
+test('a pendant held still releases without turning the drag distance into a whip', () => {
+  for (const index of [0, 2, 4]) {
+    const sim = hung({ beads: 21 })
+    const start = sim.pendantPoint(index)
+    sim.hold({ kind: 'pendant', index }, start)
+    for (let frame = 1; frame <= 60; frame++) {
+      // Lift as well as move sideways so the cord remains within reach of the peg.
+      sim.moveTo({ x: start.x + (30 * frame) / 60, y: start.y - (10 * frame) / 60 })
+      sim.advance(1 / 60)
+    }
+    for (let frame = 0; frame < 30; frame++) sim.advance(1 / 60)
+    const before = sim.pendantPoint(index)
+    sim.release()
+    sim.advance(1 / 60)
+    const after = sim.pendantPoint(index)
+    const jump = Math.hypot(after.x - before.x, after.y - before.y)
+    assert.ok(jump < 2, `pendant ${index} jumped ${jump.toFixed(2)} mm in one release frame`)
+    assertSpaced(sim)
+  }
+})
+
 test('the same input moves the strand the same way every time', () => {
   const a = hung({ material: 'mati', beads: 23, seed: 2 })
   const b = hung({ material: 'mati', beads: 23, seed: 2 })
