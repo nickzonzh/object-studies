@@ -340,11 +340,19 @@ export class StrandSimulation extends StrandPose {
     }
     if (this.grab?.kind === 'pendant') {
       const i = cord + this.grab.index
+      const fromPeg = Math.abs(this.contactS)
+      let reach = Math.min(fromPeg, cordLength - fromPeg) + HOOK_RADIUS
+      for (let link = 0; link <= this.grab.index; link++) reach += this.pendant[link].rest
+      const dx = this.stepTarget.x - this.hook.x
+      const dy = this.stepTarget.y - this.hook.y
+      const distance = Math.hypot(dx, dy)
+      // Match tether() before pinning, so an unreachable hand target cannot store stretch.
+      const scale = distance > reach ? reach / distance : 1
       // Release carries the hand's last step, rather than the whole drag.
       this.ox[i] = this.x[i]
       this.oy[i] = this.y[i]
-      this.x[i] = this.stepTarget.x
-      this.y[i] = this.stepTarget.y
+      this.x[i] = this.hook.x + dx * scale
+      this.y[i] = this.hook.y + dy * scale
     }
 
     let contact = -1
