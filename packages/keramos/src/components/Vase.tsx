@@ -487,7 +487,7 @@ export function Vase({
     st.lastT = now
     st.dirty = true
   }
-  const onPointerUp = (e: React.PointerEvent) => {
+  const endDrag = (e: React.PointerEvent) => {
     const st = state.current
     if (!st.dragging || e.pointerId !== st.pointerId) return
     st.dragging = false
@@ -539,9 +539,9 @@ export function Vase({
         style={CANVAS_FILL}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onLostPointerCapture={onPointerUp}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onLostPointerCapture={endDrag}
       />
       {draggable ? (
         <span id={hintId} hidden>
