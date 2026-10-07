@@ -1,0 +1,1123 @@
+/*
+ * Kipos — a Greek garden bed and whitewashed tins.
+ *
+ * Every rule is scoped to kipos classes; nothing here styles the page. Sizes are
+ * in garden units (--kipos-u): a thousandth of a bed's width, or a 240th of a
+ * tin's, so the whole object scales with the width it is given. The materials
+ * and drawings themselves are in art.css, which sets each textured element's
+ * background-image; the rules here set only its size and position, so they
+ * use background longhands rather than the shorthand.
+ */
+
+.kipos {
+  --kipos-ink: #4a3a2a;
+  --kipos-soft: #6b5a47;
+  --kipos-focus: #2f3434;
+  /* Contact shadow for things resting on a surface: tight and dark, then soft. */
+  --kipos-contact: drop-shadow(0 calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 0.8) rgba(30, 18, 8, 0.45)) drop-shadow(calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) rgba(30, 18, 8, 0.2));
+  color: var(--kipos-ink);
+}
+
+/* Zero specificity, so every component rule below still wins. */
+:where(.kipos) :where(*, *::before, *::after) { box-sizing: border-box; }
+:where(.kipos) :where(button) {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+:where(.kipos) :where(i) { display: block; font-style: normal; }
+
+.kipos-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Every sprite is drawn to fill its box exactly. */
+[class*='kipos-sprite--'] {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* ---------- The bed ---------- */
+
+.kipos-bed {
+  container: kipos-bed / inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.kipos-bed__scene {
+  --kipos-u: calc(100cqw / 1000);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 672;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The shadow the bed throws on the ground, darkest where stone meets earth. */
+.kipos-bed__ground {
+  position: absolute;
+  left: calc(var(--kipos-u) * 14);
+  top: calc(var(--kipos-u) * 520);
+  width: calc(var(--kipos-u) * 972);
+  height: calc(var(--kipos-u) * 52);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 50% 40% at 50% 26%, rgba(42, 26, 12, 0.5), rgba(42, 26, 12, 0) 100%),
+    radial-gradient(ellipse 52% 60% at 52% 36%, rgba(42, 26, 12, 0.18), rgba(42, 26, 12, 0) 100%);
+}
+
+/* The far wall's top edge, glimpsed beyond the soil and in its own shade. */
+.kipos-bed__back {
+  position: absolute;
+  left: calc(var(--kipos-u) * 40);
+  top: calc(var(--kipos-u) * 342);
+  width: calc(var(--kipos-u) * 920);
+  height: calc(var(--kipos-u) * 18);
+  border-radius: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 6) 0 0;
+  /* The lit far wall from art.css, in the near wall's shade. */
+  background-size: 100% 100%;
+  background-color: #bcae90;
+  filter: brightness(0.92);
+}
+
+.kipos-bed__soil {
+  position: absolute;
+  left: calc(var(--kipos-u) * 46);
+  top: calc(var(--kipos-u) * 356);
+  width: calc(var(--kipos-u) * 908);
+  height: calc(var(--kipos-u) * 56);
+  background-color: #4e2e1b;
+  background-size: calc(var(--kipos-u) * 200);
+  /* The walls shade the soil along the back and the ends. */
+  box-shadow:
+    inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(18, 10, 4, 0.55),
+    inset calc(var(--kipos-u) * 12) 0 calc(var(--kipos-u) * 12) rgba(18, 10, 4, 0.3),
+    inset calc(var(--kipos-u) * -12) 0 calc(var(--kipos-u) * 12) rgba(18, 10, 4, 0.3);
+}
+
+/* Dry-stone face: limestone set in moss-grown lime mortar. */
+.kipos-bed__face {
+  position: absolute;
+  left: calc(var(--kipos-u) * 46);
+  top: calc(var(--kipos-u) * 432);
+  width: calc(var(--kipos-u) * 908);
+  height: calc(var(--kipos-u) * 104);
+  overflow: hidden;
+  border-radius: 0 0 calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 4);
+  background-color: #8c7d63;
+  background-size: calc(var(--kipos-u) * 160);
+  box-shadow: inset 0 calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) rgba(20, 12, 4, 0.45);
+}
+
+/* A lit block from art.css, with its own shadow on the mortar; each varies in tone. */
+.kipos-stone {
+  position: absolute;
+  background-size: 100% 100%;
+  filter: brightness(var(--tone, 1)) sepia(var(--warm, 0));
+}
+/* Crusts of grey-green lichen on the odd stone. */
+.kipos-stone::after {
+  content: '';
+  position: absolute;
+  inset: 6% 8% 14% 6%;
+  opacity: var(--lichen, 0);
+  background:
+    radial-gradient(ellipse 26% 34% at var(--lx) var(--ly), rgba(128, 138, 92, 0.75), rgba(128, 138, 92, 0.4) 55%, rgba(128, 138, 92, 0) 100%),
+    radial-gradient(ellipse 12% 16% at calc(var(--lx) + 14%) calc(var(--ly) - 18%), rgba(204, 196, 132, 0.8), rgba(204, 196, 132, 0) 100%),
+    radial-gradient(ellipse 9% 12% at calc(var(--lx) - 12%) calc(var(--ly) + 10%), rgba(104, 114, 80, 0.7), rgba(104, 114, 80, 0) 100%);
+}
+
+/* Capstones along the front edge, a little proud of the face below. */
+.kipos-bed__coping {
+  position: absolute;
+  left: calc(var(--kipos-u) * 30);
+  top: calc(var(--kipos-u) * 404);
+  width: calc(var(--kipos-u) * 940);
+  height: calc(var(--kipos-u) * 34);
+  /* Mortar in the joints between capstones. */
+  background-color: #8c7d63;
+  background-size: calc(var(--kipos-u) * 160);
+  border-radius: calc(var(--kipos-u) * 4);
+}
+
+.kipos-capstone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3);
+  /* The lit capstone from art.css: worn top face, rounded arris, front face. */
+  background-size: 100% 100%;
+  background-color: #d3c6a9;
+  filter: brightness(var(--tone, 1));
+  /* The overhang's shadow on the wall below. */
+  box-shadow: 0 calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) rgba(20, 12, 4, 0.45);
+}
+
+.kipos-trowel {
+  position: absolute;
+  left: calc(var(--kipos-u) * 22);
+  top: calc(var(--kipos-u) * 388);
+  width: calc(var(--kipos-u) * 130);
+  height: calc(var(--kipos-u) * 35);
+  transform: rotate(4deg);
+  filter: var(--kipos-contact);
+  pointer-events: none;
+}
+
+/* A bamboo cane: internodes tiled up from the soil, darkened where it went in. */
+.kipos-cane {
+  border-radius: 45% 45% calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1) / calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 3) 0 0;
+  background-position: 0 100%;
+  background-size: 100% calc(var(--kipos-u) * 72);
+  background-repeat: repeat-y;
+  box-shadow: inset 0 calc(var(--kipos-u) * 2) 0 rgba(110, 85, 48, 0.9);
+}
+.kipos-cane::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(59, 38, 22, 0) calc(100% - var(--kipos-u) * 26), rgba(59, 38, 22, 0.75));
+}
+
+/* ---------- Plots ---------- */
+
+.kipos-plot {
+  position: absolute;
+  left: calc(var(--kipos-u) * (46 + var(--plot) * 302.67));
+  top: 0;
+  width: calc(var(--kipos-u) * 302.67);
+  height: calc(var(--kipos-u) * 412);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.kipos-plot:focus-visible { outline: none; }
+/* The plot is the button; what is drawn in it never takes the pointer. Its own
+   cursor keeps a change to the plot's cursor from restyling the whole plant. */
+.kipos-plot > * { pointer-events: none; cursor: default; }
+
+/* Wet soil darkens from where the water lands; dry soil goes dusty. */
+.kipos-plot__soil {
+  position: absolute;
+  left: calc(var(--kipos-u) * 18);
+  right: calc(var(--kipos-u) * 18);
+  bottom: calc(var(--kipos-u) * 4);
+  height: calc(var(--kipos-u) * 46);
+  border-radius: 50%;
+}
+.kipos-plot__soil::before,
+.kipos-plot__soil::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transition: opacity 1200ms ease;
+}
+.kipos-plot__soil::before {
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(22, 12, 5, 0.62), rgba(22, 12, 5, 0.3) 60%, rgba(22, 12, 5, 0) 100%);
+  opacity: var(--wet);
+  /* The wet patch spreads from where the water lands, and shrinks as it dries. */
+  transform: scale(calc(0.5 + var(--wet) * 0.5));
+  transition: opacity 1200ms ease, transform 1800ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.kipos-plot__soil::after {
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(206, 178, 146, 0.32), rgba(206, 178, 146, 0) 100%);
+  opacity: calc(1 - var(--wet));
+}
+
+.kipos-plot:focus-visible .kipos-plot__soil {
+  outline: 2px solid var(--kipos-focus);
+  outline-offset: calc(var(--kipos-u) * 4);
+}
+
+@media (hover: hover) {
+  .kipos-bed--holding .kipos-plot:hover .kipos-plot__soil,
+  .kipos-plot--ripe:hover .kipos-plot__soil {
+    box-shadow: 0 0 calc(var(--kipos-u) * 18) calc(var(--kipos-u) * 4) rgba(255, 238, 200, 0.28);
+  }
+}
+
+/* Canes left standing in an empty plot: a tepee of three, lashed at the top. */
+.kipos-idle {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--kipos-u) * 20);
+  width: 0;
+  height: 0;
+  filter: drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a-thin)));
+}
+.kipos-idle__cane {
+  position: absolute;
+  bottom: 0;
+  width: calc(var(--kipos-u) * 9);
+  height: calc(var(--kipos-u) * 300);
+  transform-origin: 50% 100%;
+}
+.kipos-idle__cane:nth-child(1) { left: calc(var(--kipos-u) * -62); transform: rotate(11deg); }
+.kipos-idle__cane:nth-child(2) { left: calc(var(--kipos-u) * 52); transform: rotate(-10deg); }
+.kipos-idle__cane:nth-child(3) { left: calc(var(--kipos-u) * -8); height: calc(var(--kipos-u) * 286); transform: rotate(1deg); filter: brightness(0.86); z-index: -1; }
+.kipos-idle__tie {
+  position: absolute;
+  left: calc(var(--kipos-u) * -14);
+  bottom: calc(var(--kipos-u) * 262);
+  width: calc(var(--kipos-u) * 26);
+  height: calc(var(--kipos-u) * 14);
+}
+/* The middle plot's canes lean the other way and stand a little shorter. */
+.kipos-idle--1 { transform: scale(0.92) rotate(-2deg); transform-origin: 50% 100%; }
+.kipos-idle--2 { transform: scale(0.97) rotate(2deg); transform-origin: 50% 100%; }
+
+/* ---------- Plants ---------- */
+
+/* The plant's root is a point on the soil; everything is drawn out from it.
+   Each plant keeps a layer of its own: a breeze moves it without redrawing it,
+   and it can grow without the stonework behind it being redrawn. */
+.kipos-plant {
+  --droop: 0;
+  position: absolute;
+  will-change: transform;
+  left: 50%;
+  bottom: calc(var(--kipos-u) * 22);
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+/* One soft shadow for the whole plant, cast down and away from the sun. It sits
+   inside the swaying element, so a breeze moves the shadowed plant as one
+   finished picture instead of re-casting the shadow every frame. */
+.kipos-plant__body {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a)));
+  transition: filter 1200ms ease;
+}
+
+.kipos-plant--wilted {
+  --droop: 1;
+}
+.kipos-plant--wilted > .kipos-plant__body {
+  filter:
+    drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a)))
+    saturate(0.7) brightness(0.98) sepia(0.1);
+}
+
+/* A breeze: the plant leans and swings back, its tip travelling furthest. A
+   gust is the full swing; a plant brushed in passing, or watered, swings less.
+   The keyframes hold plain numbers so the swing runs on the compositor. */
+.kipos-plant[data-sway] {
+  animation-duration: 3.8s;
+  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  animation-fill-mode: both;
+}
+.kipos-plant[data-sway='gust-a'] { animation-name: kipos-sway-gust-a; }
+.kipos-plant[data-sway='gust-b'] { animation-name: kipos-sway-gust-b; }
+.kipos-plant[data-sway='brush-a'] { animation-name: kipos-sway-brush-a; }
+.kipos-plant[data-sway='brush-b'] { animation-name: kipos-sway-brush-b; }
+.kipos-plant[data-sway='shiver-a'] { animation-name: kipos-sway-shiver-a; }
+.kipos-plant[data-sway='shiver-b'] { animation-name: kipos-sway-shiver-b; }
+@keyframes kipos-sway-gust-a {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-2.6deg); }
+  36% { transform: skewX(1.5deg); }
+  56% { transform: skewX(-0.8deg); }
+  76% { transform: skewX(0.35deg); }
+}
+@keyframes kipos-sway-gust-b {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-2.6deg); }
+  36% { transform: skewX(1.5deg); }
+  56% { transform: skewX(-0.8deg); }
+  76% { transform: skewX(0.35deg); }
+}
+@keyframes kipos-sway-brush-a {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.04deg); }
+  36% { transform: skewX(0.6deg); }
+  56% { transform: skewX(-0.32deg); }
+  76% { transform: skewX(0.14deg); }
+}
+@keyframes kipos-sway-brush-b {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.04deg); }
+  36% { transform: skewX(0.6deg); }
+  56% { transform: skewX(-0.32deg); }
+  76% { transform: skewX(0.14deg); }
+}
+@keyframes kipos-sway-shiver-a {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.3deg); }
+  36% { transform: skewX(0.75deg); }
+  56% { transform: skewX(-0.4deg); }
+  76% { transform: skewX(0.17deg); }
+}
+@keyframes kipos-sway-shiver-b {
+  0%, 100% { transform: none; }
+  16% { transform: skewX(-1.3deg); }
+  36% { transform: skewX(0.75deg); }
+  56% { transform: skewX(-0.4deg); }
+  76% { transform: skewX(0.17deg); }
+}
+
+/* A stalk: segments hung end to end, each turning from the top of the last.
+   Wilting adds a little to every joint, so the whole stalk slumps together. */
+.kipos-seg {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 0;
+  transform-origin: 0 100%;
+  transform: rotate(calc(var(--a) + var(--droop) * var(--wa)));
+  transition: transform 1200ms cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+/* Each segment is a capsule reaching half its width past both joints, so the
+   joints never show. A segment still growing stretches up from its foot. */
+.kipos-seg__body {
+  position: absolute;
+  left: calc(var(--kipos-u) * var(--w) / -2);
+  bottom: calc(var(--kipos-u) * var(--w) / -2);
+  height: calc(100% + var(--kipos-u) * var(--w));
+  border-radius: calc(var(--kipos-u) * var(--w) / 2);
+  /* The lit stem, vine or stalk tile is set in art.css, by kind. */
+  background-size: 100% calc(var(--kipos-u) * var(--w) * 2.4);
+  background-repeat: repeat-y;
+  transform-origin: 50% calc(100% - var(--kipos-u) * var(--w) / 2);
+  transform: scaleY(var(--grow, 1));
+  transition: transform 1200ms ease;
+}
+/* The tip spans its segment and slides up it as the segment grows: a transform,
+   so growth never asks the browser for layout. The bud sits at its top. */
+.kipos-seg__tip {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 100%;
+  transform: translateY(calc((1 - var(--grow, 1)) * 100%));
+  transition: transform 1200ms ease;
+}
+.kipos-seg__tip i {
+  position: absolute;
+  bottom: 100%;
+  width: calc(var(--kipos-u) * 13);
+  height: calc(var(--kipos-u) * 6);
+  filter: brightness(0.9) saturate(1.1);
+}
+.kipos-seg__tip i:first-child { right: 0; transform-origin: 100% 50%; transform: rotate(52deg); }
+.kipos-seg__tip i:last-child { left: 0; transform-origin: 0 50%; transform: rotate(-52deg); }
+
+/* Once the plant is on the page, anything new grows in from nothing. */
+@starting-style {
+  .kipos-plant[data-live] .kipos-seg__body { transform: scaleY(0); }
+  .kipos-plant[data-live] .kipos-part:not(.kipos-part--vine) { transform: rotate(var(--r, 0deg)) scale(0); }
+}
+
+.kipos-plant__shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * -70);
+  bottom: calc(var(--kipos-u) * -10);
+  width: calc(var(--kipos-u) * 140);
+  height: calc(var(--kipos-u) * 22);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(16, 9, 3, 0.45), rgba(16, 9, 3, 0) 70%);
+  transform: scaleX(calc(0.3 + var(--spread, 0) * 0.9));
+  transition: transform 1200ms ease;
+}
+
+.kipos-plant__mound {
+  position: absolute;
+  left: calc(var(--kipos-u) * -26);
+  bottom: calc(var(--kipos-u) * -5);
+  width: calc(var(--kipos-u) * 52);
+  height: calc(var(--kipos-u) * 13);
+  border-radius: 50% 50% 46% 46%;
+  background-size: calc(var(--kipos-u) * 120);
+  box-shadow: 0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 3) rgba(16, 9, 3, 0.4);
+}
+.kipos-plant__mound::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 60% 70% at 40% 25%, rgba(255, 220, 180, 0.22), rgba(255, 220, 180, 0) 70%);
+}
+
+.kipos-part {
+  position: absolute;
+  transform:
+    rotate(calc(var(--r, 0deg) + var(--droop) * var(--side, 0) * 32deg))
+    scale(var(--s, 1));
+  transition: transform 1200ms cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+.kipos-part--across { transform: rotate(var(--r, 0deg)) scaleX(var(--grow, 1)); }
+
+/* A trailing vine unrolls from its root rather than stretching. */
+.kipos-part--vine {
+  transform: rotate(var(--r, 0deg));
+  clip-path: inset(0 calc((1 - var(--grow, 1)) * 100%) calc((1 - var(--grow, 1)) * 100%) 0 round calc(var(--kipos-u) * 4));
+  transition: clip-path 1200ms ease;
+}
+
+/* Fruit and flowers swell from a bud to full size, and hang a little lower when it's dry. */
+.kipos-part--tomato,
+.kipos-part--cucumber,
+.kipos-part--melon,
+.kipos-part--bloom {
+  transform:
+    rotate(calc(var(--r, 0deg) + var(--droop) * 5deg))
+    scale(calc(var(--s, 1) * var(--size, 1)));
+}
+
+/* Canes and ties are set by hand; they never wilt. A truss turns with its stalk. */
+.kipos-part--cane,
+.kipos-part--tie,
+.kipos-part--twine { transform: rotate(var(--r, 0deg)); }
+.kipos-part--truss { transform: rotate(var(--r, 0deg)) scaleY(var(--s, 1)); }
+
+.kipos-part--leaf,
+.kipos-part--vine-leaf,
+.kipos-part--melon-leaf,
+.kipos-part--basil-leaf,
+.kipos-part--round-leaf { filter: brightness(var(--shade, 1)); }
+
+/* The seed leaves wither: they pale, yellow, droop and drop. */
+.kipos-part--cotyledon {
+  filter: saturate(calc(1 - var(--age, 0) * 0.5)) sepia(calc(var(--age, 0) * 0.55));
+  opacity: calc(1 - var(--age, 0) * 0.9);
+  transform: rotate(calc(var(--r, 0deg) + var(--age, 0) * var(--side, 0) * 40deg)) scale(var(--s, 1));
+  transition: transform 1200ms ease, opacity 1200ms ease, filter 1200ms ease;
+}
+
+/* A tendril has its grip; it doesn't wilt. */
+.kipos-part--tendril { transform: rotate(var(--r, 0deg)) scale(var(--s, 1)); }
+
+/* The ground darkened under a melon, where it rests. Swells with the fruit. */
+.kipos-part--pool {
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 45%, rgba(18, 10, 4, 0.6), rgba(18, 10, 4, 0.25) 55%, rgba(18, 10, 4, 0) 72%);
+  transform: scale(calc(var(--s, 1) * var(--size, 1)));
+}
+
+.kipos-part--cane { filter: drop-shadow(calc(var(--kipos-u) * var(--sun-x)) calc(var(--kipos-u) * var(--sun-y)) calc(var(--kipos-u) * var(--sun-blur)) rgba(20, 26, 8, var(--sun-a-thin))); }
+
+.kipos-part--twine {
+  background: linear-gradient(#d9c595, #a8915e);
+  border-radius: 1px;
+  opacity: 0.9;
+}
+
+.kipos-part--truss {
+  border-radius: calc(var(--kipos-u) * 1);
+  background-size: 100% calc(var(--kipos-u) * 4.4);
+  background-repeat: repeat-y;
+}
+
+/* A ripe tomato: the red drawing cross-fades in over the green. */
+.kipos-part--tomato::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: var(--ripe, 0);
+  transition: opacity 1200ms ease;
+}
+
+/* ---------- Watering ---------- */
+
+.kipos-pour {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--kipos-u) * 150);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Fine streaks of water leaving the rose together and fanning out as they fall. */
+.kipos-pour i {
+  position: absolute;
+  top: 0;
+  left: calc(var(--kipos-u) * var(--from, 0));
+  width: calc(var(--kipos-u) * 3);
+  height: calc(var(--kipos-u) * 24);
+  border-radius: 50%;
+  /* Clear water catching the light, with a darker edge so it reads against pale ground. */
+  background: linear-gradient(rgba(170, 205, 228, 0), rgba(150, 192, 222, 0.75) 62%, rgba(255, 255, 255, 0.95) 88%, rgba(120, 165, 195, 0.8));
+  opacity: 0;
+  animation: kipos-drop 560ms cubic-bezier(0.45, 0, 0.85, 0.6) 3;
+}
+.kipos-pour i:nth-child(1) { --from: -3.1; --dx: -18; animation-delay: 200ms; }
+.kipos-pour i:nth-child(2) { --from: 2.4; --dx: 14; animation-delay: 240ms; }
+.kipos-pour i:nth-child(3) { --from: -1.0; --dx: -6; animation-delay: 280ms; }
+.kipos-pour i:nth-child(4) { --from: 4.2; --dx: 24; animation-delay: 300ms; }
+.kipos-pour i:nth-child(5) { --from: -4.5; --dx: -26; animation-delay: 340ms; }
+.kipos-pour i:nth-child(6) { --from: 1.0; --dx: 6; animation-delay: 360ms; }
+.kipos-pour i:nth-child(7) { --from: 3.1; --dx: 18; animation-delay: 400ms; }
+.kipos-pour i:nth-child(8) { --from: -2.1; --dx: -12; animation-delay: 430ms; }
+.kipos-pour i:nth-child(9) { --from: 5.3; --dx: 30; animation-delay: 460ms; }
+.kipos-pour i:nth-child(10) { --from: -5.6; --dx: -32; animation-delay: 500ms; }
+.kipos-pour i:nth-child(11) { --from: 0.0; --dx: 0; animation-delay: 520ms; }
+.kipos-pour i:nth-child(12) { --from: 1.8; --dx: 10; animation-delay: 560ms; }
+
+/* Rings spreading on the soil where the water lands. */
+.kipos-pour b {
+  position: absolute;
+  top: calc(var(--kipos-u) * 128);
+  left: calc(var(--kipos-u) * var(--at, 0));
+  width: calc(var(--kipos-u) * 26);
+  height: calc(var(--kipos-u) * 7);
+  border: calc(var(--kipos-u) * 1.2) solid rgba(214, 232, 244, 0.75);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.2);
+  animation: kipos-splash 640ms ease-out 3;
+}
+.kipos-pour b:nth-of-type(1) { --at: -14; animation-delay: 700ms; }
+.kipos-pour b:nth-of-type(2) { --at: 12; animation-delay: 820ms; }
+.kipos-pour b:nth-of-type(3) { --at: -1; animation-delay: 940ms; }
+@keyframes kipos-splash {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+/* Seed tipped from a packet: a few pale seeds dropping a short way to the soil. */
+.kipos-pour--seeds { bottom: calc(var(--kipos-u) * 92); }
+.kipos-pour--seeds i {
+  --from: 0;
+  width: calc(var(--kipos-u) * 3.4);
+  height: calc(var(--kipos-u) * 4.6);
+  background: radial-gradient(circle at 35% 30%, #f4e7c4, #c8ad78 70%);
+  animation-name: kipos-seed;
+  animation-iteration-count: 1;
+}
+.kipos-pour--seeds i:nth-child(1) { left: calc(var(--kipos-u) * -10); }
+.kipos-pour--seeds i:nth-child(2) { left: calc(var(--kipos-u) * -4); }
+.kipos-pour--seeds i:nth-child(3) { left: calc(var(--kipos-u) * 2); }
+.kipos-pour--seeds i:nth-child(4) { left: calc(var(--kipos-u) * 7); }
+.kipos-pour--seeds i:nth-child(5) { left: calc(var(--kipos-u) * -1); }
+@keyframes kipos-seed {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: 1; }
+  100% { opacity: 0.6; transform: translateY(calc(var(--kipos-u) * 64)); }
+}
+
+@keyframes kipos-drop {
+  0% { opacity: 0; transform: translate(0, 0); }
+  15% { opacity: 1; }
+  100% { opacity: 0.2; transform: translate(calc(var(--kipos-u) * var(--dx, 0)), calc(var(--kipos-u) * 128)); }
+}
+
+/* ---------- The kraft tag, hung from the coping on a loop of twine ---------- */
+
+.kipos-tag {
+  position: absolute;
+  left: calc(var(--kipos-u) * 160);
+  top: calc(var(--kipos-u) * 446);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--kipos-u) * 1);
+  padding: calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 7) calc(var(--kipos-u) * 22);
+  border-radius: calc(var(--kipos-u) * 3) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 3);
+  /* The lit kraft card from art.css. */
+  background-size: 100% 100%;
+  background-color: #c4a068;
+  box-shadow:
+    0 calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1) rgba(40, 24, 8, 0.35),
+    calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 5) rgba(40, 24, 8, 0.3);
+  transform: rotate(-5deg);
+  transform-origin: 6% 50%;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: calc(var(--kipos-u) * 15);
+  font-weight: 700;
+  line-height: 1.1;
+  /* Typed onto the card: the ink sinks into the fibres. */
+  color: #33230f;
+  text-shadow: 0 0 calc(var(--kipos-u) * 0.6) rgba(51, 35, 15, 0.45);
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* A brass eyelet round the hole, catching the light on its upper left. */
+.kipos-tag::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--kipos-u) * 6);
+  top: calc(50% - var(--kipos-u) * 5);
+  width: calc(var(--kipos-u) * 10);
+  height: calc(var(--kipos-u) * 10);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #3a2a16 0 34%, transparent 36%),
+    radial-gradient(circle at 34% 30%, #f6e2a4, #c79a48 45%, #7c5a24 80%);
+  box-shadow: calc(var(--kipos-u) * 0.6) calc(var(--kipos-u) * 1) calc(var(--kipos-u) * 1) rgba(40, 24, 8, 0.45);
+}
+/* Twisted jute twine up to the coping. */
+.kipos-tag::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--kipos-u) * 9.6);
+  top: calc(var(--kipos-u) * -16);
+  width: calc(var(--kipos-u) * 2.4);
+  height: calc(var(--kipos-u) * 27);
+  border-radius: calc(var(--kipos-u) * 1);
+  background:
+    linear-gradient(90deg, rgba(60, 38, 14, 0.35), rgba(255, 240, 200, 0.25) 45%, rgba(60, 38, 14, 0.4)),
+    repeating-linear-gradient(-55deg, #a88a56 0 calc(var(--kipos-u) * 1.2), #c7ab74 calc(var(--kipos-u) * 1.2) calc(var(--kipos-u) * 2.4));
+  transform: rotate(14deg);
+  transform-origin: bottom;
+}
+.kipos-tag__count { font-size: calc(var(--kipos-u) * 11); font-weight: 400; }
+
+/* Until the stored garden and the clock have arrived, everything is simply
+   where it is: no fading in from the blank first render. */
+.kipos:not([data-ready]) *,
+.kipos:not([data-ready]) *::before,
+.kipos:not([data-ready]) *::after { transition: none !important; }
+
+/* ---------- Light ----------
+   The sun moves across the garden. Plants and canes cast their shadows away
+   from it: long to the right in the morning, short and dark at midday, long
+   to the left through the afternoon and longer still at dusk, and soft under
+   the moon. Garden units, so shadows scale with the bed.
+
+   The colour of the light is a filter on the whole object rather than an
+   overlay, so it falls on the bed and never tints the page behind it. It
+   changes a few times a day. */
+
+.kipos {
+  --sun-x: 4;
+  --sun-y: 4;
+  --sun-blur: 3;
+  --sun-a: 0.32;
+  --sun-a-thin: 0.28;
+}
+.kipos[data-light='morning'] { --sun-x: 11; --sun-y: 3; --sun-blur: 4; --sun-a: 0.26; --sun-a-thin: 0.22; }
+.kipos[data-light='midday'] { --sun-x: 1; --sun-y: 5; --sun-blur: 2.2; --sun-a: 0.4; --sun-a-thin: 0.34; }
+.kipos[data-light='afternoon'] { --sun-x: -9; --sun-y: 4; --sun-blur: 3.5; --sun-a: 0.3; --sun-a-thin: 0.26; }
+.kipos[data-light='dusk'] { --sun-x: -16; --sun-y: 2.5; --sun-blur: 5; --sun-a: 0.2; --sun-a-thin: 0.16; }
+.kipos[data-light='night'] { --sun-x: 3; --sun-y: 5; --sun-blur: 8; --sun-a: 0.22; --sun-a-thin: 0.18; }
+
+.kipos-bed__scene,
+.kipos-teneke__scene { transition: filter 2400ms ease; }
+/* Fresh and a little cool, gold just warming the edges. */
+[data-light='morning'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.06) saturate(1.06) brightness(1.04) hue-rotate(-3deg); }
+/* Full sun: clean colour and a touch more contrast. */
+[data-light='midday'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: contrast(1.05) saturate(1.06); }
+/* Late gold. */
+[data-light='afternoon'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.18) saturate(1.14) brightness(1.01); }
+/* Low, rosy and fading. */
+[data-light='dusk'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: sepia(0.3) saturate(1.05) hue-rotate(-14deg) brightness(0.84) contrast(0.95); }
+/* Moonlight: dim and blue, the colour drained out of everything. */
+[data-light='night'] > :is(.kipos-bed__scene, .kipos-teneke__scene) { filter: grayscale(0.88) sepia(0.4) hue-rotate(180deg) saturate(1.15) brightness(0.62) contrast(1.06); }
+
+/* ---------- Tray, packets and can ---------- */
+
+.kipos-tray {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.kipos-tray > * { pointer-events: auto; }
+
+/* An olive-wood board: top face, a rounded front edge, and the maker's mark burned in. */
+.kipos-tray__wood {
+  position: absolute;
+  left: calc(var(--kipos-u) * 64);
+  top: calc(var(--kipos-u) * 576);
+  width: calc(var(--kipos-u) * 872);
+  height: calc(var(--kipos-u) * 88);
+  border-radius: calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 10) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 14);
+  pointer-events: none;
+  /* The lit board, drawn at this size, from art.css. */
+  background-size: 100% 100%;
+  background-color: #a8784a;
+  box-shadow:
+    0 calc(var(--kipos-u) * 2) calc(var(--kipos-u) * 2) rgba(30, 16, 4, 0.4),
+    0 calc(var(--kipos-u) * 12) calc(var(--kipos-u) * 16) rgba(30, 16, 4, 0.25);
+}
+
+.kipos-tray__brand {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--kipos-u) * 4);
+  transform: translateX(-50%);
+  font-family: 'GFS Didot', Didot, 'Bodoni 72', 'Times New Roman', serif;
+  font-size: calc(var(--kipos-u) * 9.5);
+  letter-spacing: 0.42em;
+  color: rgba(52, 26, 8, 0.72);
+  text-shadow: 0 0 calc(var(--kipos-u) * 1) rgba(52, 26, 8, 0.5), 0 calc(var(--kipos-u) * 0.6) 0 rgba(255, 228, 186, 0.3);
+  white-space: nowrap;
+}
+
+/* The packet's place on the board: a button that stays put while the packet
+   itself is in hand. */
+.kipos-packet {
+  position: absolute;
+  left: calc(var(--kipos-u) * (112 + var(--slot) * 140));
+  top: calc(var(--kipos-u) * 552);
+  width: calc(var(--kipos-u) * 120);
+  height: calc(var(--kipos-u) * 88);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+/* The packet: uncoated paper with a crimped top edge, as a packet is sealed. It
+   turns about the middle of its top, where it is held. */
+.kipos-packet__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  text-align: left;
+  border-radius: calc(var(--kipos-u) * 1.5);
+  background-size: calc(var(--kipos-u) * 160);
+  background-color: #f3e7cb;
+  mask:
+    conic-gradient(from 135deg at 50% 0, #0000 90deg, #000 0) 0 0 / calc(var(--kipos-u) * 4) calc(var(--kipos-u) * 2) repeat-x,
+    linear-gradient(#000 0 0) 0 calc(var(--kipos-u) * 2) / 100% 100% no-repeat;
+  box-shadow: inset 0 0 calc(var(--kipos-u) * 6) rgba(120, 86, 40, 0.25);
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: 50% 8%;
+}
+.kipos-packet__parked {
+  position: absolute;
+  inset: 0;
+}
+/* The packet's shadow on the board. */
+.kipos-packet-shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * 2);
+  top: calc(var(--kipos-u) * 4);
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--kipos-u) * 3);
+  background: rgba(30, 16, 4, 0.34);
+  filter: blur(calc(var(--kipos-u) * 3));
+  transform: rotate(var(--tilt));
+  transform-origin: 50% 8%;
+}
+.kipos-packet:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
+
+/* Ink printed onto the paper: flat colour, a slight misregistration, the paper's tooth showing through. */
+.kipos-packet__band {
+  position: absolute;
+  left: calc(var(--kipos-u) * 6);
+  right: calc(var(--kipos-u) * 6);
+  top: calc(var(--kipos-u) * 8);
+  height: calc(var(--kipos-u) * 26);
+  padding-top: calc(var(--kipos-u) * 4);
+  background: var(--band);
+  color: #f7ecd4;
+  font-family: 'GFS Didot', Didot, 'Bodoni 72', 'Times New Roman', serif;
+  font-size: calc(var(--kipos-u) * 16);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: calc(var(--kipos-u) * 0.7) calc(var(--kipos-u) * 0.5) 0 rgba(30, 20, 10, 0.25);
+}
+.kipos-packet__name {
+  position: absolute;
+  left: calc(var(--kipos-u) * 8);
+  top: calc(var(--kipos-u) * 42);
+  font-size: calc(var(--kipos-u) * 9.5);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4f3a24;
+}
+.kipos-packet__sub {
+  position: absolute;
+  left: calc(var(--kipos-u) * 8);
+  top: calc(var(--kipos-u) * 56);
+  font-size: calc(var(--kipos-u) * 8);
+  font-style: italic;
+  color: #7a6248;
+}
+.kipos-packet__count {
+  position: absolute;
+  left: calc(var(--kipos-u) * 8);
+  bottom: calc(var(--kipos-u) * 7);
+  font-family: 'GFS Didot', Didot, 'Times New Roman', serif;
+  font-size: calc(var(--kipos-u) * 8);
+  color: var(--band);
+  opacity: 0.85;
+}
+.kipos-packet__art {
+  position: absolute;
+  right: calc(var(--kipos-u) * 5);
+  bottom: calc(var(--kipos-u) * 4);
+  width: calc(var(--kipos-u) * 44);
+  height: calc(var(--kipos-u) * 38.5);
+  background-size: 100% 100%;
+  mix-blend-mode: multiply;
+}
+/* Paper tooth over everything printed. */
+/* The light on the paper, laid over paper and print alike: the seal's crimp, the
+   seeds' bulge and the creases. Mid grey leaves things as they are. */
+.kipos-packet__face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: 100% 100%;
+  mix-blend-mode: hard-light;
+  pointer-events: none;
+}
+.kipos-packet__face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-size: calc(var(--kipos-u) * 64);
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.kipos-packet--tomato { --band: #b8402a; }
+.kipos-packet--cucumber { --band: #3a6630; }
+.kipos-packet--watermelon { --band: #ad3f52; }
+
+.kipos-can__art {
+  position: absolute;
+  inset: 0;
+}
+.kipos-can {
+  position: absolute;
+  left: calc(var(--kipos-u) * 650);
+  top: calc(var(--kipos-u) * 496);
+  width: calc(var(--kipos-u) * 250);
+  height: calc(var(--kipos-u) * 152);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.kipos-can__metal {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+.kipos-can__shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * 86);
+  bottom: calc(var(--kipos-u) * -6);
+  width: calc(var(--kipos-u) * 150);
+  height: calc(var(--kipos-u) * 16);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(30, 16, 4, 0.55), rgba(30, 16, 4, 0) 70%);
+}
+.kipos-can:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 2px; border-radius: calc(var(--kipos-u) * 12); }
+
+/* ---------- In hand ----------
+   The flying copies of the can and packets. Each is placed by its grip, the
+   point that follows the pointer: the outer element carries the position,
+   the inner one turns and scales about the grip. */
+
+.kipos-hand {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.kipos-flight {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.kipos-flight__turn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.kipos-flight__body {
+  position: absolute;
+  filter: drop-shadow(calc(var(--kipos-u) * 6) calc(var(--kipos-u) * 14) calc(var(--kipos-u) * 8) rgba(30, 16, 4, 0.32));
+}
+.kipos-flight--can .kipos-flight__body {
+  left: calc(var(--kipos-u) * 250 * -0.069);
+  top: calc(var(--kipos-u) * 152 * -0.227);
+  width: calc(var(--kipos-u) * 250);
+  height: calc(var(--kipos-u) * 152);
+}
+.kipos-flight--packet .kipos-flight__body {
+  left: calc(var(--kipos-u) * -60);
+  top: calc(var(--kipos-u) * 88 * -0.08);
+  width: calc(var(--kipos-u) * 120);
+  height: calc(var(--kipos-u) * 88);
+}
+.kipos-flight .kipos-can__metal { position: absolute; inset: 0; }
+/* While a tool follows the pointer, it is the pointer. Only the elements that
+   set a cursor of their own are named, so the switch restyles nothing else. */
+.kipos-bed__scene[data-carrying],
+.kipos-bed__scene[data-carrying] .kipos-plot,
+.kipos-bed__scene[data-carrying] .kipos-packet,
+.kipos-bed__scene[data-carrying] .kipos-can { cursor: none; }
+
+.kipos-hint {
+  margin: 10px 0 0;
+  min-height: 1.4em;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--kipos-soft);
+}
+
+/* ---------- Teneke ---------- */
+
+.kipos-teneke {
+  container: kipos-teneke / inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 180px;
+}
+
+.kipos-teneke__scene {
+  --kipos-u: calc(100cqw / 240);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 240 / 330;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.kipos-teneke__shadow {
+  position: absolute;
+  left: calc(var(--kipos-u) * 14);
+  top: calc(var(--kipos-u) * 310);
+  width: calc(var(--kipos-u) * 222);
+  height: calc(var(--kipos-u) * 26);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 46% 36% at 50% 40%, rgba(40, 22, 8, 0.5), rgba(40, 22, 8, 0) 100%),
+    radial-gradient(ellipse 50% 50% at 54% 50%, rgba(40, 22, 8, 0.2), rgba(40, 22, 8, 0) 100%);
+}
+
+.kipos-teneke__tin {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.kipos-teneke__tin:focus-visible { outline: none; }
+.kipos-teneke__tin:focus-visible .kipos-teneke__body { outline: 2px solid var(--kipos-focus); outline-offset: 3px; }
+
+.kipos-teneke .kipos-plant { bottom: calc(var(--kipos-u) * 162); }
+.kipos-teneke .kipos-plant__shadow { display: none; }
+.kipos-teneke .kipos-pour { bottom: calc(var(--kipos-u) * 290); }
+
+/* The mouth of the tin: the far half of the rolled rim and the shadowed wall
+   inside it. The near half of the rim is on the front drawing. */
+.kipos-teneke__mouth {
+  position: absolute;
+  left: calc(var(--kipos-u) * 30);
+  top: calc(var(--kipos-u) * 151);
+  width: calc(var(--kipos-u) * 180);
+  height: calc(var(--kipos-u) * 26);
+  border: calc(var(--kipos-u) * 3) solid #d8d3c6;
+  border-radius: 50%;
+  background: linear-gradient(#2e291f 15%, #5b5545);
+  box-shadow: inset 0 calc(var(--kipos-u) * 1.2) 0 rgba(255, 255, 250, 0.7);
+}
+
+/* Soil filled almost to the rim, in the shade of the far wall. */
+.kipos-teneke__soil {
+  position: absolute;
+  left: calc(var(--kipos-u) * 37);
+  top: calc(var(--kipos-u) * 158);
+  width: calc(var(--kipos-u) * 166);
+  height: calc(var(--kipos-u) * 19);
+  border-radius: 50%;
+  background-size: calc(var(--kipos-u) * 120);
+  box-shadow: inset 0 calc(var(--kipos-u) * 5) calc(var(--kipos-u) * 5) rgba(16, 9, 3, 0.65);
+}
+.kipos-teneke__soil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(22, 12, 5, 0.55);
+  opacity: var(--wet);
+  transition: opacity 1200ms ease;
+}
+
+.kipos-teneke__body {
+  position: absolute;
+  left: calc(var(--kipos-u) * 30);
+  top: calc(var(--kipos-u) * 151);
+  width: calc(var(--kipos-u) * 180);
+  height: calc(var(--kipos-u) * 178);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.kipos-teneke__pinch {
+  position: absolute;
+  right: 0;
+  top: calc(var(--kipos-u) * 8);
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 3px;
+  /* The lit paper label from art.css, with the word printed on it. */
+  background-size: 100% 100%;
+  background-color: #ece0c2;
+  box-shadow:
+    0 1px 1px rgba(40, 20, 5, 0.3),
+    1px 3px 5px rgba(40, 20, 5, 0.22);
+  font-size: 13px;
+  color: #3f2d18;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms ease;
+}
+.kipos-teneke__pinch:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 1px rgba(40, 20, 5, 0.3);
+}
+.kipos-teneke__pinch:focus-visible { outline: 2px solid var(--kipos-focus); outline-offset: 2px; }
+
+.kipos-teneke__status {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--kipos-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kipos-part,
+  .kipos-part--tomato::after,
+  .kipos-plot__soil::before,
+  .kipos-plot__soil::after,
+  .kipos-teneke__soil::before,
+  .kipos-plant__body,
+  .kipos-plant__shadow,
+  .kipos-seg,
+  .kipos-seg__body,
+  .kipos-seg__tip,
+  .kipos-bed__scene,
+  .kipos-teneke__scene { transition: none; }
+  .kipos-pour { display: none; }
+  .kipos-plant[data-sway] { animation: none; }
+}

@@ -5,12 +5,12 @@
 //   3. bundle a browser consumer (JS + every stylesheet) with Vite.
 // Run after `npm run build`. Exits non-zero on the first failure.
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz', 'komboloi']
+const packages = ['core', 'korniza', 'kimolia', 'melani', 'keramos', 'kollaz', 'komboloi', 'kipos']
 const rootManifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const dev = rootManifest.devDependencies
 const dir = mkdtempSync(join(tmpdir(), 'object-studies-consumer-'))
@@ -57,6 +57,7 @@ import { Frame as ModernBlack } from 'korniza/modern-black'
 import { Vase } from 'keramos'
 import { CraftTable, CraftPaper, GooglyEye } from 'kollaz'
 import { Komboloi } from 'komboloi'
+import { Bed, Teneke } from 'kipos'
 
 const checks = [
   ['melani', renderToString(h(Whiteboard, { persistence: { key: 'smoke' } }))],
@@ -67,6 +68,8 @@ const checks = [
   ['kollaz', renderToString(h(CraftTable))],
   ['kollaz', renderToString(h(CraftPaper, { torn: ['top'] }, h(GooglyEye, { size: 40 })))],
   ['komboloi', renderToString(h(Komboloi, { material: 'mati', beads: 23, seed: 2 }))],
+  ['kipos', renderToString(h(Bed, { persistence: { key: 'smoke' } }))],
+  ['kipos', renderToString(h(Teneke, { plant: 'geranium' }))],
 ]
 for (const [name, html] of checks) {
   if (!html.includes('class="' + name) && !html.includes(' ' + name + ' ') && !html.includes('"' + name + ' ')) throw new Error(name + ' SSR output is missing its root class')
@@ -91,12 +94,16 @@ import 'korniza/dark-walnut.css'
 import { Vase, SHAPES, type ShapeId, type VaseProps } from 'keramos'
 import { CraftTable, CraftPaper, GooglyEye, type Edge } from 'kollaz'
 import { Komboloi, MATERIALS, type MaterialId } from 'komboloi'
+import { Bed, Teneke, type Light, type TenekePlant } from 'kipos'
 import 'keramos/style.css'
 import 'kollaz/style.css'
 import 'komboloi/style.css'
+import 'kipos/style.css'
 
 const pieceMode: VaseProps['mode'] = 'still'
 const torn: Edge[] = ['top', 'left']
+const dusk: Light = 'dusk'
+const herb: TenekePlant = 'basil'
 
 export function Consumer({ variant }: { variant: FrameVariant }) {
   const whiteboard = useRef<WhiteboardHandle>(null)
@@ -115,6 +122,8 @@ export function Consumer({ variant }: { variant: FrameVariant }) {
       <CraftTable />
       <CraftPaper torn={torn}><GooglyEye track /></CraftPaper>
       {(Object.keys(MATERIALS) as MaterialId[]).map((material) => <Komboloi key={material} material={material} beads={21} onClack={(strength: number) => strength} />)}
+      <Bed light={dusk} speed={60} persistence={false} labels={{ crops: { tomato: 'Ντομάτα' } }} />
+      <Teneke plant={herb} persistence={{ key: 'tin' }} />
     </>
   )
 }
@@ -146,6 +155,7 @@ import { Frame as OakFrame } from 'korniza/carved-oak'
 import { Vase } from 'keramos'
 import { CraftTable } from 'kollaz'
 import { Komboloi } from 'komboloi'
+import { Bed, Teneke } from 'kipos'
 import 'melani/style.css'
 import 'kimolia/style.css'
 import 'korniza/style.css'
@@ -153,14 +163,23 @@ import 'korniza/carved-oak.css'
 import 'keramos/style.css'
 import 'kollaz/style.css'
 import 'komboloi/style.css'
+import 'kipos/style.css'
 createRoot(document.getElementById('root')).render([
   h(Whiteboard, { key: 'a' }), h(Chalkboard, { key: 'k' }), h(Frame, { key: 'f', variant: 'carved-oak' }), h(OakFrame, { key: 'o' }),
-  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }), h(Komboloi, { key: 'b' }),
+  h(Vase, { key: 'v' }), h(CraftTable, { key: 'c' }), h(Komboloi, { key: 'm' }), h(Bed, { key: 'b' }), h(Teneke, { key: 't' }),
 ])
 `,
   )
   run(process.execPath, [join(root, 'node_modules/vite/bin/vite.js'), 'build', '--logLevel', 'error'])
-  console.log('bundle: vite consumer build ok')
+  // kipos links its art as image files beside its stylesheet: the bundler must
+  // have found every one, emitting it as an asset or inlining it.
+  const assets = readdirSync(join(dir, 'dist/assets'))
+  const css = assets.filter((name) => name.endsWith('.css')).map((name) => readFileSync(join(dir, 'dist/assets', name), 'utf8')).join('')
+  if (css.includes('./art/')) throw new Error('kipos art was left unresolved in the consumer stylesheet')
+  const images = assets.filter((name) => name.endsWith('.avif')).length + (css.match(/data:image\/avif/g) ?? []).length
+  const shipped = readdirSync(join(dir, 'node_modules/kipos/dist/art')).length
+  if (images < shipped) throw new Error('kipos ships ' + shipped + ' images but the consumer bundle has ' + images)
+  console.log('bundle: vite consumer build ok (' + images + ' kipos images)')
 } finally {
   if (!process.env.KEEP_SMOKE) rmSync(dir, { recursive: true, force: true })
   else console.log('kept ' + dir)

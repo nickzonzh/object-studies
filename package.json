@@ -2,7 +2,7 @@
   "name": "object-studies",
   "private": true,
   "type": "module",
-  "description": "Tactile, physical-object React components: Melani (whiteboard), Kimolia (chalkboard), Korniza (gallery frames), Keramos (painted pottery), Kollaz (craft table) and Komboloi (worry beads).",
+  "description": "Tactile, physical-object React components: Melani (whiteboard), Kimolia (chalkboard), Korniza (gallery frames), Keramos (painted pottery), Kollaz (craft table), Komboloi (worry beads) and Kipos (garden bed).",
   "license": "MIT",
   "workspaces": [
     "packages/core",
@@ -12,6 +12,7 @@
     "packages/keramos",
     "packages/kollaz",
     "packages/komboloi",
+    "packages/kipos",
     "apps/site"
   ],
   "scripts": {
@@ -25,7 +26,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only",
     "release": "npm run build && npm run check:packages && changeset publish",
-    "dev:site": "npm run build --workspace object-studies-core --workspace korniza --workspace kimolia --workspace melani --workspace keramos --workspace kollaz --workspace komboloi && npm run dev --workspace object-studies-site",
+    "dev:site": "npm run build --workspace object-studies-core --workspace korniza --workspace kimolia --workspace melani --workspace keramos --workspace kollaz --workspace komboloi --workspace kipos && npm run dev --workspace object-studies-site",
     "smoke:consumer": "node scripts/smoke-consumer.mjs"
   },
   "devDependencies": {
