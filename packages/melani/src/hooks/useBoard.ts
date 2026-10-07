@@ -572,7 +572,11 @@ export function useBoard({
     }
   }
   const onObjectPointerLeave = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!activeStrokeRef.current && !objectRef.current?.contains(event.relatedTarget as Node | null)) {
+    // Lifting a finger ends hover, but the selected tool must survive between taps.
+    if (event.pointerType === 'touch') return
+    // React can use Window as the related target when the pointer leaves the page.
+    const target = event.relatedTarget
+    if (!activeStrokeRef.current && !(target instanceof Node && objectRef.current?.contains(target))) {
       scheduleReturn()
       previousPointerRef.current = null
     }
