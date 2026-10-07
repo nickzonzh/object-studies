@@ -154,6 +154,7 @@ export function Vase({
     rotation: angle,
     velocity: 0,
     dragging: false,
+    pointerId: null as number | null,
     lastX: 0,
     lastT: 0,
     lightAz: DEFAULT_LIGHT.az,
@@ -461,18 +462,20 @@ export function Vase({
   }
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!draggable) return
+    if (!draggable || !e.isPrimary || e.button !== 0) return
     const st = state.current
+    if (st.dragging) return
     st.dragging = true
+    st.pointerId = e.pointerId
     st.lastX = e.clientX
     st.lastT = performance.now()
     st.velocity = 0
-    ;(e.target as Element).setPointerCapture(e.pointerId)
+    e.currentTarget.setPointerCapture(e.pointerId)
     loopRef.current?.wake()
   }
   const onPointerMove = (e: React.PointerEvent) => {
     const st = state.current
-    if (!st.dragging) return
+    if (!st.dragging || e.pointerId !== st.pointerId) return
     const rect = wrapRef.current!.getBoundingClientRect()
     const now = performance.now()
     const dx = e.clientX - st.lastX
@@ -484,9 +487,11 @@ export function Vase({
     st.lastT = now
     st.dirty = true
   }
-  const onPointerUp = () => {
+  const onPointerUp = (e: React.PointerEvent) => {
     const st = state.current
+    if (!st.dragging || e.pointerId !== st.pointerId) return
     st.dragging = false
+    st.pointerId = null
     // A hand that stopped before letting go doesn't fling the piece.
     const held = performance.now() - st.lastT
     st.velocity *= Math.exp(-Math.max(0, held - 40) / 40)
@@ -536,6 +541,7 @@ export function Vase({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onLostPointerCapture={onPointerUp}
       />
       {draggable ? (
         <span id={hintId} hidden>

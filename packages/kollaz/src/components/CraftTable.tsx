@@ -1266,6 +1266,7 @@ export function CraftTable({ labels, portalContainer, className, style }: CraftT
 
   // Pieces move as DOM elements during a drag and commit their offset on release.
   const dragPiece = (id: number) => (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button !== 0) return
     const piece = piecesRef.current.find((p) => p.id === id)
     if (toolRef.current || !piece || piece.glued) return
     event.stopPropagation()
@@ -1407,6 +1408,7 @@ export function CraftTable({ labels, portalContainer, className, style }: CraftT
   }
 
   const dragPipe = (id: number) => (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button !== 0) return
     const pipe = pipesRef.current.find((p) => p.id === id)
     if (toolRef.current || !pipe || pipe.glued) return
     event.stopPropagation()
@@ -1485,6 +1487,7 @@ export function CraftTable({ labels, portalContainer, className, style }: CraftT
   // Dragging moves the element directly and commits to state once, on release,
   // so the whole table doesn't re-render on every pointer move.
   const dragEye = (id: number) => (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button !== 0) return
     if (toolRef.current) return
     event.stopPropagation()
     const target = event.currentTarget
