@@ -9,7 +9,7 @@
     "url": "git+https://github.com/nickzonzh/object-studies.git",
     "directory": "packages/komboloi"
   },
-  "homepage": "https://github.com/nickzonzh/object-studies/tree/main/packages/komboloi#readme",
+  "homepage": "https://nickzonnios.com/play/komboloi/",
   "bugs": "https://github.com/nickzonzh/object-studies/issues",
   "keywords": [
     "react",
