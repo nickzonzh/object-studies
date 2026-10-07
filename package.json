@@ -24,7 +24,7 @@
     "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:packages && npm run smoke:consumer",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install --package-lock-only",
-    "release": "npm run build && npm run check:packages && changeset publish",
+    "release": "npm run check && changeset publish",
     "dev:site": "npm run build --workspace object-studies-core --workspace korniza --workspace kimolia --workspace melani --workspace keramos --workspace kollaz --workspace komboloi && npm run dev --workspace object-studies-site",
     "smoke:consumer": "node scripts/smoke-consumer.mjs"
   },

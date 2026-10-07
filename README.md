@@ -66,9 +66,14 @@ Versions and changelogs are managed with [Changesets](https://github.com/changes
 
 Publishing uses npm trusted publishing: npm accepts releases from this repository's `release.yml`
 workflow, so there is no npm token to store or rotate. Trusted publishing can only be configured on
-a package that already exists, so the very first release is done locally with `npm login`, then
-`npm run release`; after that, each package's npm settings name `nickzonzh/object-studies` and
-`release.yml` as its trusted publisher.
+a package that already exists, so the very first release is done locally:
+
+1. Run `npm run version-packages` to apply the pending changesets.
+2. Commit the resulting versions, changelogs and lockfile changes.
+3. Run `npm login`, then `npm run release`.
+
+After that, each package's npm settings name `nickzonzh/object-studies` and `release.yml` as its
+trusted publisher.
 
 ## License
 
