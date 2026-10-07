@@ -10,7 +10,7 @@
  * height with `--melani-height`.
  */
 
-.melani {
+:where(.melani) {
   /* ── theming surface ─────────────────────────────────────────────────── */
   --melani-frame-metal: #b2b8bb;
   --melani-frame-highlight: #f3f6f7;
@@ -39,7 +39,9 @@
   --melani-object-aspect: 1.512;
   --melani-light-x: 34%;
   --melani-light-y: 14%;
+}
 
+.melani {
   display: flex;
   flex-direction: column;
   align-items: center;
