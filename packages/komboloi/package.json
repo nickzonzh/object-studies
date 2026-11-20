@@ -1,6 +1,6 @@
 {
   "name": "komboloi",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Greek worry beads for React: a komboloi on a brass peg that you can lift, swing and click, with simulated cord physics and synthesised clacks.",
   "license": "MIT",
   "author": "Nick <nick@zonnioshunt.com.au>",
@@ -46,7 +46,7 @@
     "check:package": "publint --strict && attw --pack --profile esm-only"
   },
   "dependencies": {
-    "object-studies-core": "^0.0.0"
+    "object-studies-core": "^0.1.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"
